@@ -1,5 +1,5 @@
-using System.Diagnostics;
-using System.Text;
+using CliWrap;
+using CliWrap.Buffered;
 using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
@@ -32,7 +32,7 @@ public class GitService : IGitService
 
     public async Task<GitCommitInfo?> GetCurrentCommitAsync(string path, CancellationToken ct = default)
     {
-        var format = "%H%n%h%n%s%n%an%n%aI";
+        const string format = "%H%n%h%n%s%n%an%n%aI";
         var (exitCode, output, _) = await RunGitCommandAsync(path, $"log -1 --format=\"{format}\"", ct);
 
         if (exitCode != 0)
@@ -65,22 +65,22 @@ public class GitService : IGitService
     {
         var branch = await GetCurrentBranchAsync(path, ct);
         if (branch == null)
-            return (0, 0);
+            return (Behind: 0, Ahead: 0);
 
         var (exitCode, output, _) = await RunGitCommandAsync(path,
             $"rev-list --left-right --count origin/{branch}...HEAD", ct);
 
         if (exitCode != 0)
-            return (0, 0);
+            return (Behind: 0, Ahead: 0);
 
         var parts = output.Trim().Split('\t');
         if (parts.Length != 2)
-            return (0, 0);
+            return (Behind: 0, Ahead: 0);
 
         int.TryParse(parts[0], out var behind);
         int.TryParse(parts[1], out var ahead);
 
-        return (behind, ahead);
+        return (Behind: behind, Ahead: ahead);
     }
 
     public async Task<IReadOnlyList<GitCommitInfo>> GetIncomingCommitsAsync(string path, int limit = 10,
@@ -90,7 +90,7 @@ public class GitService : IGitService
         if (branch == null)
             return [];
 
-        var format = "%H%n%h%n%s%n%an%n%aI%n---";
+        const string format = "%H%n%h%n%s%n%an%n%aI%n---";
         var (exitCode, output, _) = await RunGitCommandAsync(path,
             $"log HEAD..origin/{branch} --format=\"{format}\" -n {limit}", ct);
 
@@ -103,7 +103,7 @@ public class GitService : IGitService
     public async Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string path, int limit = 20,
         CancellationToken ct = default)
     {
-        var format = "%H%n%h%n%s%n%an%n%aI%n---";
+        const string format = "%H%n%h%n%s%n%an%n%aI%n---";
         var (exitCode, output, _) = await RunGitCommandAsync(path,
             $"log --format=\"{format}\" -n {limit}", ct);
 
@@ -162,9 +162,9 @@ public class GitService : IGitService
             return [];
 
         return output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(b => b.Trim())
-            .Where(b => !b.Contains("->")) // Filter out HEAD -> origin/main
-            .Select(b => b.StartsWith("origin/") ? b[7..] : b)
+            .Select(s => s.Trim())
+            .Where(s => !s.Contains("->")) // Filter out HEAD -> origin/main
+            .Select(s => s.StartsWith("origin/") ? s[7..] : s)
             .ToList();
     }
 
@@ -196,7 +196,7 @@ public class GitService : IGitService
                 ShortHash: lines[1].Trim(),
                 Message: lines[2].Trim(),
                 Author: lines[3].Trim(),
-                Date: DateTimeOffset.TryParse(lines[4].Trim(), out var date) ? date : DateTimeOffset.MinValue
+                Date: DateTimeOffset.TryParse(lines[4].Trim(), out DateTimeOffset date) ? date : DateTimeOffset.MinValue
             ));
         }
 
@@ -206,59 +206,22 @@ public class GitService : IGitService
     private static async Task<(int ExitCode, string Output, string Error)> RunGitCommandAsync(
         string workingDirectory, string arguments, CancellationToken ct, int timeoutMs = 30000)
     {
-        using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
-        {
-            FileName = "git",
-            Arguments = arguments,
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
-
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data != null) outputBuilder.AppendLine(e.Data);
-        };
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data != null) errorBuilder.AppendLine(e.Data);
-        };
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(timeoutMs);
 
         try
         {
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            BufferedCommandResult result = await Cli.Wrap("git")
+                .WithArguments(arguments)
+                .WithWorkingDirectory(workingDirectory)
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync(cts.Token);
 
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(timeoutMs);
-
-            await process.WaitForExitAsync(cts.Token);
-
-            return (process.ExitCode, outputBuilder.ToString(), errorBuilder.ToString());
+            return (result.ExitCode, result.StandardOutput, result.StandardError);
         }
         catch (OperationCanceledException)
         {
-            try
-            {
-                process.Kill(entireProcessTree: true);
-            }
-            catch
-            {
-                // Ignore kill errors
-            }
-
             return (ExitCode: -1, Output: "", Error: "Operation timed out or was cancelled");
-        }
-        catch (Exception ex)
-        {
-            return (ExitCode: -1, Output: "", Error: ex.Message);
         }
     }
 }
