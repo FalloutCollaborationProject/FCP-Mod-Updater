@@ -201,12 +201,10 @@ public class InteractiveMenu
             async (repo, progress) =>
             {
                 var targetPath = Path.Combine(_modsDirectory, repo.Name);
-                progress.Report(10);
 
-                var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, targetPath, ct: ct);
-                progress.Report(100);
+                var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
 
-                return (cloneOk, cloneOk ? null : "Clone failed");
+                return (Success: cloneOk, Error: cloneOk ? null : "Clone failed");
             });
 
         ModTableRenderer.RenderUpdateSummary(results);
@@ -242,14 +240,15 @@ public class InteractiveMenu
 
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold red]WARNING: This will permanently delete the following mods:[/]");
-        foreach (var mod in selected)
+        foreach (InstalledMod mod in selected)
         {
             AnsiConsole.MarkupLine($"  [red]• {mod.Name}[/] ({mod.Path})");
         }
 
         AnsiConsole.WriteLine();
 
-        if (!AnsiConsole.Confirm("[red]Are you sure you want to delete these mods?[/]", defaultValue: false))
+        if (!await AnsiConsole.ConfirmAsync("[red]Are you sure you want to delete these mods?[/]", defaultValue: false,
+                cancellationToken: ct))
         {
             return false;
         }
@@ -265,7 +264,7 @@ public class InteractiveMenu
 
         var results = new List<(string Name, bool Success, string? Error)>();
 
-        foreach (var mod in selected)
+        foreach (InstalledMod mod in selected)
         {
             try
             {
@@ -288,7 +287,7 @@ public class InteractiveMenu
     private async Task<bool> HandleConvertAsync(CancellationToken ct)
     {
         var nonGitMods = _mods
-            .Where(m => m.Source != ModSource.Git && !string.IsNullOrEmpty(m.MatchedRepoName))
+            .Where(mod => mod.Source != ModSource.Git && !string.IsNullOrEmpty(mod.MatchedRepoName))
             .ToList();
 
         if (nonGitMods.Count == 0)
@@ -314,54 +313,36 @@ public class InteractiveMenu
         AnsiConsole.MarkupLine("[yellow]Warning: This will replace local folders with fresh git clones.[/]");
         AnsiConsole.MarkupLine("[yellow]Any local modifications (except About.xml changes) will be lost.[/]");
 
-        if (!AnsiConsole.Confirm("Proceed with conversion?"))
+        if (!await AnsiConsole.ConfirmAsync("Proceed with conversion?", cancellationToken: ct))
         {
             return false;
         }
 
-        var results = new List<(string Name, bool Success, string? Error)>();
-
-        foreach (var mod in selected)
-        {
-            var repo = await _gitHubApiService.GetRepoByNameAsync(mod.MatchedRepoName!, ct);
-            if (repo == null)
+        var results = await ProgressReporter.WithBatchProgressAsync(
+            description: "Converting mods to Git",
+            items: selected.ToList(),
+            nameSelector: mod => mod.Name,
+            action: async (mod, progress) =>
             {
-                results.Add((mod.Name, false, "Repository not found"));
-                continue;
-            }
+                RemoteRepo? repo = await _gitHubApiService.GetRepoByNameAsync(mod.MatchedRepoName!, ct);
+                if (repo == null)
+                    return (Success: false, Error: "Repository not found");
 
-            // Backup About.xml if it exists and has modifications
-            var aboutPath = Path.Combine(mod.Path, "About", "About.xml");
-            string? aboutBackup = null;
-            if (File.Exists(aboutPath))
-            {
-                aboutBackup = await File.ReadAllTextAsync(aboutPath, ct);
-            }
-
-            try
-            {
-                // Delete existing folder
-                Directory.Delete(mod.Path, recursive: true);
-
-                // Clone fresh
-                var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, mod.Path, ct: ct);
-
-                if (!cloneOk)
+                try
                 {
-                    results.Add((mod.Name, false, "Clone failed"));
-                    continue;
+                    // Delete existing folder
+                    Directory.Delete(mod.Path, recursive: true);
+
+                    // Clone fresh with progress
+                    var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);
+
+                    return (Success: cloneOk, Error: cloneOk ? null : "Clone failed");
                 }
-
-                // Note: We don't restore About.xml as it would create local modifications
-                // The user should use the game's mod settings instead
-
-                results.Add((mod.Name, true, null));
-            }
-            catch (Exception ex)
-            {
-                results.Add((mod.Name, false, ex.Message));
-            }
-        }
+                catch (Exception ex)
+                {
+                    return (Success: false, Error: ex.Message);
+                }
+            });
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
@@ -381,7 +362,7 @@ public class InteractiveMenu
             return false;
         }
 
-        var mod = AnsiConsole.Prompt(
+        InstalledMod mod = AnsiConsole.Prompt(
             new SelectionPrompt<InstalledMod>()
                 .Title("[bold]Select a mod to manage:[/]")
                 .PageSize(15)
@@ -419,19 +400,20 @@ public class InteractiveMenu
         if (mod.HasLocalChanges)
         {
             AnsiConsole.MarkupLine("[yellow]Warning: You have local changes that may be affected.[/]");
-            if (!AnsiConsole.Confirm("Continue anyway?"))
+            if (!await AnsiConsole.ConfirmAsync("Continue anyway?", cancellationToken: ct))
             {
                 return false;
             }
         }
 
-        if (action == "Switch Branch")
+        switch (action)
         {
-            await HandleBranchSwitchAsync(mod, ct);
-        }
-        else if (action == "Checkout Specific Commit")
-        {
-            await HandleCommitCheckoutAsync(mod, ct);
+            case "Switch Branch":
+                await HandleBranchSwitchAsync(mod, ct);
+                break;
+            case "Checkout Specific Commit":
+                await HandleCommitCheckoutAsync(mod, ct);
+                break;
         }
 
         await RefreshModsAsync(ct);
@@ -465,14 +447,9 @@ public class InteractiveMenu
             $"Switching to {branch}...",
             async () => await _gitService.CheckoutAsync(mod.Path, branch, ct));
 
-        if (success)
-        {
-            AnsiConsole.MarkupLine($"[green]Switched to branch '{branch}'[/]");
-        }
-        else
-        {
-            AnsiConsole.MarkupLine($"[red]Failed to switch to branch '{branch}'[/]");
-        }
+        AnsiConsole.MarkupLine(success
+            ? $"[green]Switched to branch '{branch}'[/]"
+            : $"[red]Failed to switch to branch '{branch}'[/]");
 
         WaitForKey();
     }
@@ -490,7 +467,7 @@ public class InteractiveMenu
             return;
         }
 
-        var commit = AnsiConsole.Prompt(
+        GitCommitInfo commit = AnsiConsole.Prompt(
             new SelectionPrompt<GitCommitInfo>()
                 .Title("Select commit:")
                 .PageSize(15)

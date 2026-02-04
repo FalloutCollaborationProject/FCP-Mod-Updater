@@ -12,7 +12,7 @@ public interface IGitService
     Task<IReadOnlyList<GitCommitInfo>> GetIncomingCommitsAsync(string path, int limit = 10, CancellationToken ct = default);
     Task<bool> FetchAsync(string path, IProgress<string>? progress = null, CancellationToken ct = default);
     Task<bool> PullAsync(string path, IProgress<string>? progress = null, CancellationToken ct = default);
-    Task<bool> CloneAsync(string url, string targetPath, IProgress<string>? progress = null, CancellationToken ct = default);
+    Task<bool> CloneAsync(string url, string targetPath, IProgress<string>? progress = null, IProgress<double>? percentProgress = null, CancellationToken ct = default);
     Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string path, CancellationToken ct = default);
     Task<bool> CheckoutAsync(string path, string branchOrCommit, CancellationToken ct = default);
     Task<bool> HasLocalChangesAsync(string path, CancellationToken ct = default);

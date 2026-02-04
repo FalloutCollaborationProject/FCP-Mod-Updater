@@ -38,11 +38,11 @@ public static class ModTableRenderer
         AnsiConsole.Write(table);
 
         // Status summary
-        var gitMods = mods.Where(m => m.Source == ModSource.Git).ToList();
-        var upToDate = gitMods.Count(m => m.Status == ModStatus.UpToDate);
-        var behind = gitMods.Count(m => m.Status == ModStatus.Behind);
-        var localChanges = gitMods.Count(m => m.Status == ModStatus.LocalChanges);
-        var nonGit = mods.Count(m => m.Source != ModSource.Git);
+        var gitMods = mods.Where(mod => mod.Source == ModSource.Git).ToList();
+        var upToDate = gitMods.Count(mod => mod.Status == ModStatus.UpToDate);
+        var behind = gitMods.Count(mod => mod.Status == ModStatus.Behind);
+        var localChanges = gitMods.Count(mod => mod.Status == ModStatus.LocalChanges);
+        var nonGit = mods.Count(mod => mod.Source != ModSource.Git);
 
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine(
@@ -91,10 +91,9 @@ public static class ModTableRenderer
 
     private static string FormatCommit(GitCommitInfo? commit)
     {
-        if (commit == null)
-            return "[grey]-[/]";
-
-        return $"[grey]{commit.ShortHash}[/]";
+        return commit != null 
+            ? $"[grey]{commit.ShortHash}[/]" 
+            : "[grey]-[/]";
     }
 
     private static string FormatStatus(InstalledMod mod)
@@ -117,7 +116,7 @@ public static class ModTableRenderer
     {
         AnsiConsole.WriteLine();
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(Color.Grey)
             .Title("[bold]Update Results[/]")
@@ -139,15 +138,9 @@ public static class ModTableRenderer
         var failCount = results.Count(r => !r.Success);
 
         AnsiConsole.WriteLine();
-        if (failCount == 0)
-        {
-            AnsiConsole.MarkupLine($"[green]Successfully updated {successCount} mod(s).[/]");
-        }
-        else
-        {
-            AnsiConsole.MarkupLine(
-                $"[yellow]Updated {successCount} mod(s), {failCount} failed.[/]");
-        }
+        AnsiConsole.MarkupLine(failCount == 0
+            ? $"[green]Successfully updated {successCount} mod(s).[/]"
+            : $"[yellow]Updated {successCount} mod(s), {failCount} failed.[/]");
     }
 
     public static void RenderIncomingCommits(InstalledMod mod, IReadOnlyList<GitCommitInfo> commits)
@@ -160,7 +153,7 @@ public static class ModTableRenderer
 
         var tree = new Tree($"[bold]{mod.Name}[/] [grey]({commits.Count} incoming commits)[/]");
 
-        foreach (var commit in commits)
+        foreach (GitCommitInfo commit in commits)
         {
             var dateStr = commit.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             tree.AddNode(

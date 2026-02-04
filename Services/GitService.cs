@@ -1,11 +1,15 @@
+using System.Text.RegularExpressions;
 using CliWrap;
 using CliWrap.Buffered;
 using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
 
-public class GitService : IGitService
+public partial class GitService : IGitService
 {
+    // Matches git progress output like: "Receiving objects:  45% (555/1234), 12.34 MiB | 1.23 MiB/s"
+    [GeneratedRegex(@"(\d+)%\s*\((\d+)/(\d+)\)", RegexOptions.Compiled)]
+    private static partial Regex GitProgressRegex();
     public async Task<bool> IsGitRepositoryAsync(string path, CancellationToken ct = default)
     {
         var (exitCode, _, _) = await RunGitCommandAsync(path, "rev-parse --is-inside-work-tree", ct);
@@ -126,14 +130,18 @@ public class GitService : IGitService
     }
 
     public async Task<bool> CloneAsync(string url, string targetPath, IProgress<string>? progress = null,
-        CancellationToken ct = default)
+        IProgress<double>? percentProgress = null, CancellationToken ct = default)
     {
         progress?.Report($"Cloning {url}...");
 
         var parentDir = Path.GetDirectoryName(targetPath) ?? ".";
         var folderName = Path.GetFileName(targetPath);
 
-        var (exitCode, _, error) = await RunGitCommandAsync(parentDir, $"clone \"{url}\" \"{folderName}\"", ct,
+        var (exitCode, error) = await RunGitCommandWithProgressAsync(
+            parentDir,
+            $"clone --progress \"{url}\" \"{folderName}\"",
+            percentProgress,
+            ct,
             timeoutMs: 300000); // 5 minute timeout for clone
 
         if (exitCode != 0)
@@ -166,6 +174,47 @@ public class GitService : IGitService
     {
         var (exitCode, output, _) = await RunGitCommandAsync(path, "status --porcelain", ct);
         return exitCode == 0 && !string.IsNullOrWhiteSpace(output);
+    }
+
+    private static async Task<(int ExitCode, string Error)> RunGitCommandWithProgressAsync(
+        string workingDirectory, string arguments, IProgress<double>? percentProgress,
+        CancellationToken ct, int timeoutMs = 30000)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(timeoutMs);
+
+        var errorLines = new List<string>();
+
+        try
+        {
+            var result = await Cli.Wrap("git")
+                .WithArguments(arguments)
+                .WithWorkingDirectory(workingDirectory)
+                .WithEnvironmentVariables(env => env
+                    .Set("GIT_TERMINAL_PROMPT", "0"))
+                .WithValidation(CommandResultValidation.None)
+                .WithStandardOutputPipe(PipeTarget.Null)
+                .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+                {
+                    errorLines.Add(line);
+
+                    if (percentProgress == null)
+                        return;
+
+                    var match = GitProgressRegex().Match(line);
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out var percent))
+                    {
+                        percentProgress.Report(percent);
+                    }
+                }))
+                .ExecuteAsync(cts.Token);
+
+            return (result.ExitCode, string.Join(Environment.NewLine, errorLines));
+        }
+        catch (OperationCanceledException)
+        {
+            return (ExitCode: -1, Error: "Operation timed out or was cancelled");
+        }
     }
 
     private static IReadOnlyList<GitCommitInfo> ParseCommitLog(string output)
