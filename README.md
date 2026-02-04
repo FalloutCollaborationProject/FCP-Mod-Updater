@@ -1,5 +1,9 @@
 # FCP Mod Updater
 
+[![Stable Release](https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?label=Stable&color=brightgreen)](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest)
+[![Beta Release](https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?include_prereleases&label=Beta&color=orange)](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white)](https://discord.gg/XcgBf3AbPa)
+
 A command-line tool for managing [Fallout Collaboration Project](https://github.com/FalloutCollaborationProject) RimWorld mods. Features both interactive and automated workflows for discovering, updating, installing, and managing FCP mods.
 
 ## Features
@@ -21,12 +25,16 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 
 ### Pre-Compiled Releases
 
-Download from the [Releases](https://github.com/FalloutCollaborationProject/FCPModUpdater/releases) page:
+> [!NOTE]
+> Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
 
 | Archive | Description |
 |---------|-------------|
 | `*-selfcontained.zip/.tar.gz` | Standalone, no .NET required |
 | `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller, requires .NET 10 Runtime |
+
+Downloads are available in the [Releases](https://github.com/FalloutCollaborationProject/FCPModUpdater/releases) page:
+
 
 ### Build from Source
 ```bash
@@ -37,9 +45,8 @@ dotnet build
 
 ## Usage
 
-### Cli Note
-
-You may choose between either `dotnet run -- ARGS` or running the built application directly with the args
+> [!TIP]
+> You may choose between either `dotnet run -- ARGS` or running the built application directly with the args
 (ex: `FCPModUpdater scan`)
 
 ### Interactive Mode (scan arg, Default)
