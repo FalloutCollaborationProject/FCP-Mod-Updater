@@ -9,6 +9,7 @@ app.Configure(config =>
 {
     config.SetApplicationName("fcp-mod-manager");
     config.SetApplicationVersion("1.0.0");
+    config.SetInterceptor(new GitRequiredInterceptor());
 
     config.AddCommand<ScanCommand>("scan")
         .WithDescription("Scan mods and show interactive menu (DEFAULT)")
