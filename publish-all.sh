@@ -4,6 +4,7 @@ APP_NAME="FCPModUpdater"
 # Self-contained
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc ./FCPModUpdater.csproj
 dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc ./FCPModUpdater.csproj
+cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
 
 # Archive self-contained builds
 cd ./publish
@@ -14,6 +15,7 @@ cd ..
 # Framework-dependent
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd ./FCPModUpdater.csproj
 dotnet publish -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd ./FCPModUpdater.csproj
+cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
 
 # Archive framework-dependent builds (keep originals)
 cd ./publish
