@@ -7,5 +7,6 @@ public record RemoteRepo(
     [property: JsonPropertyName("clone_url")] string CloneUrl,
     [property: JsonPropertyName("default_branch")] string DefaultBranch,
     [property: JsonPropertyName("description")] string? Description,
-    [property: JsonPropertyName("html_url")] string HtmlUrl
+    [property: JsonPropertyName("html_url")] string HtmlUrl,
+    [property: JsonPropertyName("topics")] IReadOnlyList<string> Topics
 );

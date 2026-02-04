@@ -7,6 +7,7 @@ public class GitHubApiService : IGitHubApiService, IDisposable
 {
     private const string OrgName = "FalloutCollaborationProject";
     private const string BaseUrl = "https://api.github.com";
+    private const string RequiredTopic = "rimworld-mod";
 
     private readonly HttpClient _httpClient;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromHours(1);
@@ -86,7 +87,10 @@ public class GitHubApiService : IGitHubApiService, IDisposable
 
         if (allRepos.Count > 0)
         {
-            _cachedRepos = allRepos;
+            // Filter to only repos tagged as RimWorld mods
+            _cachedRepos = allRepos
+                .Where(r => r.Topics.Contains(RequiredTopic, StringComparer.OrdinalIgnoreCase))
+                .ToList();
             _cacheTime = DateTimeOffset.UtcNow;
         }
 
