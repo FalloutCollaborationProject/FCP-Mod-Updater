@@ -5,7 +5,6 @@ namespace FCPModUpdater.Services;
 public class ModDiscoveryService : IModDiscoveryService
 {
     private const string FcpOrgUrl = "github.com/FalloutCollaborationProject/";
-    private const string FcpOrgUrlAlt = "github.com:FalloutCollaborationProject/"; // SSH format
 
     private readonly IGitService _gitService;
     private readonly IGitHubApiService _gitHubApiService;
@@ -121,8 +120,7 @@ public class ModDiscoveryService : IModDiscoveryService
             return null;
         }
 
-        var isFcpMod = remoteUrl.Contains(FcpOrgUrl, StringComparison.OrdinalIgnoreCase) ||
-                       remoteUrl.Contains(FcpOrgUrlAlt, StringComparison.OrdinalIgnoreCase);
+        var isFcpMod = remoteUrl.Contains(FcpOrgUrl, StringComparison.OrdinalIgnoreCase);
 
         if (!isFcpMod)
         {
