@@ -61,12 +61,12 @@ public static class ProgressReporter
                 new SpinnerColumn())
             .StartAsync(async ctx =>
             {
-                var overallTask = ctx.AddTask($"[bold]{description}[/]", maxValue: items.Count);
+                ProgressTask overallTask = ctx.AddTask($"[bold]{description}[/]", maxValue: items.Count);
 
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     var name = nameSelector(item);
-                    var itemTask = ctx.AddTask($"  {name}");
+                    ProgressTask itemTask = ctx.AddTask($"  {name}");
 
                     var progress = new Progress<double>(p => itemTask.Value = p);
 
@@ -76,14 +76,9 @@ public static class ProgressReporter
                         results.Add((name, success, error));
                         itemTask.Value = 100;
 
-                        if (!success)
-                        {
-                            itemTask.Description = $"  [red]{name}[/]";
-                        }
-                        else
-                        {
-                            itemTask.Description = $"  [green]{name}[/]";
-                        }
+                        itemTask.Description = success 
+                            ? $"  [green]{name}[/]" 
+                            : $"  [red]{name}[/]";
                     }
                     catch (Exception ex)
                     {

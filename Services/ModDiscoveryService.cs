@@ -5,6 +5,7 @@ namespace FCPModUpdater.Services;
 public class ModDiscoveryService : IModDiscoveryService
 {
     private const string FcpOrgUrl = "github.com/FalloutCollaborationProject/";
+    private static readonly string[] BranchSuffixes = ["-main", "-master", "-develop"];
 
     private readonly IGitService _gitService;
     private readonly IGitHubApiService _gitHubApiService;
@@ -25,7 +26,6 @@ public class ModDiscoveryService : IModDiscoveryService
             return [];
         }
 
-        var gitInstalled = await _gitService.IsGitInstalledAsync(ct);
         var orgRepos = await _gitHubApiService.GetOrganizationReposAsync(ct);
         var orgRepoNames = orgRepos.Select(r => r.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -39,7 +39,7 @@ public class ModDiscoveryService : IModDiscoveryService
             var folderName = Path.GetFileName(dir);
             progress?.Report($"Scanning: {folderName}");
 
-            InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, gitInstalled, orgRepoNames, ct);
+            InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, ct);
             if (mod != null)
             {
                 mods.Add(mod);
@@ -52,46 +52,24 @@ public class ModDiscoveryService : IModDiscoveryService
     private async Task<InstalledMod?> AnalyzeModDirectoryAsync(
         string path,
         string folderName,
-        bool gitInstalled,
         HashSet<string> orgRepoNames,
         CancellationToken ct)
     {
-        // Check if it's a Workshop mod (has PublishedFileId.txt)
-        var isWorkshop = File.Exists(Path.Combine(path, "About", "PublishedFileId.txt"));
-
-        if (!gitInstalled)
-        {
-            // Can't check git status without git installed
-            // Check if folder name matches an org repo
-            if (orgRepoNames.Contains(folderName))
-            {
-                return new InstalledMod
-                {
-                    Name = folderName,
-                    Path = path,
-                    Source = isWorkshop ? ModSource.Workshop : ModSource.Local,
-                    Status = ModStatus.NonGit,
-                    MatchedRepoName = folderName
-                };
-            }
-
-            return null;
-        }
-
         var isGitRepo = await _gitService.IsGitRepositoryAsync(path, ct);
 
         if (!isGitRepo)
         {
             // Not a git repo - check if it matches an org repo by name
-            if (orgRepoNames.Contains(folderName))
+            var matchedRepo = MatchRepoName(folderName, orgRepoNames);
+            if (matchedRepo != null)
             {
                 return new InstalledMod
                 {
                     Name = folderName,
                     Path = path,
-                    Source = isWorkshop ? ModSource.Workshop : ModSource.Local,
+                    Source = ModSource.Local,
                     Status = ModStatus.NonGit,
-                    MatchedRepoName = folderName
+                    MatchedRepoName = matchedRepo
                 };
             }
 
@@ -104,7 +82,8 @@ public class ModDiscoveryService : IModDiscoveryService
         if (string.IsNullOrEmpty(remoteUrl))
         {
             // Git repo without remote - check if folder matches org repo
-            if (orgRepoNames.Contains(folderName))
+            var matchedRepo = MatchRepoName(folderName, orgRepoNames);
+            if (matchedRepo != null)
             {
                 return new InstalledMod
                 {
@@ -113,7 +92,7 @@ public class ModDiscoveryService : IModDiscoveryService
                     Source = ModSource.Git,
                     Status = ModStatus.Error,
                     ErrorMessage = "Git repository has no remote configured",
-                    MatchedRepoName = folderName
+                    MatchedRepoName = matchedRepo
                 };
             }
 
@@ -125,7 +104,7 @@ public class ModDiscoveryService : IModDiscoveryService
         if (!isFcpMod)
         {
             // Check if folder name matches org repo (might be cloned from fork)
-            if (!orgRepoNames.Contains(folderName))
+            if (MatchRepoName(folderName, orgRepoNames) == null)
             {
                 return null;
             }
@@ -180,6 +159,29 @@ public class ModDiscoveryService : IModDiscoveryService
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <summary>
+    /// Tries to match a folder name to an org repo, accounting for GitHub ZIP download suffixes like -main, -master.
+    /// </summary>
+    private static string? MatchRepoName(string folderName, HashSet<string> orgRepoNames)
+    {
+        // Direct match
+        if (orgRepoNames.Contains(folderName))
+            return folderName;
+
+        // Try stripping common branch suffixes (for ZIP downloads)
+        foreach (var suffix in BranchSuffixes)
+        {
+            if (folderName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                var baseName = folderName[..^suffix.Length];
+                if (orgRepoNames.Contains(baseName))
+                    return baseName;
+            }
+        }
+
+        return null;
     }
 
     private static ModStatus DetermineStatus(int behind, int ahead, bool hasLocalChanges, string? branch)

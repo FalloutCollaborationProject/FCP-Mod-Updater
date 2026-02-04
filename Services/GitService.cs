@@ -6,18 +6,6 @@ namespace FCPModUpdater.Services;
 
 public class GitService : IGitService
 {
-    private bool? _gitInstalled;
-
-    public async Task<bool> IsGitInstalledAsync(CancellationToken ct = default)
-    {
-        if (_gitInstalled.HasValue)
-            return _gitInstalled.Value;
-
-        var (exitCode, _, _) = await RunGitCommandAsync(".", "--version", ct);
-        _gitInstalled = exitCode == 0;
-        return _gitInstalled.Value;
-    }
-
     public async Task<bool> IsGitRepositoryAsync(string path, CancellationToken ct = default)
     {
         var (exitCode, _, _) = await RunGitCommandAsync(path, "rev-parse --is-inside-work-tree", ct);
@@ -214,6 +202,8 @@ public class GitService : IGitService
             BufferedCommandResult result = await Cli.Wrap("git")
                 .WithArguments(arguments)
                 .WithWorkingDirectory(workingDirectory)
+                .WithEnvironmentVariables(env => env
+                    .Set("GIT_TERMINAL_PROMPT", "0"))  // Disable interactive prompts
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteBufferedAsync(cts.Token);
 

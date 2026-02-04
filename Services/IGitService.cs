@@ -4,7 +4,6 @@ namespace FCPModUpdater.Services;
 
 public interface IGitService
 {
-    Task<bool> IsGitInstalledAsync(CancellationToken ct = default);
     Task<bool> IsGitRepositoryAsync(string path, CancellationToken ct = default);
     Task<string?> GetRemoteUrlAsync(string path, CancellationToken ct = default);
     Task<GitCommitInfo?> GetCurrentCommitAsync(string path, CancellationToken ct = default);

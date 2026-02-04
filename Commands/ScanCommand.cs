@@ -23,17 +23,8 @@ public class ScanCommand : AsyncCommand<ModPathSettings>
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            // Check for git
-            var gitService = new GitService();
-            if (!await gitService.IsGitInstalledAsync(cancellationToken))
-            {
-                AnsiConsole.MarkupLine("[yellow]Warning: Git is not installed or not in PATH.[/]");
-                AnsiConsole.MarkupLine("[yellow]Git-based features will be limited.[/]");
-                AnsiConsole.MarkupLine("[grey]Install git from: https://git-scm.com/downloads[/]");
-                AnsiConsole.WriteLine();
-            }
-
             // Initialize services
+            var gitService = new GitService();
             var gitHubApiService = new GitHubApiService();
             var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
 

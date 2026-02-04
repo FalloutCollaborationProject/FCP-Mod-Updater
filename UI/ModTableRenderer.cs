@@ -24,7 +24,7 @@ public static class ModTableRenderer
             .AddColumn(new TableColumn("[bold]Commit[/]").Centered())
             .AddColumn(new TableColumn("[bold]Status[/]").Centered());
 
-        foreach (var mod in mods)
+        foreach (InstalledMod mod in mods)
         {
             table.AddRow(
                 FormatModName(mod),
@@ -48,14 +48,14 @@ public static class ModTableRenderer
         AnsiConsole.MarkupLine(
             $"[grey]Summary:[/] [green]{upToDate} up to date[/] | [yellow]{behind} updates available[/] | [cyan]{localChanges} with local changes[/] | [grey]{nonGit} non-git[/]");
 
-        if (rateLimit.HasValue)
-        {
-            var resetTime = rateLimitReset.HasValue
-                ? $" (resets {rateLimitReset.Value.ToLocalTime():HH:mm})"
-                : "";
-            var color = rateLimit.Value < 10 ? "yellow" : "grey";
-            AnsiConsole.MarkupLine($"[{color}]GitHub API: {rateLimit.Value} requests remaining{resetTime}[/]");
-        }
+        if (!rateLimit.HasValue) 
+            return;
+        
+        var resetTime = rateLimitReset.HasValue
+            ? $" (resets {rateLimitReset.Value.ToLocalTime():HH:mm})"
+            : "";
+        var color = rateLimit.Value < 10 ? "yellow" : "grey";
+        AnsiConsole.MarkupLine($"[{color}]GitHub API: {rateLimit.Value} requests remaining{resetTime}[/]");
     }
 
     private static string FormatModName(InstalledMod mod)
@@ -75,7 +75,6 @@ public static class ModTableRenderer
         {
             ModSource.Git => "[green]Git[/]",
             ModSource.Local => "[grey]Local[/]",
-            ModSource.Workshop => "[blue]Workshop[/]",
             _ => "[grey]?[/]"
         };
     }

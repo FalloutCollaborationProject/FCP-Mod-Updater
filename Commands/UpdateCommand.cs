@@ -2,11 +2,13 @@ using FCPModUpdater.Commands.Settings;
 using FCPModUpdater.Models;
 using FCPModUpdater.Services;
 using FCPModUpdater.UI;
+using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace FCPModUpdater.Commands;
 
+[UsedImplicitly]
 public class UpdateCommand : AsyncCommand<ModPathSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
@@ -24,16 +26,8 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            // Check for git
-            var gitService = new GitService();
-            if (!await gitService.IsGitInstalledAsync(cancellationToken))
-            {
-                AnsiConsole.MarkupLine("[red]Error: Git is not installed or not in PATH.[/]");
-                AnsiConsole.MarkupLine("[grey]Install git from: https://git-scm.com/downloads[/]");
-                return 1;
-            }
-
             // Initialize services
+            var gitService = new GitService();
             var gitHubApiService = new GitHubApiService();
             var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
 
@@ -54,7 +48,7 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
             }
 
             AnsiConsole.MarkupLine($"[yellow]Found {updateableMods.Count} mod(s) with updates available:[/]");
-            foreach (var mod in updateableMods)
+            foreach (InstalledMod mod in updateableMods)
             {
                 AnsiConsole.MarkupLine($"  • {mod.Name} [grey]({mod.CommitsBehind} commits behind)[/]");
             }

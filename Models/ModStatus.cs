@@ -15,6 +15,5 @@ public enum ModStatus
 public enum ModSource
 {
     Git,
-    Local,
-    Workshop
+    Local
 }
