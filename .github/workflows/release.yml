@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  APP_NAME: FCPModUpdater
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+          cache: true
+
+      - name: Build Windows x64 (self-contained)
+        run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
+
+      - name: Build Linux x64 (self-contained)
+        run: |
+          dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
+          cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
+
+      - name: Build Windows x64 (framework-dependent)
+        run: dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd
+
+      - name: Build Linux x64 (framework-dependent)
+        run: |
+          dotnet publish -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
+          cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
+
+      - name: Create archives
+        run: |
+          cd ./publish
+          zip -r "${{ env.APP_NAME }}-win-x64-selfcontained.zip" win-x64-sc
+          tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
+          zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
+          tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            ./publish/${{ env.APP_NAME }}-win-x64-selfcontained.zip
+            ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
+            ./publish/${{ env.APP_NAME }}-win-x64.zip
+            ./publish/${{ env.APP_NAME }}-linux-x64.tar.gz
