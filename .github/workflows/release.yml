@@ -51,6 +51,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             ./publish/${{ env.APP_NAME }}-win-x64-selfcontained.zip
             ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
