@@ -20,8 +20,13 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 ## Installation
 
 ### Pre-Compiled Releases
-Releases will be uploaded to the releases tab periodically, versions suffixed with selfcontained don't require .NET 10 to be installed, 
-while other versions are smaller in size but do require .NET 10.
+
+Download from the [Releases](https://github.com/FalloutCollaborationProject/FCPModUpdater/releases) page:
+
+| Archive | Description |
+|---------|-------------|
+| `*-selfcontained.zip/.tar.gz` | Standalone, no .NET required |
+| `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller, requires .NET 10 Runtime |
 
 ### Build from Source
 ```bash
@@ -32,11 +37,12 @@ dotnet build
 
 ## Usage
 
-### Interactive Mode (Default)
+### Cli Note
 
-```bash
-dotnet run -- scan
-```
+You may choose between either `dotnet run -- ARGS` or running the built application directly with the args
+(ex: `FCPModUpdater scan`)
+
+### Interactive Mode (scan arg, Default)
 
 Launches the interactive menu where you can:
 - View status of all installed FCP mods
@@ -45,6 +51,13 @@ Launches the interactive menu where you can:
 - Uninstall mods
 - Convert local (non-git) mods to git repositories
 - Switch mod versions (branches/commits)
+
+
+#### Double Click
+
+- **Windows:** Double-click the `.exe` to launch the interactive menu directly — no command line needed.
+
+- **Linux:** The archive includes `fcp-mod-manager.desktop` for desktop integration. Copy it to `~/.local/share/applications/` and update the `Exec` path to point to the extracted binary.
 
 ### Batch Update Mode
 
