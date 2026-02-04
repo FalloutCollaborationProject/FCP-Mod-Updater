@@ -48,18 +48,15 @@ public class PathDiscoveryService
 
     private static List<string> GetWindowsPaths()
     {
-        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
 
         var paths = new List<string>
         {
             // Steam default locations
             Path.Combine(programFilesX86, "Steam/steamapps/common/RimWorld/Mods"),
-            Path.Combine(programFiles, "Steam/steamapps/common/RimWorld/Mods"),
 
             // GOG default location
             Path.Combine(programFilesX86, "GOG Galaxy/Games/RimWorld/Mods"),
-            Path.Combine(programFiles, "GOG Galaxy/Games/RimWorld/Mods"),
             @"C:\GOG Games\RimWorld\Mods",
         };
 
