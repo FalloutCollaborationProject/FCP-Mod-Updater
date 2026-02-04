@@ -23,7 +23,7 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 
 ## Installation
 
-### Pre-Compiled Releases
+### Standard Installation
 
 > [!NOTE]
 > Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
@@ -33,7 +33,7 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 | `*-selfcontained.zip/.tar.gz` | Standalone, no .NET required |
 | `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller, requires .NET 10 Runtime |
 
-Downloads are available in the [Releases](https://github.com/FalloutCollaborationProject/FCPModUpdater/releases) page:
+Downloads are available in the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page:
 
 
 ### Build from Source
