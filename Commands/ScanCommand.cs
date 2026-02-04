@@ -14,7 +14,7 @@ public class ScanCommand : AsyncCommand<ModPathSettings>
         try
         {
             // Resolve mods directory
-            var modsDirectory = ResolveModsDirectory(settings);
+            var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: true);
             if (modsDirectory == null)
             {
                 return 1;
@@ -49,36 +49,5 @@ public class ScanCommand : AsyncCommand<ModPathSettings>
             AnsiConsole.WriteException(ex);
             return 1;
         }
-    }
-
-    private static string? ResolveModsDirectory(ModPathSettings settings)
-    {
-        if (settings.ModDirectory != null)
-        {
-            return settings.ModDirectory.FullName;
-        }
-
-        // Auto-discover
-        var pathDiscovery = new PathDiscoveryService();
-        var paths = pathDiscovery.DiscoverModPaths();
-
-        if (paths.Count == 0)
-        {
-            AnsiConsole.MarkupLine("[red]Error: Could not find RimWorld Mods folder.[/]");
-            AnsiConsole.MarkupLine("[grey]Please specify the path using --directory[/]");
-            return null;
-        }
-
-        if (paths.Count == 1)
-        {
-            return paths[0];
-        }
-
-        // Multiple paths found - let user choose
-        return AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("[bold]Multiple RimWorld installations found. Select one:[/]")
-                .PageSize(10)
-                .AddChoices(paths));
     }
 }
