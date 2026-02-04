@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
@@ -30,21 +31,21 @@ public class ModDiscoveryService : IModDiscoveryService
         var orgRepoNames = orgRepos.Select(r => r.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var directories = Directory.GetDirectories(modsDirectory);
-        var mods = new List<InstalledMod>();
+        var mods = new ConcurrentBag<InstalledMod>();
 
-        foreach (var dir in directories)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            var folderName = Path.GetFileName(dir);
-            progress?.Report($"Scanning: {folderName}");
-
-            InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, ct);
-            if (mod != null)
+        await Parallel.ForEachAsync(directories,
+            new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = ct },
+            async (dir, token) =>
             {
-                mods.Add(mod);
-            }
-        }
+                var folderName = Path.GetFileName(dir);
+                progress?.Report($"Scanning: {folderName}");
+
+                InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, token);
+                if (mod != null)
+                {
+                    mods.Add(mod);
+                }
+            });
 
         return mods.OrderBy(m => m.Name).ToList();
     }
@@ -122,13 +123,19 @@ public class ModDiscoveryService : IModDiscoveryService
     {
         try
         {
-            string? branch = await _gitService.GetCurrentBranchAsync(path, ct);
-            GitCommitInfo? currentCommit = await _gitService.GetCurrentCommitAsync(path, ct);
-            bool hasLocalChanges = await _gitService.HasLocalChangesAsync(path, ct);
+            // Phase 1: Run all independent operations in parallel
+            var branchTask = _gitService.GetCurrentBranchAsync(path, ct);
+            var commitTask = _gitService.GetCurrentCommitAsync(path, ct);
+            var changesTask = _gitService.HasLocalChangesAsync(path, ct);
+            var fetchTask = _gitService.FetchAsync(path, ct: ct);
 
-            // Fetch to get accurate behind/ahead counts
-            await _gitService.FetchAsync(path, ct: ct);
+            await Task.WhenAll(branchTask, commitTask, changesTask, fetchTask);
 
+            string? branch = branchTask.Result;
+            GitCommitInfo? currentCommit = commitTask.Result;
+            bool hasLocalChanges = changesTask.Result;
+
+            // Phase 2: Get commit difference (needs fetch to complete first)
             (int behind, int ahead) = await _gitService.GetCommitDifferenceAsync(path, ct);
 
             ModStatus status = DetermineStatus(behind, ahead, hasLocalChanges, branch);
