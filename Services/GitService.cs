@@ -109,7 +109,7 @@ public partial class GitService : IGitService
         CancellationToken ct = default)
     {
         progress?.Report("Fetching from remote...");
-        var (exitCode, _, error) = await RunGitCommandAsync(path, "fetch --all --prune", ct);
+        var (exitCode, _, error) = await RunGitCommandAsync(path, "fetch --all --prune --recurse-submodules", ct);
 
         if (exitCode != 0)
             progress?.Report($"Fetch failed: {error}");
@@ -121,7 +121,7 @@ public partial class GitService : IGitService
         CancellationToken ct = default)
     {
         progress?.Report("Pulling changes...");
-        var (exitCode, _, error) = await RunGitCommandAsync(path, "pull --ff-only", ct);
+        var (exitCode, _, error) = await RunGitCommandAsync(path, "pull --ff-only --recurse-submodules", ct);
 
         if (exitCode != 0)
             progress?.Report($"Pull failed: {error}");
@@ -139,7 +139,7 @@ public partial class GitService : IGitService
 
         var (exitCode, error) = await RunGitCommandWithProgressAsync(
             parentDir,
-            $"clone --progress \"{url}\" \"{folderName}\"",
+            $"clone --progress --recurse-submodules \"{url}\" \"{folderName}\"",
             percentProgress,
             ct,
             timeoutMs: 300000); // 5 minute timeout for clone
@@ -167,7 +167,11 @@ public partial class GitService : IGitService
     public async Task<bool> CheckoutAsync(string path, string branchOrCommit, CancellationToken ct = default)
     {
         var (exitCode, _, _) = await RunGitCommandAsync(path, $"checkout \"{branchOrCommit}\"", ct);
-        return exitCode == 0;
+        if (exitCode != 0)
+            return false;
+
+        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        return true;
     }
 
     public async Task<bool> HasLocalChangesAsync(string path, CancellationToken ct = default)
