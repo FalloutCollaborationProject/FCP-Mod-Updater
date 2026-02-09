@@ -29,7 +29,7 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 > Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
 
 > [!TIP]
-> **Not sure which file to download?** Grab the **self-contained** version for your platform — it includes everything you need and just works, no extra software required.
+> **Not sure which file to download?** Grab the **self-contained** version for your platform — it includes everything you need and just works, no extra software required outside of Git.
 
 | Archive | What it means | Who it's for |
 |---------|---------------|--------------|
