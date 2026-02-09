@@ -34,7 +34,7 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 | Archive | What it means | Who it's for |
 |---------|---------------|--------------|
 | `*-selfcontained.zip` (Windows) | Everything bundled in one package | **Most users** — download this one |
-| `*-selfcontained.tar.gz` (Linux/macOS) | Everything bundled in one package | **Most users** — download this one |
+| `*-selfcontained.tar.gz` (Linux) | Everything bundled in one package | **Most users** — download this one |
 | `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller download, but requires [.NET 10 Runtime](https://dotnet.microsoft.com/download) installed separately | Developers or users who already have .NET installed |
 
 Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
