@@ -28,12 +28,16 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 > [!NOTE]
 > Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
 
-| Archive | Description |
-|---------|-------------|
-| `*-selfcontained.zip/.tar.gz` | Standalone, no .NET required |
-| `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller, requires .NET 10 Runtime |
+> [!TIP]
+> **Not sure which file to download?** Grab the **self-contained** version for your platform — it includes everything you need and just works, no extra software required.
 
-Downloads are available in the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page:
+| Archive | What it means | Who it's for |
+|---------|---------------|--------------|
+| `*-selfcontained.zip` (Windows) | Everything bundled in one package | **Most users** — download this one |
+| `*-selfcontained.tar.gz` (Linux/macOS) | Everything bundled in one package | **Most users** — download this one |
+| `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller download, but requires [.NET 10 Runtime](https://dotnet.microsoft.com/download) installed separately | Developers or users who already have .NET installed |
+
+Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
 
 
 ### Build from Source
@@ -48,6 +52,15 @@ dotnet build
 > [!TIP]
 > You may choose between either `dotnet run -- ARGS` or running the built application directly with the args
 (ex: `FCPModUpdater scan`)
+
+### Quick Start
+
+1. Download the **self-contained** zip/tar for your platform from [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases)
+2. Extract the archive anywhere on your computer
+3. **Windows:** Double-click `FCPModUpdater.exe` — the tool will automatically find your RimWorld installation
+4. **Linux/macOS:** Run `./FCPModUpdater` from a terminal
+
+The tool opens an interactive menu — use the **arrow keys** to navigate, **Enter** to select, and **Escape** to go back.
 
 ### Interactive Mode (scan arg, Default)
 
