@@ -15,6 +15,7 @@ public interface IGitService
     Task<bool> CloneAsync(string url, string targetPath, IProgress<string>? progress = null, IProgress<double>? percentProgress = null, CancellationToken ct = default);
     Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string path, CancellationToken ct = default);
     Task<bool> CheckoutAsync(string path, string branchOrCommit, CancellationToken ct = default);
+    Task<bool> ResetToCommitAsync(string path, string commitHash, CancellationToken ct = default);
     Task<bool> HasLocalChangesAsync(string path, CancellationToken ct = default);
     Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string path, int limit = 20, CancellationToken ct = default);
 }

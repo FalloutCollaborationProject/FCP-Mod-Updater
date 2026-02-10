@@ -467,26 +467,63 @@ public class InteractiveMenu
             return;
         }
 
-        GitCommitInfo commit = AnsiConsole.Prompt(
-            new SelectionPrompt<GitCommitInfo>()
-                .Title("Select commit:")
-                .PageSize(15)
-                .UseConverter(c =>
-                    $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
-                .AddChoices(commits));
+        var method = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("How would you like to select a commit?")
+                .AddChoices(
+                    "Pick from history",
+                    "Enter commit hash manually"
+                ));
 
-        var success = await ProgressReporter.WithStatusAsync(
-            $"Checking out {commit.ShortHash}...",
-            async () => await _gitService.CheckoutAsync(mod.Path, commit.Hash, ct));
-
-        if (success)
+        if (method == "Enter commit hash manually")
         {
-            AnsiConsole.MarkupLine($"[green]Checked out commit {commit.ShortHash}[/]");
-            AnsiConsole.MarkupLine("[yellow]Note: You are now in 'detached HEAD' state.[/]");
+            var manualHash = AnsiConsole.Ask<string>("Enter commit hash:").Trim();
+            if (string.IsNullOrEmpty(manualHash))
+            {
+                AnsiConsole.MarkupLine("[yellow]No commit hash provided.[/]");
+                WaitForKey();
+                return;
+            }
+
+            var label = manualHash.Length > 7 ? manualHash[..7] : manualHash;
+
+            var success = await ProgressReporter.WithStatusAsync(
+                $"Checking out {label}...",
+                async () => await _gitService.CheckoutAsync(mod.Path, manualHash, ct));
+
+            if (success)
+            {
+                AnsiConsole.MarkupLine($"[green]Checked out commit {label}[/]");
+                AnsiConsole.MarkupLine("[yellow]Note: You are now in 'detached HEAD' state.[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]Failed to checkout commit {label}[/]");
+            }
         }
         else
         {
-            AnsiConsole.MarkupLine($"[red]Failed to checkout commit {commit.ShortHash}[/]");
+            GitCommitInfo commit = AnsiConsole.Prompt(
+                new SelectionPrompt<GitCommitInfo>()
+                    .Title("Select commit:")
+                    .PageSize(15)
+                    .UseConverter(c =>
+                        $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
+                    .AddChoices(commits));
+
+            var currentBranch = mod.Branch ?? "HEAD";
+            var success = await ProgressReporter.WithStatusAsync(
+                $"Resetting {currentBranch} to {commit.ShortHash}...",
+                async () => await _gitService.ResetToCommitAsync(mod.Path, commit.Hash, ct));
+
+            if (success)
+            {
+                AnsiConsole.MarkupLine($"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]Failed to reset to commit {commit.ShortHash}[/]");
+            }
         }
 
         WaitForKey();

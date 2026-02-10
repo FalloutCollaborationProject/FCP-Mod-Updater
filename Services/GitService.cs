@@ -174,6 +174,16 @@ public partial class GitService : IGitService
         return true;
     }
 
+    public async Task<bool> ResetToCommitAsync(string path, string commitHash, CancellationToken ct = default)
+    {
+        var (exitCode, _, _) = await RunGitCommandAsync(path, $"reset --hard \"{commitHash}\"", ct);
+        if (exitCode != 0)
+            return false;
+
+        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        return true;
+    }
+
     public async Task<bool> HasLocalChangesAsync(string path, CancellationToken ct = default)
     {
         var (exitCode, output, _) = await RunGitCommandAsync(path, "status --porcelain", ct);
