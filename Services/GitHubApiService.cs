@@ -15,13 +15,14 @@ public class GitHubApiService : IGitHubApiService, IDisposable
     private IReadOnlyList<RemoteRepo>? _cachedRepos;
     private DateTimeOffset _cacheTime = DateTimeOffset.MinValue;
 
+    public HttpClient HttpClient => _httpClient;
     public int? RemainingRateLimit { get; private set; }
     public DateTimeOffset? RateLimitReset { get; private set; }
 
     public GitHubApiService(HttpClient? httpClient = null)
     {
         _httpClient = httpClient ?? new HttpClient();
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("FCPModUpdater/1.0");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"FCPModUpdater/{AppVersion.SemanticVersion}");
         _httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
 
         var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");

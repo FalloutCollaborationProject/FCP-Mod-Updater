@@ -28,12 +28,17 @@ public class ScanCommand : AsyncCommand<ModPathSettings>
             var gitHubApiService = new GitHubApiService();
             var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
 
+            // Start update check in background (non-blocking)
+            var updateCheckService = new UpdateCheckService(gitHubApiService.HttpClient);
+            var updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
+
             // Run interactive menu
             var menu = new InteractiveMenu(
                 gitService,
                 gitHubApiService,
                 modDiscoveryService,
-                modsDirectory);
+                modsDirectory,
+                updateCheckTask);
 
             await menu.RunAsync(cancellationToken);
 

@@ -10,19 +10,23 @@ public class InteractiveMenu
     private readonly IGitHubApiService _gitHubApiService;
     private readonly IModDiscoveryService _modDiscoveryService;
     private readonly string _modsDirectory;
+    private readonly Task<UpdateCheckResult?> _updateCheckTask;
 
     private IReadOnlyList<InstalledMod> _mods = [];
+    private bool _updateNotificationShown;
 
     public InteractiveMenu(
         IGitService gitService,
         IGitHubApiService gitHubApiService,
         IModDiscoveryService modDiscoveryService,
-        string modsDirectory)
+        string modsDirectory,
+        Task<UpdateCheckResult?> updateCheckTask)
     {
         _gitService = gitService;
         _gitHubApiService = gitHubApiService;
         _modDiscoveryService = modDiscoveryService;
         _modsDirectory = modsDirectory;
+        _updateCheckTask = updateCheckTask;
     }
 
     public async Task RunAsync(CancellationToken ct = default)
@@ -35,6 +39,21 @@ public class InteractiveMenu
             AnsiConsole.Clear();
             ModTableRenderer.RenderModTable(_mods, _gitHubApiService.RemainingRateLimit,
                 _gitHubApiService.RateLimitReset);
+
+            // Show update notification once, non-blocking
+            if (!_updateNotificationShown && _updateCheckTask.IsCompleted)
+            {
+                _updateNotificationShown = true;
+                var updateResult = await _updateCheckTask;
+                if (updateResult != null)
+                {
+                    var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
+                    AnsiConsole.MarkupLine(
+                        $"[yellow bold]{label}: v{updateResult.LatestVersion}[/] [grey](current: {updateResult.CurrentVersion})[/]");
+                    AnsiConsole.MarkupLine($"[grey]Download: {updateResult.ReleaseUrl}[/]");
+                }
+            }
+
             AnsiConsole.WriteLine();
 
             var choice = AnsiConsole.Prompt(

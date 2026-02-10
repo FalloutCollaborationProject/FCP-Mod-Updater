@@ -31,6 +31,10 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
             var gitHubApiService = new GitHubApiService();
             var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
 
+            // Start update check in background (non-blocking)
+            var updateCheckService = new UpdateCheckService(gitHubApiService.HttpClient);
+            var updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
+
             // Discover mods
             var mods = await ProgressReporter.WithStatusAsync(
                 "Scanning mods directory...",
@@ -75,6 +79,17 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
                 });
 
             ModTableRenderer.RenderUpdateSummary(results);
+
+            // Show update notification if available
+            var updateResult = await updateCheckTask;
+            if (updateResult != null)
+            {
+                AnsiConsole.WriteLine();
+                var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
+                AnsiConsole.MarkupLine(
+                    $"[yellow bold]{label}: v{updateResult.LatestVersion}[/] [grey](current: {updateResult.CurrentVersion})[/]");
+                AnsiConsole.MarkupLine($"[grey]Download: {updateResult.ReleaseUrl}[/]");
+            }
 
             var failCount = results.Count(r => !r.Success);
             return failCount > 0 ? 1 : 0;
