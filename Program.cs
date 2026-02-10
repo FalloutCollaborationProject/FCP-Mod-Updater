@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using FCPModUpdater;
 using FCPModUpdater.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -8,7 +9,7 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("fcp-mod-manager");
-    config.SetApplicationVersion("1.0.0");
+    config.SetApplicationVersion(AppVersion.InformationalVersion);
     config.SetInterceptor(new GitRequiredInterceptor());
 
     config.AddCommand<ScanCommand>("scan")

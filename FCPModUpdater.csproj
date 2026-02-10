@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,5 +21,42 @@
     <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  
+
+  <!-- Derive version from git tags at build time -->
+  <Target Name="SetVersionFromGit" BeforeTargets="GetAssemblyVersion;GetAssemblyAttributes;GenerateNuGetPackage">
+    <Exec Command="git describe --tags --long --always"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitDescribe" />
+      <Output TaskParameter="ExitCode" PropertyName="GitDescribeExitCode" />
+    </Exec>
+
+    <!-- Parse "v0.1.1-4-g2d7e0c6" into components -->
+    <PropertyGroup Condition="'$(GitDescribeExitCode)' == '0' and '$(GitDescribe)' != ''">
+      <GitDescribeClean>$([System.Text.RegularExpressions.Regex]::Replace('$(GitDescribe)', '^v', ''))</GitDescribeClean>
+      <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '^\d+\.\d+\.\d+').Value)</VersionPrefix>
+      <GitCommitsSinceTag>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '(?&lt;=\d-)\d+(?=-)').Value)</GitCommitsSinceTag>
+      <GitShortHash>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', 'g[0-9a-f]+$').Value)</GitShortHash>
+    </PropertyGroup>
+
+    <!-- On a tag exactly (0 commits since tag) -->
+    <PropertyGroup Condition="'$(VersionPrefix)' != '' and '$(GitCommitsSinceTag)' == '0'">
+      <Version>$(VersionPrefix)</Version>
+      <InformationalVersion>$(VersionPrefix)</InformationalVersion>
+    </PropertyGroup>
+
+    <!-- Commits ahead of tag = dev build -->
+    <PropertyGroup Condition="'$(VersionPrefix)' != '' and '$(GitCommitsSinceTag)' != '' and '$(GitCommitsSinceTag)' != '0'">
+      <Version>$(VersionPrefix)</Version>
+      <InformationalVersion>$(VersionPrefix)-dev.$(GitCommitsSinceTag)+$(GitShortHash)</InformationalVersion>
+    </PropertyGroup>
+
+    <!-- Fallback if git describe failed or no tags -->
+    <PropertyGroup Condition="'$(VersionPrefix)' == ''">
+      <Version>0.0.0</Version>
+      <InformationalVersion>0.0.0-unknown</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+
 </Project>
