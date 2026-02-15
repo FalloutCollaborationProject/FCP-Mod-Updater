@@ -6,6 +6,8 @@
 
 A command-line tool for managing [Fallout Collaboration Project](https://github.com/FalloutCollaborationProject) RimWorld mods. Features both interactive and automated workflows for discovering, updating, installing, and managing FCP mods.
 
+![CMD Preview](./demo.gif)
+
 ## Features
 
 - **Auto-discover** RimWorld installation across Steam, GOG, and Lutris on Windows, Linux, and macOS
