@@ -20,7 +20,6 @@ A command-line tool for managing [Fallout Collaboration Project](https://github.
 
 ## Requirements
 
-- [.NET 10.0 Runtime](https://dotnet.microsoft.com/download) or later (Except for Self-Contained Releases)
 - [Git](https://git-scm.com/downloads) installed and available in PATH
 
 ## Installation
