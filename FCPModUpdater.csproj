@@ -11,6 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FCPModUpdater.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="FCPModUpdater.Tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.10.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
     <PackageReference Include="Spectre.Console" Version="0.54.0" />

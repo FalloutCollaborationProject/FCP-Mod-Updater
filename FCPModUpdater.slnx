@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="FCPModUpdater.csproj" />
+  <Project Path="FCPModUpdater.Tests/FCPModUpdater.Tests.csproj" />
 </Solution>

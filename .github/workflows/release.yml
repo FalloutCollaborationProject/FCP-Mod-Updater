@@ -23,6 +23,9 @@ jobs:
           dotnet-version: '10.0.x'
           cache: true
 
+      - name: Test
+        run: dotnet test --configuration Release
+
       - name: Build Windows x64 (self-contained)
         run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
 
