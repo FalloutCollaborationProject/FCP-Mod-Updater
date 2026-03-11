@@ -171,7 +171,7 @@ public class ModDiscoveryService : IModDiscoveryService
     /// <summary>
     /// Tries to match a folder name to an org repo, accounting for GitHub ZIP download suffixes like -main, -master.
     /// </summary>
-    private static string? MatchRepoName(string folderName, HashSet<string> orgRepoNames)
+    internal static string? MatchRepoName(string folderName, HashSet<string> orgRepoNames)
     {
         // Direct match
         if (orgRepoNames.Contains(folderName))
@@ -191,7 +191,7 @@ public class ModDiscoveryService : IModDiscoveryService
         return null;
     }
 
-    private static ModStatus DetermineStatus(int behind, int ahead, bool hasLocalChanges, string? branch)
+    internal static ModStatus DetermineStatus(int behind, int ahead, bool hasLocalChanges, string? branch)
     {
         if (branch == null)
         {

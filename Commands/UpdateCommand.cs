@@ -11,6 +11,9 @@ namespace FCPModUpdater.Commands;
 [UsedImplicitly]
 public class UpdateCommand : AsyncCommand<ModPathSettings>
 {
+    public static IReadOnlyList<InstalledMod> GetUpdateableMods(IReadOnlyList<InstalledMod> mods)
+        => mods.Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind).ToList();
+
     public override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
         CancellationToken cancellationToken)
     {
@@ -41,9 +44,7 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
                 async () => await modDiscoveryService.DiscoverModsAsync(modsDirectory, ct: cancellationToken));
 
             // Find updateable mods
-            var updateableMods = mods
-                .Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind)
-                .ToList();
+            var updateableMods = GetUpdateableMods(mods);
 
             if (updateableMods.Count == 0)
             {

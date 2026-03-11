@@ -244,7 +244,7 @@ public partial class GitService : IGitService
         }
     }
 
-    private static IReadOnlyList<GitCommitInfo> ParseCommitLog(string output)
+    internal static IReadOnlyList<GitCommitInfo> ParseCommitLog(string output)
     {
         var commits = new List<GitCommitInfo>();
         var entries = output.Split("---", StringSplitOptions.RemoveEmptyEntries);
