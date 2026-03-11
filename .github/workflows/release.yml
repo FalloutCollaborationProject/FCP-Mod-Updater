@@ -24,19 +24,19 @@ jobs:
           cache: true
 
       - name: Build Windows x64 (self-contained)
-        run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
+        run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
 
       - name: Build Linux x64 (self-contained)
         run: |
-          dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
+          dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
           cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
 
       - name: Build Windows x64 (framework-dependent)
-        run: dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd
+        run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd
 
       - name: Build Linux x64 (framework-dependent)
         run: |
-          dotnet publish -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
+          dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
           cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
 
       - name: Create archives
