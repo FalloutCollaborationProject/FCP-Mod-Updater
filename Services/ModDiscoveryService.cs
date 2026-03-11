@@ -34,7 +34,7 @@ public class ModDiscoveryService : IModDiscoveryService
         var mods = new ConcurrentBag<InstalledMod>();
 
         await Parallel.ForEachAsync(directories,
-            new ParallelOptions { MaxDegreeOfParallelism = 6, CancellationToken = ct },
+            new ParallelOptions { MaxDegreeOfParallelism = 12, CancellationToken = ct },
             async (dir, token) =>
             {
                 var folderName = Path.GetFileName(dir);
