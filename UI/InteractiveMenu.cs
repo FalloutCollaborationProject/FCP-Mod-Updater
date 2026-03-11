@@ -221,9 +221,9 @@ public class InteractiveMenu
             {
                 var targetPath = Path.Combine(_modsDirectory, repo.Name);
 
-                var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
+                var result = await _gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
 
-                return (Success: cloneOk, Error: cloneOk ? null : "Clone failed");
+                return (Success: result.Success, Error: result.Error);
             });
 
         ModTableRenderer.RenderUpdateSummary(results);
@@ -353,9 +353,9 @@ public class InteractiveMenu
                     Directory.Delete(mod.Path, recursive: true);
 
                     // Clone fresh with progress
-                    var cloneOk = await _gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);
+                    var result = await _gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);  
 
-                    return (Success: cloneOk, Error: cloneOk ? null : "Clone failed");
+                    return (result.Success, result.Error);        
                 }
                 catch (Exception ex)
                 {

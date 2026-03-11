@@ -129,7 +129,7 @@ public partial class GitService : IGitService
         return exitCode == 0;
     }
 
-    public async Task<bool> CloneAsync(string url, string targetPath, IProgress<string>? progress = null,
+    public async Task<(bool Success, string? Error)> CloneAsync(string url, string targetPath, IProgress<string>? progress = null,
         IProgress<double>? percentProgress = null, CancellationToken ct = default)
     {
         progress?.Report($"Cloning {url}...");
@@ -144,10 +144,23 @@ public partial class GitService : IGitService
             ct,
             timeoutMs: 300000); // 5 minute timeout for clone
 
-        if (exitCode != 0)
-            progress?.Report($"Clone failed: {error}");
+        // Exit code 141 = SIGPIPE (128+13), harmless when git's progress pipe closes early
+        if (exitCode != 0 && exitCode != 141)
+        {
+            var errorMessage = $"Clone failed (exit code {exitCode}): url={url}, target={targetPath}, git output: {error}";
+            progress?.Report(errorMessage);
+            return (Success: false, Error: errorMessage);
+        }
 
-        return exitCode == 0;
+        // Verify the clone actually produced a valid git repo
+        if (!Directory.Exists(targetPath) || !await IsGitRepositoryAsync(targetPath, ct))
+        {
+            var errorMessage = $"Clone appeared to finish but target is not a valid git repo: url={url}, target={targetPath}, git output: {error}";
+            progress?.Report(errorMessage);
+            return (Success: false, Error: errorMessage);
+        }
+
+        return (Success: true, Error: null);
     }
 
     public async Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string path, CancellationToken ct = default)
