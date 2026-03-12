@@ -26,7 +26,7 @@ public class GitServiceIntegrationTests : IDisposable
     private async Task RunGitAsync(string workingDir, string args)
     {
         var result = await Cli.Wrap("git")
-            .WithArguments(args)
+            .WithArguments($"-c commit.gpgsign=false {args}")
             .WithWorkingDirectory(workingDir)
             .WithEnvironmentVariables(env => env
                 .Set("GIT_TERMINAL_PROMPT", "0")
