@@ -50,62 +50,58 @@ dotnet build
 
 ## Usage
 
-> [!TIP]
-> You may choose between either `dotnet run -- ARGS` or running the built application directly with the args
-(ex: `FCPModUpdater scan`)
-
 ### Quick Start
 
 1. Download the **self-contained** zip/tar for your platform from [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases)
 2. Extract the archive anywhere on your computer
 3. **Windows:** Double-click `FCPModUpdater.exe` — the tool will automatically find your RimWorld installation
-4. **Linux/macOS:** Run `./FCPModUpdater` from a terminal
+4. **Linux/macOS:** Run `./FCPModUpdater` from a terminal, ensuring it has execution permission.
 
 The tool opens an interactive menu — use the **arrow keys** to navigate, **Enter** to select, and **Escape** to go back.
 
-To install mods:
+### To install mods:
 1. Select **Install New Mods** from the main menu
-2. Use **arrow keys** to browse available mods — press **Space** to mark/unmark each one
+2. Use **arrow keys** to browse available mod, press **Space** to mark/unmark each one
 3. Press **Enter** to confirm and install the selected mods
 
-To update mods:
+### To update mods:
 1. Select **Update Mods** from the main menu
-2. All mods with available updates are pre-selected — press **Space** to deselect any you want to skip
+2. All mods with available updates are pre-selected, press **Space** to deselect any you want to skip
 3. Press **Enter** to confirm and apply updates
 
-### Interactive Mode (scan arg, Default)
+### To uninstall mods:
+1. Select **Uninstall Mods** from the main menu
+2. Use **arrow keys** to browse installed mods, press **Space** to mark each one for removal
+3. Press **Enter**, confirm the warning prompt, then type `DELETE` to permanently remove the selected mods
 
-Launches the interactive menu where you can:
-- View status of all installed FCP mods
-- Update mods with available changes
-- Install new mods from FCP
-- Uninstall mods
-- Convert local (non-git) mods to git repositories
-- Switch mod versions (branches/commits)
+### To convert a local (ZIP) mod to a Git repository:
+1. Select **Convert to Git** from the main menu
+2. Press **Space** to select any local mods that match FCP repositories
+3. Press **Enter** and confirm, the folder will be replaced with a fresh git clone
 
+### To switch a mod's branch or version:
+1. Select **Switch Version** from the main menu
+2. Choose the mod you want to manage
+3. Select **Switch Branch** to pick a branch, or **Checkout Specific Commit** to pin to a specific version
 
-#### Double Click
-
-- **Windows:** Double-click the `.exe` to launch the interactive menu directly — no command line needed.
-
-- **Linux:** The archive includes `fcp-mod-manager.desktop` for desktop integration. Copy it to `~/.local/share/applications/` and update the `Exec` path to point to the extracted binary.
-
-### Batch Update Mode
+### To Batch Update Mods
 
 ```bash
-dotnet run -- update
+FCPModUpdater update
 ```
 
-Non-interactive mode that updates all FCP mods with available changes. Ideal for automation and scheduled tasks. Returns exit code 0 on success, 1 if any updates fail.
+Non-interactive mode that updates all FCP mods with available changes. Returns exit code 0 on success, 1 if any updates fail.
 
-### Options
+## Options
+
+### Choosing a Directory
 
 Both commands accept:
 - `-d, --directory <path>` — Path to RimWorld Mods folder (auto-discovers if omitted)
 
 ```bash
-dotnet run -- scan --directory "/path/to/RimWorld/Mods"
-dotnet run -- update -d "C:\Games\RimWorld\Mods"
+FCPModUpdater scan --directory "/path/to/RimWorld/Mods"
+FCPModUpdater update -d "C:\Games\RimWorld\Mods"
 ```
 
 ## Environment Variables
