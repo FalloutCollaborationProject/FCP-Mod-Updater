@@ -201,8 +201,10 @@ public class InteractiveMenu
         var selected = AnsiConsole.Prompt(
             new MultiSelectionPrompt<RemoteRepo>()
                 .Title("[bold]Select mods to install:[/]")
+                .InstructionsText("[grey](Press <space> to mark a mod for install, <enter> to confirm)[/]")
                 .PageSize(15)
-                .Required(false)
+                .NotRequired()
+                .WrapAround() // Pressing down on last item goes to first
                 .UseConverter(r => string.IsNullOrEmpty(r.Description)
                     ? r.Name
                     : $"{r.Name} [grey]— {Truncate(r.Description, 50)}[/]")
@@ -247,8 +249,10 @@ public class InteractiveMenu
         var selected = AnsiConsole.Prompt(
             new MultiSelectionPrompt<InstalledMod>()
                 .Title("[bold red]Select mods to uninstall:[/]")
+                .InstructionsText("[grey](Press <space> to mark a mod for uninstallation, <enter> to confirm)[/]")
                 .PageSize(15)
-                .Required(false)
+                .NotRequired()
+                .WrapAround()
                 .UseConverter(m => m.Name)
                 .AddChoices(installedMods));
 
