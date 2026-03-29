@@ -63,6 +63,16 @@ dotnet build
 
 The tool opens an interactive menu — use the **arrow keys** to navigate, **Enter** to select, and **Escape** to go back.
 
+To install mods:
+1. Select **Install New Mods** from the main menu
+2. Use **arrow keys** to browse available mods — press **Space** to mark/unmark each one
+3. Press **Enter** to confirm and install the selected mods
+
+To update mods:
+1. Select **Update Mods** from the main menu
+2. All mods with available updates are pre-selected — press **Space** to deselect any you want to skip
+3. Press **Enter** to confirm and apply updates
+
 ### Interactive Mode (scan arg, Default)
 
 Launches the interactive menu where you can:
