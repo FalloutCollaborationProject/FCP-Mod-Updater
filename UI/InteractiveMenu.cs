@@ -126,50 +126,46 @@ public class InteractiveMenu
             .Required(false)
             .UseConverter(m => $"{m.Name} [grey]({m.CommitsBehind} commits behind)[/]");
 
-        foreach (var mod in updateableMods)
+        foreach (InstalledMod mod in updateableMods)
         {
             prompt.AddChoice(mod).Select();
         }
 
-        var selected = AnsiConsole.Prompt(prompt);
+        List<InstalledMod> selected = AnsiConsole.Prompt(prompt);
 
         if (selected.Count == 0)
-        {
             return false;
-        }
 
         // Show incoming commits for each selected mod
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Incoming commits:[/]");
         AnsiConsole.WriteLine();
 
-        foreach (var mod in selected)
+        foreach (InstalledMod mod in selected)
         {
-            var commits = await _gitService.GetIncomingCommitsAsync(mod.Path, 5, ct);
+            IReadOnlyList<GitCommitInfo> commits = await _gitService.GetIncomingCommitsAsync(mod.Path, 5, ct);
             ModTableRenderer.RenderIncomingCommits(mod, commits);
         }
 
-        if (!AnsiConsole.Confirm("Proceed with update?"))
-        {
+        if (!await AnsiConsole.ConfirmAsync("Proceed with update?", true, ct))
             return false;
-        }
 
         var results = await ProgressReporter.WithBatchProgressAsync(
             "Updating mods",
             selected.ToList(),
-            m => m.Name,
+            mod => mod.Name,
             async (mod, progress) =>
             {
                 progress.Report(25);
                 var fetchOk = await _gitService.FetchAsync(mod.Path, ct: ct);
                 if (!fetchOk)
-                    return (false, "Fetch failed");
+                    return (Success: false, Error: "Fetch failed");
 
                 progress.Report(50);
                 var pullOk = await _gitService.PullAsync(mod.Path, ct: ct);
                 progress.Report(100);
 
-                return (pullOk, pullOk ? null : "Pull failed");
+                return (Success: pullOk, Error: pullOk ? null : "Pull failed");
             });
 
         ModTableRenderer.RenderUpdateSummary(results);
@@ -181,14 +177,14 @@ public class InteractiveMenu
 
     private async Task<bool> HandleInstallAsync(CancellationToken ct)
     {
-        var orgRepos = await ProgressReporter.WithStatusAsync(
+        IReadOnlyList<RemoteRepo> orgRepos = await ProgressReporter.WithStatusAsync(
             "Fetching available mods...",
             async () => await _gitHubApiService.GetOrganizationReposAsync(ct));
 
-        var installedNames = _mods.Select(m => m.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var availableRepos = orgRepos
-            .Where(r => !installedNames.Contains(r.Name))
-            .OrderBy(r => r.Name)
+        IEnumerable<string> installedNames = _mods.Select(m => m.Name);
+        List<RemoteRepo> availableRepos = orgRepos
+            .Where(repo => !installedNames.Contains(repo.Name))
+            .OrderBy(repo => repo.Name)
             .ToList();
 
         if (availableRepos.Count == 0)
@@ -198,7 +194,7 @@ public class InteractiveMenu
             return false;
         }
 
-        var selected = AnsiConsole.Prompt(
+        List<RemoteRepo> selectedRepos = AnsiConsole.Prompt(
             new MultiSelectionPrompt<RemoteRepo>()
                 .Title("[bold]Select mods to install:[/]")
                 .InstructionsText("[grey](Press <space> to mark a mod for install, <enter> to confirm)[/]")
@@ -210,22 +206,20 @@ public class InteractiveMenu
                     : $"{r.Name} [grey]— {Truncate(r.Description, 50)}[/]")
                 .AddChoices(availableRepos));
 
-        if (selected.Count == 0)
-        {
+        if (selectedRepos.Count == 0)
             return false;
-        }
 
         var results = await ProgressReporter.WithBatchProgressAsync(
             "Installing mods",
-            selected.ToList(),
-            r => r.Name,
+            selectedRepos.ToList(),
+            repo => repo.Name,
             async (repo, progress) =>
             {
                 var targetPath = Path.Combine(_modsDirectory, repo.Name);
 
                 var result = await _gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
 
-                return (Success: result.Success, Error: result.Error);
+                return (result.Success, result.Error);
             });
 
         ModTableRenderer.RenderUpdateSummary(results);
@@ -237,7 +231,7 @@ public class InteractiveMenu
 
     private async Task<bool> HandleUninstallAsync(CancellationToken ct)
     {
-        var installedMods = _mods.ToList();
+        List<InstalledMod> installedMods = _mods.ToList();
 
         if (installedMods.Count == 0)
         {
@@ -246,7 +240,7 @@ public class InteractiveMenu
             return false;
         }
 
-        var selected = AnsiConsole.Prompt(
+        List<InstalledMod> selected = AnsiConsole.Prompt(
             new MultiSelectionPrompt<InstalledMod>()
                 .Title("[bold red]Select mods to uninstall:[/]")
                 .InstructionsText("[grey](Press <space> to mark a mod for uninstallation, <enter> to confirm)[/]")
@@ -257,9 +251,7 @@ public class InteractiveMenu
                 .AddChoices(installedMods));
 
         if (selected.Count == 0)
-        {
             return false;
-        }
 
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold red]WARNING: This will permanently delete the following mods:[/]");
@@ -539,14 +531,9 @@ public class InteractiveMenu
                 $"Resetting {currentBranch} to {commit.ShortHash}...",
                 async () => await _gitService.ResetToCommitAsync(mod.Path, commit.Hash, ct));
 
-            if (success)
-            {
-                AnsiConsole.MarkupLine($"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]");
-            }
-            else
-            {
-                AnsiConsole.MarkupLine($"[red]Failed to reset to commit {commit.ShortHash}[/]");
-            }
+            AnsiConsole.MarkupLine(success
+                ? $"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]"
+                : $"[red]Failed to reset to commit {commit.ShortHash}[/]");
         }
 
         WaitForKey();
