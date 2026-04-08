@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Discover, install, update, and manage FCP mods with an interactive terminal UI or automated workflows.
+  List, install, update, and manage FCP mods with an interactive terminal UI.
 </p>
 
 <p align="center">
