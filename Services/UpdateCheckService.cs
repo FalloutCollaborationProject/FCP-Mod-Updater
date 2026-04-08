@@ -3,18 +3,10 @@ using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
 
-public class UpdateCheckService
+public class UpdateCheckService(HttpClient httpClient)
 {
     private const string RepoOwner = "FalloutCollaborationProject";
     private const string RepoName = "FCP-Mod-Updater";
-    private const string BaseUrl = "https://api.github.com";
-
-    private readonly HttpClient _httpClient;
-
-    public UpdateCheckService(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
 
     /// <summary>
     /// Check if a newer version is available. Returns null if check fails or no update needed.
@@ -24,8 +16,8 @@ public class UpdateCheckService
     {
         try
         {
-            var url = $"{BaseUrl}/repos/{RepoOwner}/{RepoName}/releases?per_page=15";
-            var releases = await _httpClient.GetFromJsonAsync<List<ReleaseInfo>>(url, ct);
+            var url = $"repos/{RepoOwner}/{RepoName}/releases?per_page=15";
+            var releases = await httpClient.GetFromJsonAsync<List<ReleaseInfo>>(url, ct);
 
             if (releases is null || releases.Count == 0)
                 return null;
@@ -34,13 +26,13 @@ public class UpdateCheckService
             ReleaseInfo? newest = null;
             Version? newestVersion = null;
 
-            foreach (var release in releases)
+            foreach (ReleaseInfo release in releases)
             {
                 if (release.Draft)
                     continue;
 
                 var tagBase = GetBaseVersion(release.TagName.TrimStart('v'));
-                if (!Version.TryParse(tagBase, out var ver))
+                if (!Version.TryParse(tagBase, out Version? ver))
                     continue;
 
                 if (newestVersion is null || ver > newestVersion)
@@ -54,7 +46,7 @@ public class UpdateCheckService
                 return null;
 
             var currentBase = GetBaseVersion(AppVersion.SemanticVersion);
-            if (!Version.TryParse(currentBase, out var currentVer))
+            if (!Version.TryParse(currentBase, out Version? currentVer))
                 return null;
 
             if (newestVersion > currentVer)

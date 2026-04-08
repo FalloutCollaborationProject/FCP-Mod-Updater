@@ -9,14 +9,14 @@ public class GitHubApiServiceTests : IDisposable
     public GitHubApiServiceTests()
     {
         _handler = new MockHttpMessageHandler();
-        _httpClient = new HttpClient(_handler);
+        _httpClient = new HttpClient(_handler) { BaseAddress = new Uri("https://api.github.com") };
         _service = new GitHubApiService(_httpClient);
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _service.Dispose();
+        _httpClient.Dispose();
     }
 
     private static RemoteRepo MakeRepo(string name, List<string>? topics = null) =>
@@ -176,12 +176,11 @@ public class GitHubApiServiceTests : IDisposable
         // Since cache is still fresh, this will return cached anyway
         // Let's just verify network error on fresh service
         var handler2 = new MockHttpMessageHandler { ThrowOnSend = true };
-        var client2 = new HttpClient(handler2);
+        var client2 = new HttpClient(handler2) { BaseAddress = new Uri("https://api.github.com") };
         var service2 = new GitHubApiService(client2);
 
         IReadOnlyList<RemoteRepo> result = await service2.GetOrganizationReposAsync(token);
         Assert.Empty(result);
-        service2.Dispose();
         client2.Dispose();
     }
 
@@ -191,12 +190,11 @@ public class GitHubApiServiceTests : IDisposable
         CancellationToken token = TestContext.Current.CancellationToken;
         
         var handler = new MockHttpMessageHandler { ThrowOnSend = true };
-        var client = new HttpClient(handler);
+        var client = new HttpClient(handler) { BaseAddress = new Uri("https://api.github.com") };
         var service = new GitHubApiService(client);
 
         IReadOnlyList<RemoteRepo> result = await service.GetOrganizationReposAsync(token);
         Assert.Empty(result);
-        service.Dispose();
         client.Dispose();
     }
 

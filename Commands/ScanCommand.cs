@@ -6,33 +6,26 @@ using Spectre.Console.Cli;
 
 namespace FCPModUpdater.Commands;
 
-public class ScanCommand : AsyncCommand<ModPathSettings>
+public class ScanCommand(
+    IGitService gitService,
+    IGitHubApiService gitHubApiService,
+    IModDiscoveryService modDiscoveryService,
+    UpdateCheckService updateCheckService) : AsyncCommand<ModPathSettings>
 {
     public override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
         CancellationToken cancellationToken)
     {
         try
         {
-            // Resolve mods directory
             var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: true);
             if (modsDirectory == null)
-            {
                 return 1;
-            }
 
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            // Initialize services
-            var gitService = new GitService();
-            var gitHubApiService = new GitHubApiService();
-            var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
-
-            // Start update check in background (non-blocking)
-            var updateCheckService = new UpdateCheckService(gitHubApiService.HttpClient);
             var updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
 
-            // Run interactive menu
             var menu = new InteractiveMenu(
                 gitService,
                 gitHubApiService,

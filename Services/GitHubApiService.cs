@@ -3,35 +3,19 @@ using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
 
-public class GitHubApiService : IGitHubApiService, IDisposable
+public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
 {
     private const string OrgName = "FalloutCollaborationProject";
-    private const string BaseUrl = "https://api.github.com";
     private const string RequiredTopic = "rimworld-mod";
 
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient _httpClient = httpClient;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromHours(1);
 
     private IReadOnlyList<RemoteRepo>? _cachedRepos;
     private DateTimeOffset _cacheTime = DateTimeOffset.MinValue;
 
-    public HttpClient HttpClient => _httpClient;
     public int? RemainingRateLimit { get; private set; }
     public DateTimeOffset? RateLimitReset { get; private set; }
-
-    public GitHubApiService(HttpClient? httpClient = null)
-    {
-        _httpClient = httpClient ?? new HttpClient();
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"FCPModUpdater/{AppVersion.SemanticVersion}");
-        _httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-
-        var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-        if (!string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        }
-    }
 
     public async Task<IReadOnlyList<RemoteRepo>> GetOrganizationReposAsync(CancellationToken ct = default)
     {
@@ -46,7 +30,7 @@ public class GitHubApiService : IGitHubApiService, IDisposable
 
         while (true)
         {
-            var url = $"{BaseUrl}/orgs/{OrgName}/repos?per_page={perPage}&page={page}";
+            var url = $"orgs/{OrgName}/repos?per_page={perPage}&page={page}";
 
             try
             {
@@ -120,9 +104,4 @@ public class GitHubApiService : IGitHubApiService, IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        _httpClient.Dispose();
-        GC.SuppressFinalize(this);
-    }
 }

@@ -9,7 +9,10 @@ using Spectre.Console.Cli;
 namespace FCPModUpdater.Commands;
 
 [UsedImplicitly]
-public class UpdateCommand : AsyncCommand<ModPathSettings>
+public class UpdateCommand(
+    IGitService gitService,
+    IModDiscoveryService modDiscoveryService,
+    UpdateCheckService updateCheckService) : AsyncCommand<ModPathSettings>
 {
     public static IReadOnlyList<InstalledMod> GetUpdateableMods(IReadOnlyList<InstalledMod> mods)
         => mods.Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind).ToList();
@@ -19,31 +22,19 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
     {
         try
         {
-            // Resolve mods directory
             var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: false);
             if (modsDirectory == null)
-            {
                 return 1;
-            }
 
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            // Initialize services
-            var gitService = new GitService();
-            var gitHubApiService = new GitHubApiService();
-            var modDiscoveryService = new ModDiscoveryService(gitService, gitHubApiService);
-
-            // Start update check in background (non-blocking)
-            var updateCheckService = new UpdateCheckService(gitHubApiService.HttpClient);
             var updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
 
-            // Discover mods
             var mods = await ProgressReporter.WithStatusAsync(
                 "Scanning mods directory...",
                 async () => await modDiscoveryService.DiscoverModsAsync(modsDirectory, ct: cancellationToken));
 
-            // Find updateable mods
             var updateableMods = GetUpdateableMods(mods);
 
             if (updateableMods.Count == 0)
@@ -60,7 +51,6 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
 
             AnsiConsole.WriteLine();
 
-            // Update all
             var results = await ProgressReporter.WithBatchProgressAsync(
                 "Updating mods",
                 updateableMods,
@@ -81,7 +71,6 @@ public class UpdateCommand : AsyncCommand<ModPathSettings>
 
             ModTableRenderer.RenderUpdateSummary(results);
 
-            // Show update notification if available
             var updateResult = await updateCheckTask;
             if (updateResult != null)
             {
