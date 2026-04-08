@@ -1,12 +1,47 @@
-# FCP Mod Updater
+<h1 align="center">FCP Mod Updater</h1>
 
-[![Stable Release](https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?label=Stable&color=brightgreen)](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest)
-[![Beta Release](https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?include_prereleases&label=Beta&color=orange)](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white)](https://discord.gg/XcgBf3AbPa)
+<p align="center">
+  <img src="fcp_logo.png" alt="FCP logo" width="180" />
+</p>
 
-A command-line tool for managing [Fallout Collaboration Project](https://github.com/FalloutCollaborationProject) RimWorld mods. Features both interactive and automated workflows for discovering, updating, installing, and managing FCP mods.
+<p align="center">
+  <strong>A CLI tool for managing Fallout Collaboration Project RimWorld mods.</strong>
+</p>
 
-![CMD Preview](./demo.gif)
+<p align="center">
+  Discover, install, update, and manage FCP mods with an interactive terminal UI or automated workflows.
+</p>
+
+<p align="center">
+  <a href="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest">
+    <img src="https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?style=for-the-badge&label=Stable&color=brightgreen" alt="Stable Release">
+  </a>
+  <a href="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases">
+    <img src="https://img.shields.io/github/v/release/FalloutCollaborationProject/FCP-Mod-Updater?include_prereleases&style=for-the-badge&label=Beta&color=orange" alt="Beta Release">
+  </a>
+  <a href="https://discord.gg/XcgBf3AbPa">
+    <img src="https://img.shields.io/badge/Discord-Join%20Us-7289da?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/stargazers">
+    <img src="https://img.shields.io/github/stars/FalloutCollaborationProject/FCP-Mod-Updater?style=flat-square" alt="Stars">
+  </a>
+  <a href="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases">
+    <img src="https://img.shields.io/github/downloads/FalloutCollaborationProject/FCP-Mod-Updater/total?style=flat-square" alt="Downloads">
+  </a>
+  <!-- <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/FalloutCollaborationProject/FCP-Mod-Updater?style=flat-square" alt="License">
+  </a> -->
+  <a href="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/FalloutCollaborationProject/FCP-Mod-Updater/ci.yml?style=flat-square&label=Tests" alt="Tests">
+  </a>
+</p>
+
+<p align="center">
+  <img src="./demo.gif" alt="FCP Mod Updater preview" />
+</p>
 
 ## Features
 
