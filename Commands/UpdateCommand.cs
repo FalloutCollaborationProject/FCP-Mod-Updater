@@ -17,23 +17,21 @@ public class UpdateCommand(
     public static IReadOnlyList<InstalledMod> GetUpdateableMods(IReadOnlyList<InstalledMod> mods)
         => mods.Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind).ToList();
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
-        CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
+        CancellationToken ct)
     {
         try
         {
             var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: false);
-            if (modsDirectory == null)
-                return 1;
 
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            var updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
+            Task<UpdateCheckResult?> updateCheckTask = updateCheckService.CheckForUpdateAsync(ct);
 
             var mods = await ProgressReporter.WithStatusAsync(
                 "Scanning mods directory...",
-                async () => await modDiscoveryService.DiscoverModsAsync(modsDirectory, ct: cancellationToken));
+                async () => await modDiscoveryService.DiscoverModsAsync(modsDirectory, ct: ct));
 
             var updateableMods = GetUpdateableMods(mods);
 
@@ -54,16 +52,16 @@ public class UpdateCommand(
             var results = await ProgressReporter.WithBatchProgressAsync(
                 "Updating mods",
                 updateableMods,
-                m => m.Name,
+                installedMod => installedMod.Name,
                 async (mod, progress) =>
                 {
                     progress.Report(25);
-                    var fetchOk = await gitService.FetchAsync(mod.Path, ct: cancellationToken);
+                    var fetchOk = await gitService.FetchAsync(mod.Path, ct: ct);
                     if (!fetchOk)
                         return (false, "Fetch failed");
 
                     progress.Report(50);
-                    var pullOk = await gitService.PullAsync(mod.Path, ct: cancellationToken);
+                    var pullOk = await gitService.PullAsync(mod.Path, ct: ct);
                     progress.Report(100);
 
                     return (pullOk, pullOk ? null : "Pull failed");
@@ -71,7 +69,7 @@ public class UpdateCommand(
 
             ModTableRenderer.RenderUpdateSummary(results);
 
-            var updateResult = await updateCheckTask;
+            UpdateCheckResult? updateResult = await updateCheckTask;
             if (updateResult != null)
             {
                 AnsiConsole.WriteLine();
