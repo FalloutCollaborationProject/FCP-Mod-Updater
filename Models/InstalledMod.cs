@@ -2,6 +2,13 @@ namespace FCPModUpdater.Models;
 
 public record InstalledMod
 {
+    public static readonly InstalledMod Invalid = new InstalledMod
+    {
+        Name = "Invalid Mod",
+        Path = "",
+        Source = default,
+    };
+    
     public required string Name { get; init; }
     public required string Path { get; init; }
     public required ModSource Source { get; init; }

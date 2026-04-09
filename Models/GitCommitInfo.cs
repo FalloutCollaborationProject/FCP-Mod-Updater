@@ -6,4 +6,7 @@ public record GitCommitInfo(
     string Message,
     string Author,
     DateTimeOffset Date
-);
+)
+{
+    public static readonly GitCommitInfo Invalid = new GitCommitInfo("", "", "", "", default);
+}

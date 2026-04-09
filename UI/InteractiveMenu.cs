@@ -60,6 +60,7 @@ public class InteractiveMenu
                 new SelectionPrompt<string>()
                     .Title("[bold]What would you like to do?[/]")
                     .PageSize(10)
+                    .AddCancelResult("Exit")
                     .AddChoices(
                         "Update Git Mods",
                         "Install New Mods",
@@ -124,6 +125,7 @@ public class InteractiveMenu
             .Title("[bold]Select mods to update:[/]")
             .PageSize(15)
             .Required(false)
+            .AddCancelResult()
             .UseConverter(mod => $"{mod.Name} [grey]({mod.CommitsBehind} commits behind)[/]");
 
         foreach (InstalledMod mod in updateableMods)
@@ -201,6 +203,7 @@ public class InteractiveMenu
                 .PageSize(15)
                 .NotRequired()
                 .WrapAround() // Pressing down on last item goes to first
+                .AddCancelResult()
                 .UseConverter(r => string.IsNullOrEmpty(r.Description)
                     ? r.Name
                     : $"{r.Name} [grey]— {Truncate(r.Description, 50)}[/]")
@@ -247,6 +250,7 @@ public class InteractiveMenu
                 .PageSize(15)
                 .NotRequired()
                 .WrapAround()
+                .AddCancelResult()
                 .UseConverter(m => m.Name)
                 .AddChoices(installedMods), ct);
 
@@ -317,6 +321,7 @@ public class InteractiveMenu
                 .Title("[bold]Select mods to convert to Git:[/]")
                 .PageSize(15)
                 .Required(false)
+                .AddCancelResult()
                 .UseConverter(m => $"{m.Name} [grey]→ will clone from {m.MatchedRepoName}[/]")
                 .AddChoices(nonGitMods), ct);
 
@@ -368,7 +373,9 @@ public class InteractiveMenu
 
     private async Task<bool> HandleVersionSelectorAsync(CancellationToken ct)
     {
-        var gitMods = _mods.Where(m => m.Source == ModSource.Git).ToList();
+        List<InstalledMod> gitMods = _mods
+            .Where(m => m.Source == ModSource.Git)
+            .ToList();
 
         if (gitMods.Count == 0)
         {
@@ -377,13 +384,17 @@ public class InteractiveMenu
             return false;
         }
 
-        InstalledMod mod = await AnsiConsole.PromptAsync(
+        InstalledMod? mod = await AnsiConsole.PromptAsync(
             new SelectionPrompt<InstalledMod>()
                 .Title("[bold]Select a mod to manage:[/]")
                 .PageSize(15)
+                .AddCancelResult(InstalledMod.Invalid)
                 .UseConverter(m =>
                     $"{m.Name} [grey]({m.Branch ?? "detached"} @ {m.CurrentCommit?.ShortHash ?? "unknown"})[/]")
                 .AddChoices(gitMods), ct);
+
+        if (mod == InstalledMod.Invalid)
+            return false;
 
         // Show current state
         AnsiConsole.WriteLine();
@@ -401,6 +412,7 @@ public class InteractiveMenu
         var action = await AnsiConsole.PromptAsync(
             new SelectionPrompt<string>()
                 .Title("What would you like to do?")
+                .AddCancelResult("Back to Main Menu")
                 .AddChoices(
                     "Switch Branch",
                     "Checkout Specific Commit",
@@ -408,9 +420,7 @@ public class InteractiveMenu
                 ), ct);
 
         if (action == "Back to Main Menu")
-        {
             return false;
-        }
 
         if (mod.HasLocalChanges)
         {
@@ -437,7 +447,7 @@ public class InteractiveMenu
 
     private async Task HandleBranchSwitchAsync(InstalledMod mod, CancellationToken ct)
     {
-        var branches = await ProgressReporter.WithStatusAsync(
+        IReadOnlyList<string> branches = await ProgressReporter.WithStatusAsync(
             "Fetching branches...",
             async () =>
             {
@@ -456,7 +466,11 @@ public class InteractiveMenu
             new SelectionPrompt<string>()
                 .Title("Select branch:")
                 .PageSize(15)
+                .AddCancelResult("Exit")
                 .AddChoices(branches), ct);
+
+        if (branch == "Exit")
+            return;
 
         var success = await ProgressReporter.WithStatusAsync(
             $"Switching to {branch}...",
@@ -485,55 +499,70 @@ public class InteractiveMenu
         var method = await AnsiConsole.PromptAsync(
             new SelectionPrompt<string>()
                 .Title("How would you like to select a commit?")
+                .AddCancelResult("Exit")
                 .AddChoices(
                     "Pick from history",
                     "Enter commit hash manually"
                 ), ct);
 
-        if (method == "Enter commit hash manually")
+        switch (method)
         {
-            var manualHash = (await AnsiConsole.AskAsync<string>("Enter commit hash:", ct)).Trim();
-            if (string.IsNullOrEmpty(manualHash))
+            case "Exit":
             {
-                AnsiConsole.MarkupLine("[yellow]No commit hash provided.[/]");
-                WaitForKey();
                 return;
             }
-
-            var label = manualHash.Length > 7 ? manualHash[..7] : manualHash;
-
-            var success = await ProgressReporter.WithStatusAsync(
-                $"Checking out {label}...",
-                async () => await _gitService.CheckoutAsync(mod.Path, manualHash, ct));
-
-            if (success)
+            case "Enter commit hash manually":
             {
-                AnsiConsole.MarkupLine($"[green]Checked out commit {label}[/]");
-                AnsiConsole.MarkupLine("[yellow]Note: You are now in 'detached HEAD' state.[/]");
+                var manualHash = (await AnsiConsole.AskAsync<string>("Enter commit hash:", ct)).Trim();
+                if (string.IsNullOrEmpty(manualHash))
+                {
+                    AnsiConsole.MarkupLine("[yellow]No commit hash provided.[/]");
+                    WaitForKey();
+                    return;
+                }
+
+                var label = manualHash.Length > 7 ? manualHash[..7] : manualHash;
+
+                var success = await ProgressReporter.WithStatusAsync(
+                    $"Checking out {label}...",
+                    async () => await _gitService.CheckoutAsync(mod.Path, manualHash, ct));
+
+                if (success)
+                {
+                    AnsiConsole.MarkupLine($"[green]Checked out commit {label}[/]");
+                    AnsiConsole.MarkupLine("[yellow]Note: You are now in 'detached HEAD' state.[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[red]Failed to checkout commit {label}[/]");
+                }
+
+                break;
             }
-            else
+            default:
             {
-                AnsiConsole.MarkupLine($"[red]Failed to checkout commit {label}[/]");
+                GitCommitInfo commit = await AnsiConsole.PromptAsync(
+                    new SelectionPrompt<GitCommitInfo>()
+                        .Title("Select commit:")
+                        .PageSize(15)
+                        .AddCancelResult(GitCommitInfo.Invalid)
+                        .UseConverter(c =>
+                            $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
+                        .AddChoices(commits), ct);
+
+                if (commit == GitCommitInfo.Invalid)
+                    return;
+
+                var currentBranch = mod.Branch ?? "HEAD";
+                var success = await ProgressReporter.WithStatusAsync(
+                    $"Resetting {currentBranch} to {commit.ShortHash}...",
+                    async () => await _gitService.ResetToCommitAsync(mod.Path, commit.Hash, ct));
+
+                AnsiConsole.MarkupLine(success
+                    ? $"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]"
+                    : $"[red]Failed to reset to commit {commit.ShortHash}[/]");
+                break;
             }
-        }
-        else
-        {
-            GitCommitInfo commit = await AnsiConsole.PromptAsync(
-                new SelectionPrompt<GitCommitInfo>()
-                    .Title("Select commit:")
-                    .PageSize(15)
-                    .UseConverter(c =>
-                        $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
-                    .AddChoices(commits), ct);
-
-            var currentBranch = mod.Branch ?? "HEAD";
-            var success = await ProgressReporter.WithStatusAsync(
-                $"Resetting {currentBranch} to {commit.ShortHash}...",
-                async () => await _gitService.ResetToCommitAsync(mod.Path, commit.Hash, ct));
-
-            AnsiConsole.MarkupLine(success
-                ? $"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]"
-                : $"[red]Failed to reset to commit {commit.ShortHash}[/]");
         }
 
         WaitForKey();
