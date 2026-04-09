@@ -56,7 +56,7 @@ public class InteractiveMenu
 
             AnsiConsole.WriteLine();
 
-            var choice = AnsiConsole.Prompt(
+            var choice = await AnsiConsole.PromptAsync(
                 new SelectionPrompt<string>()
                     .Title("[bold]What would you like to do?[/]")
                     .PageSize(10)
@@ -68,7 +68,7 @@ public class InteractiveMenu
                         "Mod Version Selector",
                         "Refresh Status",
                         "Exit"
-                    ));
+                    ), ct);
 
             try
             {
@@ -110,7 +110,7 @@ public class InteractiveMenu
     private async Task<bool> HandleUpdateAsync(CancellationToken ct)
     {
         var updateableMods = _mods
-            .Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind)
+            .Where(mod => mod.Source == ModSource.Git && mod.Status == ModStatus.Behind)
             .ToList();
 
         if (updateableMods.Count == 0)
@@ -124,14 +124,14 @@ public class InteractiveMenu
             .Title("[bold]Select mods to update:[/]")
             .PageSize(15)
             .Required(false)
-            .UseConverter(m => $"{m.Name} [grey]({m.CommitsBehind} commits behind)[/]");
+            .UseConverter(mod => $"{mod.Name} [grey]({mod.CommitsBehind} commits behind)[/]");
 
         foreach (InstalledMod mod in updateableMods)
         {
             prompt.AddChoice(mod).Select();
         }
 
-        List<InstalledMod> selected = AnsiConsole.Prompt(prompt);
+        List<InstalledMod> selected = await AnsiConsole.PromptAsync(prompt, ct);
 
         if (selected.Count == 0)
             return false;
@@ -194,7 +194,7 @@ public class InteractiveMenu
             return false;
         }
 
-        List<RemoteRepo> selectedRepos = AnsiConsole.Prompt(
+        List<RemoteRepo> selectedRepos = await AnsiConsole.PromptAsync(
             new MultiSelectionPrompt<RemoteRepo>()
                 .Title("[bold]Select mods to install:[/]")
                 .InstructionsText("[grey](Press <space> to mark a mod for install, <enter> to confirm)[/]")
@@ -204,7 +204,7 @@ public class InteractiveMenu
                 .UseConverter(r => string.IsNullOrEmpty(r.Description)
                     ? r.Name
                     : $"{r.Name} [grey]— {Truncate(r.Description, 50)}[/]")
-                .AddChoices(availableRepos));
+                .AddChoices(availableRepos), ct);
 
         if (selectedRepos.Count == 0)
             return false;
@@ -240,7 +240,7 @@ public class InteractiveMenu
             return false;
         }
 
-        List<InstalledMod> selected = AnsiConsole.Prompt(
+        List<InstalledMod> selected = await AnsiConsole.PromptAsync(
             new MultiSelectionPrompt<InstalledMod>()
                 .Title("[bold red]Select mods to uninstall:[/]")
                 .InstructionsText("[grey](Press <space> to mark a mod for uninstallation, <enter> to confirm)[/]")
@@ -248,7 +248,7 @@ public class InteractiveMenu
                 .NotRequired()
                 .WrapAround()
                 .UseConverter(m => m.Name)
-                .AddChoices(installedMods));
+                .AddChoices(installedMods), ct);
 
         if (selected.Count == 0)
             return false;
@@ -269,7 +269,7 @@ public class InteractiveMenu
         }
 
         // Double confirmation
-        var confirmText = AnsiConsole.Ask<string>("Type [red]DELETE[/] to confirm:");
+        var confirmText = await AnsiConsole.AskAsync<string>("Type [red]DELETE[/] to confirm:", ct);
         if (confirmText != "DELETE")
         {
             AnsiConsole.MarkupLine("[grey]Uninstall cancelled.[/]");
@@ -312,13 +312,13 @@ public class InteractiveMenu
             return false;
         }
 
-        var selected = AnsiConsole.Prompt(
+        var selected = await AnsiConsole.PromptAsync(
             new MultiSelectionPrompt<InstalledMod>()
                 .Title("[bold]Select mods to convert to Git:[/]")
                 .PageSize(15)
                 .Required(false)
                 .UseConverter(m => $"{m.Name} [grey]→ will clone from {m.MatchedRepoName}[/]")
-                .AddChoices(nonGitMods));
+                .AddChoices(nonGitMods), ct);
 
         if (selected.Count == 0)
         {
@@ -377,13 +377,13 @@ public class InteractiveMenu
             return false;
         }
 
-        InstalledMod mod = AnsiConsole.Prompt(
+        InstalledMod mod = await AnsiConsole.PromptAsync(
             new SelectionPrompt<InstalledMod>()
                 .Title("[bold]Select a mod to manage:[/]")
                 .PageSize(15)
                 .UseConverter(m =>
                     $"{m.Name} [grey]({m.Branch ?? "detached"} @ {m.CurrentCommit?.ShortHash ?? "unknown"})[/]")
-                .AddChoices(gitMods));
+                .AddChoices(gitMods), ct);
 
         // Show current state
         AnsiConsole.WriteLine();
@@ -398,14 +398,14 @@ public class InteractiveMenu
 
         AnsiConsole.WriteLine();
 
-        var action = AnsiConsole.Prompt(
+        var action = await AnsiConsole.PromptAsync(
             new SelectionPrompt<string>()
                 .Title("What would you like to do?")
                 .AddChoices(
                     "Switch Branch",
                     "Checkout Specific Commit",
                     "Back to Main Menu"
-                ));
+                ), ct);
 
         if (action == "Back to Main Menu")
         {
@@ -452,11 +452,11 @@ public class InteractiveMenu
             return;
         }
 
-        var branch = AnsiConsole.Prompt(
+        var branch = await AnsiConsole.PromptAsync(
             new SelectionPrompt<string>()
                 .Title("Select branch:")
                 .PageSize(15)
-                .AddChoices(branches));
+                .AddChoices(branches), ct);
 
         var success = await ProgressReporter.WithStatusAsync(
             $"Switching to {branch}...",
@@ -482,17 +482,17 @@ public class InteractiveMenu
             return;
         }
 
-        var method = AnsiConsole.Prompt(
+        var method = await AnsiConsole.PromptAsync(
             new SelectionPrompt<string>()
                 .Title("How would you like to select a commit?")
                 .AddChoices(
                     "Pick from history",
                     "Enter commit hash manually"
-                ));
+                ), ct);
 
         if (method == "Enter commit hash manually")
         {
-            var manualHash = AnsiConsole.Ask<string>("Enter commit hash:").Trim();
+            var manualHash = (await AnsiConsole.AskAsync<string>("Enter commit hash:", ct)).Trim();
             if (string.IsNullOrEmpty(manualHash))
             {
                 AnsiConsole.MarkupLine("[yellow]No commit hash provided.[/]");
@@ -518,13 +518,13 @@ public class InteractiveMenu
         }
         else
         {
-            GitCommitInfo commit = AnsiConsole.Prompt(
+            GitCommitInfo commit = await AnsiConsole.PromptAsync(
                 new SelectionPrompt<GitCommitInfo>()
                     .Title("Select commit:")
                     .PageSize(15)
                     .UseConverter(c =>
                         $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
-                    .AddChoices(commits));
+                    .AddChoices(commits), ct);
 
             var currentBranch = mod.Branch ?? "HEAD";
             var success = await ProgressReporter.WithStatusAsync(

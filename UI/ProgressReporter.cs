@@ -51,7 +51,7 @@ public static class ProgressReporter
         Func<T, string> nameSelector,
         Func<T, IProgress<double>, Task<(bool Success, string? Error)>> action)
     {
-        var results = new List<(string Name, bool Success, string? Error)>();
+        var itemTasks = new List<ProgressTask>();
 
         await AnsiConsole.Progress()
             .Columns(
@@ -67,22 +67,23 @@ public static class ProgressReporter
                 {
                     var name = nameSelector(item);
                     ProgressTask itemTask = ctx.AddTask($"  {name}");
+                    itemTasks.Add(itemTask);
 
                     var progress = new Progress<double>(p => itemTask.Value = p);
 
                     try
                     {
                         var (success, error) = await action(item, progress);
-                        results.Add((name, success, error));
+                        itemTask.Tag(new BatchResult(name, success, error));
                         itemTask.Value = 100;
 
-                        itemTask.Description = success 
-                            ? $"  [green]{name}[/]" 
+                        itemTask.Description = success
+                            ? $"  [green]{name}[/]"
                             : $"  [red]{name}[/]";
                     }
                     catch (Exception ex)
                     {
-                        results.Add((name, false, ex.Message));
+                        itemTask.Tag(new BatchResult(name, false, ex.Message));
                         itemTask.Value = 100;
                         itemTask.Description = $"  [red]{name}[/]";
                     }
@@ -91,6 +92,11 @@ public static class ProgressReporter
                 }
             });
 
-        return results;
+        return itemTasks
+            .Select(t => (BatchResult)t.Tag!)
+            .Select(r => (r.Name, r.Success, r.Error))
+            .ToList();
     }
+
+    private record BatchResult(string Name, bool Success, string? Error);
 }
