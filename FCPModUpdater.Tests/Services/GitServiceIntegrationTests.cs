@@ -183,6 +183,22 @@ public class GitServiceIntegrationTests : IDisposable
     }
 
     [Fact]
+    public async Task CloneAsync_LocalRepository_CreatesGitRepo()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var remoteDir = Path.Combine(_tempDir, "remote");
+        Directory.CreateDirectory(remoteDir);
+        await InitRepoWithCommit(remoteDir);
+
+        var targetDir = Path.Combine(_tempDir, "clone-target");
+        (bool Success, string? Error) result = await _service.CloneAsync(remoteDir, targetDir, ct: ct);
+
+        Assert.True(result.Success, result.Error);
+        Assert.Null(result.Error);
+        Assert.True(await _service.IsGitRepositoryAsync(targetDir, ct));
+    }
+
+    [Fact]
     public async Task GetRemoteBranchesAsync_ReturnsBranches()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -7,6 +7,9 @@ namespace FCPModUpdater.Services;
 
 public partial class GitService : IGitService
 {
+    internal const int StandardCommandTimeoutMs = 30000;
+    internal const int NetworkCommandIdleTimeoutMs = 300000;
+
     // Matches git progress output like: "Receiving objects:  45% (555/1234), 12.34 MiB | 1.23 MiB/s"
     [GeneratedRegex(@"(\d+)%\s*\((\d+)/(\d+)\)", RegexOptions.Compiled)]
     private static partial Regex GitProgressRegex();
@@ -109,7 +112,12 @@ public partial class GitService : IGitService
         CancellationToken ct = default)
     {
         progress?.Report("Fetching from remote...");
-        var (exitCode, _, error) = await RunGitCommandAsync(path, "fetch --all --prune --recurse-submodules", ct);
+        var (exitCode, error) = await RunGitCommandWithProgressAsync(
+            path,
+            "fetch --all --prune --recurse-submodules",
+            percentProgress: null,
+            ct,
+            idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
         if (exitCode != 0)
             progress?.Report($"Fetch failed: {error}");
@@ -121,7 +129,12 @@ public partial class GitService : IGitService
         CancellationToken ct = default)
     {
         progress?.Report("Pulling changes...");
-        var (exitCode, _, error) = await RunGitCommandAsync(path, "pull --ff-only --recurse-submodules", ct);
+        var (exitCode, error) = await RunGitCommandWithProgressAsync(
+            path,
+            "pull --ff-only --recurse-submodules",
+            percentProgress: null,
+            ct,
+            idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
         if (exitCode != 0)
             progress?.Report($"Pull failed: {error}");
@@ -142,7 +155,7 @@ public partial class GitService : IGitService
             $"clone --progress --recurse-submodules \"{url}\" \"{folderName}\"",
             percentProgress,
             ct,
-            timeoutMs: 300000); // 5 minute timeout for clone
+            idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
         // Exit code 141 = SIGPIPE (128+13), harmless when git's progress pipe closes early
         if (exitCode != 0 && exitCode != 141)
@@ -205,10 +218,10 @@ public partial class GitService : IGitService
 
     private static async Task<(int ExitCode, string Error)> RunGitCommandWithProgressAsync(
         string workingDirectory, string arguments, IProgress<double>? percentProgress,
-        CancellationToken ct, int timeoutMs = 30000)
+        CancellationToken ct, int idleTimeoutMs = StandardCommandTimeoutMs)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(timeoutMs);
+        cts.CancelAfter(idleTimeoutMs);
 
         var errorLines = new List<string>();
 
@@ -223,6 +236,7 @@ public partial class GitService : IGitService
                 .WithStandardOutputPipe(PipeTarget.Null)
                 .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
                 {
+                    cts.CancelAfter(idleTimeoutMs);
                     errorLines.Add(line);
 
                     if (percentProgress == null)
@@ -240,7 +254,10 @@ public partial class GitService : IGitService
         }
         catch (OperationCanceledException)
         {
-            return (ExitCode: -1, Error: "Operation timed out or was cancelled");
+            return ct.IsCancellationRequested
+                ? (ExitCode: -1, Error: "Operation was cancelled")
+                : (ExitCode: -1,
+                    Error: $"Git command made no progress for {TimeSpan.FromMilliseconds(idleTimeoutMs).TotalMinutes:0} minute(s)");
         }
     }
 
@@ -268,7 +285,7 @@ public partial class GitService : IGitService
     }
 
     private static async Task<(int ExitCode, string Output, string Error)> RunGitCommandAsync(
-        string workingDirectory, string arguments, CancellationToken ct, int timeoutMs = 30000)
+        string workingDirectory, string arguments, CancellationToken ct, int timeoutMs = StandardCommandTimeoutMs)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeoutMs);
@@ -287,7 +304,10 @@ public partial class GitService : IGitService
         }
         catch (OperationCanceledException)
         {
-            return (ExitCode: -1, Output: "", Error: "Operation timed out or was cancelled");
+            return ct.IsCancellationRequested
+                ? (ExitCode: -1, Output: "", Error: "Operation was cancelled")
+                : (ExitCode: -1, Output: "",
+                    Error: $"Git command timed out after {TimeSpan.FromMilliseconds(timeoutMs).TotalSeconds:0} second(s)");
         }
     }
 }
