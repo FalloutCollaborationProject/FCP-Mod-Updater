@@ -38,6 +38,7 @@ public class UpdateCommand(
             if (updateableMods.Count == 0)
             {
                 AnsiConsole.MarkupLine("[green]All FCP mods are up to date![/]");
+                await RenderAppUpdateNoticeAsync(updateCheckTask);
                 return 0;
             }
 
@@ -57,15 +58,7 @@ public class UpdateCommand(
 
             ModTableRenderer.RenderUpdateSummary(results);
 
-            UpdateCheckResult? updateResult = await updateCheckTask;
-            if (updateResult != null)
-            {
-                AnsiConsole.WriteLine();
-                var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
-                AnsiConsole.MarkupLine(
-                    $"[yellow bold]{label}: v{updateResult.LatestVersion}[/] [grey](current: {updateResult.CurrentVersion})[/]");
-                AnsiConsole.MarkupLine($"[grey]Download: {updateResult.ReleaseUrl}[/]");
-            }
+            await RenderAppUpdateNoticeAsync(updateCheckTask);
 
             var failCount = results.Count(r => !r.Success);
             return failCount > 0 ? 1 : 0;
@@ -80,5 +73,15 @@ public class UpdateCommand(
             AnsiConsole.WriteException(ex);
             return 1;
         }
+    }
+
+    private static async Task RenderAppUpdateNoticeAsync(Task<UpdateCheckResult?> updateCheckTask)
+    {
+        UpdateCheckResult? updateResult = await updateCheckTask;
+        if (updateResult is null)
+            return;
+
+        AnsiConsole.WriteLine();
+        AppUpdateNoticeRenderer.Render(updateResult);
     }
 }

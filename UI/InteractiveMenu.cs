@@ -47,10 +47,7 @@ public class InteractiveMenu
                 var updateResult = await _updateCheckTask;
                 if (updateResult != null)
                 {
-                    var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
-                    AnsiConsole.MarkupLine(
-                        $"[yellow bold]{label}: v{updateResult.LatestVersion}[/] [grey](current: {updateResult.CurrentVersion})[/]");
-                    AnsiConsole.MarkupLine($"[grey]Download: {updateResult.ReleaseUrl}[/]");
+                    AppUpdateNoticeRenderer.Render(updateResult);
                 }
             }
 

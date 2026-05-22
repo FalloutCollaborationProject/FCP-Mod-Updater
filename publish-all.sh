@@ -1,9 +1,14 @@
 #!/bin/bash
 APP_NAME="FCPModUpdater"
+mkdir -p ./publish
+cp ./update-fcp-mod-manager.bat ./publish/
+cp ./update-fcp-mod-manager.sh ./publish/
 
 # Self-contained
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc ./FCPModUpdater.csproj
 dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc ./FCPModUpdater.csproj
+cp ./update-fcp-mod-manager.bat ./publish/win-x64-sc/
+cp ./update-fcp-mod-manager.sh ./publish/linux-x64-sc/
 cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
 
 # Archive self-contained builds
@@ -21,4 +26,5 @@ cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
 cd ./publish
 zip -r "${APP_NAME}-win-x64.zip" win-x64-fd
 tar -czvf "${APP_NAME}-linux-x64.tar.gz" linux-x64-fd
+sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz > checksums.txt
 cd ..

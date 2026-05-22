@@ -27,11 +27,14 @@ jobs:
         run: dotnet test --configuration Release
 
       - name: Build Windows x64 (self-contained)
-        run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
+        run: |
+          dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
+          cp ./update-fcp-mod-manager.bat ./publish/win-x64-sc/
 
       - name: Build Linux x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
+          cp ./update-fcp-mod-manager.sh ./publish/linux-x64-sc/
           cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
 
       - name: Build Windows x64 (framework-dependent)
@@ -44,11 +47,14 @@ jobs:
 
       - name: Create archives
         run: |
+          cp ./update-fcp-mod-manager.bat ./publish/
+          cp ./update-fcp-mod-manager.sh ./publish/
           cd ./publish
           zip -r "${{ env.APP_NAME }}-win-x64-selfcontained.zip" win-x64-sc
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
           zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
           tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
+          sha256sum "${{ env.APP_NAME }}"-*.zip "${{ env.APP_NAME }}"-*.tar.gz > checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -60,3 +66,6 @@ jobs:
             ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
             ./publish/${{ env.APP_NAME }}-win-x64.zip
             ./publish/${{ env.APP_NAME }}-linux-x64.tar.gz
+            ./publish/checksums.txt
+            ./publish/update-fcp-mod-manager.bat
+            ./publish/update-fcp-mod-manager.sh

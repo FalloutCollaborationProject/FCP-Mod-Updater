@@ -75,6 +75,28 @@
 
 Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
 
+### Updating the App
+
+FCP Mod Manager checks for newer app releases and prints update instructions when one is available. The recommended update path is still to download the latest self-contained archive from the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page and replace your existing app folder.
+
+For convenience, self-contained releases also include manual updater scripts:
+
+| Platform | Script |
+|----------|--------|
+| Windows | `update-fcp-mod-manager.bat` |
+| Linux | `./update-fcp-mod-manager.sh` |
+
+Before running an updater script, close FCP Mod Manager and run the script from the existing app folder. The script will ask whether to use the latest stable release or the latest pre-release, download the matching archive and `checksums.txt`, verify the SHA256 checksum, then replace the files in the current folder.
+
+> [!WARNING]
+> The updater scripts are mainly convenience helpers. If an update fails, download the release archive manually and replace the app folder yourself.
+
+> [!WARNING]
+> The Windows updater script is less tested than the Linux script. If it fails, use the manual download method from the Releases page.
+
+> [!NOTE]
+> The Linux updater requires `curl`, `tar`, and `sha256sum`. Choosing the pre-release channel also requires `python3` for GitHub release JSON parsing.
+
 
 ### Build from Source
 ```bash
