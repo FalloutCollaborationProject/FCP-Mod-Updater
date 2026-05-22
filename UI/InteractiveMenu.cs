@@ -156,19 +156,7 @@ public class InteractiveMenu
             "Updating mods",
             selected.ToList(),
             mod => mod.Name,
-            async (mod, progress) =>
-            {
-                progress.Report(25);
-                var fetchOk = await _gitService.FetchAsync(mod.Path, ct: ct);
-                if (!fetchOk)
-                    return (Success: false, Error: "Fetch failed");
-
-                progress.Report(50);
-                var pullOk = await _gitService.PullAsync(mod.Path, ct: ct);
-                progress.Report(100);
-
-                return (Success: pullOk, Error: pullOk ? null : "Pull failed");
-            });
+            async (mod, progress) => await GitModUpdater.UpdateAsync(_gitService, mod, progress, ct));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();

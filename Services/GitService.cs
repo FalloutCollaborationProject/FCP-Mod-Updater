@@ -108,7 +108,7 @@ public partial class GitService : IGitService
         return ParseCommitLog(output);
     }
 
-    public async Task<bool> FetchAsync(string path, IProgress<string>? progress = null,
+    public async Task<GitOperationResult> FetchAsync(string path, IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
         progress?.Report("Fetching from remote...");
@@ -119,13 +119,15 @@ public partial class GitService : IGitService
             ct,
             idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
-        if (exitCode != 0)
-            progress?.Report($"Fetch failed: {error}");
+        var result = GitOperationResult.FromExitCode(exitCode, error);
 
-        return exitCode == 0;
+        if (!result.Success)
+            progress?.Report($"Fetch failed: {result.Error ?? $"git exited with code {result.ExitCode}"}");
+
+        return result;
     }
 
-    public async Task<bool> PullAsync(string path, IProgress<string>? progress = null,
+    public async Task<GitOperationResult> PullAsync(string path, IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
         progress?.Report("Pulling changes...");
@@ -136,10 +138,12 @@ public partial class GitService : IGitService
             ct,
             idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
-        if (exitCode != 0)
-            progress?.Report($"Pull failed: {error}");
+        var result = GitOperationResult.FromExitCode(exitCode, error);
 
-        return exitCode == 0;
+        if (!result.Success)
+            progress?.Report($"Pull failed: {result.Error ?? $"git exited with code {result.ExitCode}"}");
+
+        return result;
     }
 
     public async Task<(bool Success, string? Error)> CloneAsync(string url, string targetPath, IProgress<string>? progress = null,
@@ -157,10 +161,10 @@ public partial class GitService : IGitService
             ct,
             idleTimeoutMs: NetworkCommandIdleTimeoutMs);
 
-        // Exit code 141 = SIGPIPE (128+13), harmless when git's progress pipe closes early
-        if (exitCode != 0 && exitCode != 141)
+        var result = GitOperationResult.FromExitCode(exitCode, error);
+        if (!result.Success)
         {
-            var errorMessage = $"Clone failed (exit code {exitCode}): url={url}, target={targetPath}, git output: {error}";
+            var errorMessage = $"Clone failed for {targetPath}: {FormatGitFailure(result)}";
             progress?.Report(errorMessage);
             return (Success: false, Error: errorMessage);
         }
@@ -168,12 +172,18 @@ public partial class GitService : IGitService
         // Verify the clone actually produced a valid git repo
         if (!Directory.Exists(targetPath) || !await IsGitRepositoryAsync(targetPath, ct))
         {
-            var errorMessage = $"Clone appeared to finish but target is not a valid git repo: url={url}, target={targetPath}, git output: {error}";
+            var errorMessage =
+                $"Clone appeared to finish but target is not a valid git repo: url={url}, target={targetPath}, git output: {result.Error}";
             progress?.Report(errorMessage);
             return (Success: false, Error: errorMessage);
         }
 
         return (Success: true, Error: null);
+    }
+
+    internal static string FormatGitFailure(GitOperationResult result)
+    {
+        return result.Error ?? $"git exited with code {result.ExitCode}";
     }
 
     public async Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string path, CancellationToken ct = default)

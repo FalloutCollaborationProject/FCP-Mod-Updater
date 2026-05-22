@@ -159,7 +159,7 @@ public class DiscoverModsAsyncTests : IDisposable
         _gitService.HasLocalChangesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
         _gitService.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(new GitOperationResult(true, 0, null));
         _gitService.GetCommitDifferenceAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((Behind: 0, Ahead: 0));
 
@@ -207,7 +207,7 @@ public class DiscoverModsAsyncTests : IDisposable
         _gitService.HasLocalChangesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
         _gitService.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(new GitOperationResult(true, 0, null));
         _gitService.GetCommitDifferenceAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((Behind: 0, Ahead: 0));
 
@@ -250,7 +250,7 @@ public class DiscoverModsAsyncTests : IDisposable
         _gitService.HasLocalChangesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
         _gitService.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(new GitOperationResult(true, 0, null));
 
         IReadOnlyList<InstalledMod> result = await _service.DiscoverModsAsync(_tempDir, ct: token);
 
@@ -297,7 +297,7 @@ public class DiscoverModsAsyncTests : IDisposable
         _gitService.HasLocalChangesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(false);
         _gitService.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+            .Returns(new GitOperationResult(true, 0, null));
         _gitService.GetCommitDifferenceAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((Behind: 3, Ahead: 0));
 

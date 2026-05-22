@@ -53,19 +53,7 @@ public class UpdateCommand(
                 "Updating mods",
                 updateableMods,
                 installedMod => installedMod.Name,
-                async (mod, progress) =>
-                {
-                    progress.Report(25);
-                    var fetchOk = await gitService.FetchAsync(mod.Path, ct: ct);
-                    if (!fetchOk)
-                        return (false, "Fetch failed");
-
-                    progress.Report(50);
-                    var pullOk = await gitService.PullAsync(mod.Path, ct: ct);
-                    progress.Report(100);
-
-                    return (pullOk, pullOk ? null : "Pull failed");
-                });
+                async (mod, progress) => await GitModUpdater.UpdateAsync(gitService, mod, progress, ct));
 
             ModTableRenderer.RenderUpdateSummary(results);
 
