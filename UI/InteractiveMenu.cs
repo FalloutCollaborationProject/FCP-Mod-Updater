@@ -6,6 +6,8 @@ namespace FCPModUpdater.UI;
 
 public class InteractiveMenu
 {
+    internal const string NotRecommendedTopic = "fcp-not-recommended";
+
     private readonly IGitService _gitService;
     private readonly IGitHubApiService _gitHubApiService;
     private readonly IModDiscoveryService _modDiscoveryService;
@@ -168,11 +170,7 @@ public class InteractiveMenu
             "Fetching available mods...",
             async () => await _gitHubApiService.GetOrganizationReposAsync(ct));
 
-        IEnumerable<string> installedNames = _mods.Select(m => m.Name);
-        List<RemoteRepo> availableRepos = orgRepos
-            .Where(repo => !installedNames.Contains(repo.Name))
-            .OrderBy(repo => repo.Name)
-            .ToList();
+        List<RemoteRepo> availableRepos = GetAvailableInstallRepos(orgRepos, _mods.Select(m => m.Name));
 
         if (availableRepos.Count == 0)
         {
@@ -189,9 +187,7 @@ public class InteractiveMenu
                 .NotRequired()
                 .WrapAround() // Pressing down on last item goes to first
                 .AddCancelResult()
-                .UseConverter(r => string.IsNullOrEmpty(r.Description)
-                    ? r.Name
-                    : $"{r.Name} [grey]— {Truncate(r.Description, 50)}[/]")
+                .UseConverter(FormatInstallRepoChoice)
                 .AddChoices(availableRepos), ct);
 
         if (selectedRepos.Count == 0)
@@ -564,6 +560,31 @@ public class InteractiveMenu
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[grey]Press any key to continue...[/]");
         Console.ReadKey(true);
+    }
+
+    private static List<RemoteRepo> GetAvailableInstallRepos(
+        IReadOnlyList<RemoteRepo> orgRepos,
+        IEnumerable<string> installedNames)
+    {
+        var installedNameSet = new HashSet<string>(installedNames, StringComparer.OrdinalIgnoreCase);
+
+        return orgRepos
+            .Where(repo => !installedNameSet.Contains(repo.Name))
+            .OrderBy(IsNotRecommended)
+            .ThenBy(repo => repo.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static bool IsNotRecommended(RemoteRepo repo) =>
+        repo.Topics.Contains(NotRecommendedTopic, StringComparer.OrdinalIgnoreCase);
+
+    private static string FormatInstallRepoChoice(RemoteRepo repo)
+    {
+        var warning = IsNotRecommended(repo) ? " [yellow dim](not recommended for use)[/]" : string.Empty;
+
+        return string.IsNullOrEmpty(repo.Description)
+            ? $"{repo.Name}{warning}"
+            : $"{repo.Name}{warning} [grey]— {Truncate(repo.Description, 50)}[/]";
     }
 
     private static string Truncate(string text, int maxLength)
