@@ -580,7 +580,7 @@ public class InteractiveMenu
 
     private static string FormatInstallRepoChoice(RemoteRepo repo)
     {
-        var warning = IsNotRecommended(repo) ? " [yellow dim](not recommended for use)[/]" : string.Empty;
+        var warning = IsNotRecommended(repo) ? " [yellow](not recommended for use)[/]" : string.Empty;
 
         return string.IsNullOrEmpty(repo.Description)
             ? $"{repo.Name}{warning}"
