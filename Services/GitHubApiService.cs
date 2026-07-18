@@ -17,6 +17,12 @@ public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
     public int? RemainingRateLimit { get; private set; }
     public DateTimeOffset? RateLimitReset { get; private set; }
 
+    public void ClearCache()
+    {
+        _cachedRepos = null;
+        _cacheTime = DateTimeOffset.MinValue;
+    }
+
     public async Task<IReadOnlyList<RemoteRepo>> GetOrganizationReposAsync(CancellationToken ct = default)
     {
         if (_cachedRepos != null && DateTimeOffset.UtcNow - _cacheTime < _cacheExpiry)

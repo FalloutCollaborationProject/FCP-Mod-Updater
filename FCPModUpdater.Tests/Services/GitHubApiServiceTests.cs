@@ -111,6 +111,30 @@ public class GitHubApiServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearCache_NextRequestFetchesFreshRepositories()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+
+        _handler.ResponseQueue.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new[] { MakeRepo("FCP-Weapons") }))
+        });
+        _handler.ResponseQueue.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new[] { MakeRepo("FCP-Armor") }))
+        });
+
+        IReadOnlyList<RemoteRepo> cached = await _service.GetOrganizationReposAsync(token);
+
+        _service.ClearCache();
+        IReadOnlyList<RemoteRepo> refreshed = await _service.GetOrganizationReposAsync(token);
+
+        Assert.Equal("FCP-Weapons", Assert.Single(cached).Name);
+        Assert.Equal("FCP-Armor", Assert.Single(refreshed).Name);
+        Assert.Equal(2, _handler.RequestCount);
+    }
+
+    [Fact]
     public async Task RateLimitHeaders_Parsed()
     {
         CancellationToken token = TestContext.Current.CancellationToken;

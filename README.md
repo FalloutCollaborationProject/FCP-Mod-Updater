@@ -141,6 +141,12 @@ The tool opens an interactive menu — use the **arrow keys** to navigate, **Ent
 2. Choose the mod you want to manage
 3. Select **Switch Branch** to pick a branch, or **Checkout Specific Commit** to pin to a specific version
 
+### To clear cached data and refresh mod status:
+1. Select **Clear Cache & Refresh** from the main menu
+2. The manager retrieves the FCP repository list again, rescans the Mods directory, and fetches the latest Git status for every installed Git mod
+
+This does not pull updates, switch versions, or overwrite local changes.
+
 ### To Batch Update Mods
 
 ```bash

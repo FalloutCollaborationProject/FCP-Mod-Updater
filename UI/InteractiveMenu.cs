@@ -66,7 +66,7 @@ public class InteractiveMenu
                         "Uninstall Mods",
                         "Convert Local to Git",
                         "Mod Version Selector",
-                        "Refresh Status",
+                        "Clear Cache & Refresh",
                         "Exit"
                     ), ct);
 
@@ -79,7 +79,7 @@ public class InteractiveMenu
                     "Uninstall Mods" => await HandleUninstallAsync(ct),
                     "Convert Local to Git" => await HandleConvertAsync(ct),
                     "Mod Version Selector" => await HandleVersionSelectorAsync(ct),
-                    "Refresh Status" => await HandleRefreshAsync(ct),
+                    "Clear Cache & Refresh" => await HandleClearCacheAndRefreshAsync(ct),
                     "Exit" => true,
                     _ => false
                 };
@@ -549,8 +549,9 @@ public class InteractiveMenu
         WaitForKey();
     }
 
-    private async Task<bool> HandleRefreshAsync(CancellationToken ct)
+    private async Task<bool> HandleClearCacheAndRefreshAsync(CancellationToken ct)
     {
+        _gitHubApiService.ClearCache();
         await RefreshModsAsync(ct);
         return false;
     }
