@@ -39,6 +39,7 @@ public class InteractiveMenu
         while (!ct.IsCancellationRequested)
         {
             AnsiConsole.Clear();
+            TerminalTheme.WriteHeader();
             ModTableRenderer.RenderModTable(_mods, _gitHubApiService.RemainingRateLimit,
                 _gitHubApiService.RateLimitReset);
 
@@ -56,8 +57,7 @@ public class InteractiveMenu
             AnsiConsole.WriteLine();
 
             var choice = await AnsiConsole.PromptAsync(
-                new SelectionPrompt<string>()
-                    .Title("[bold]What would you like to do?[/]")
+                TerminalTheme.Selection<string>("Select operation")
                     .PageSize(10)
                     .AddCancelResult("Exit")
                     .AddChoices(
@@ -93,8 +93,9 @@ public class InteractiveMenu
             }
             catch (Exception ex)
             {
-                AnsiConsole.WriteException(ex);
-                AnsiConsole.MarkupLine("\n[grey]Press any key to continue...[/]");
+                AnsiConsole.WriteException(ex, TerminalTheme.ExceptionSettings);
+                AnsiConsole.WriteLine();
+                TerminalTheme.WriteMessage("PRESS ANY KEY TO CONTINUE", TerminalMessageKind.Muted);
                 Console.ReadKey(true);
             }
         }
@@ -115,17 +116,18 @@ public class InteractiveMenu
 
         if (updateableMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[green]All mods are up to date![/]");
+            TerminalTheme.WriteMessage("ALL MOD RECORDS CURRENT", TerminalMessageKind.Success);
             WaitForKey();
             return false;
         }
 
-        var prompt = new MultiSelectionPrompt<InstalledMod>()
-            .Title("[bold]Select mods to update:[/]")
+        var prompt = TerminalTheme.MultiSelection<InstalledMod>("Select mods to update")
             .PageSize(15)
             .Required(false)
             .AddCancelResult()
-            .UseConverter(mod => $"{mod.Name} [grey]({mod.CommitsBehind} commits behind)[/]");
+            .UseConverter(mod =>
+                $"{Markup.Escape(mod.Name)} [{TerminalTheme.Dim.ToMarkup()}]" +
+                $"({mod.CommitsBehind} REVISIONS BEHIND)[/]");
 
         foreach (InstalledMod mod in updateableMods)
         {
@@ -139,7 +141,7 @@ public class InteractiveMenu
 
         // Show incoming commits for each selected mod
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold]Incoming commits:[/]");
+        TerminalTheme.WriteSection("Incoming revisions");
         AnsiConsole.WriteLine();
 
         foreach (InstalledMod mod in selected)
@@ -148,7 +150,7 @@ public class InteractiveMenu
             ModTableRenderer.RenderIncomingCommits(mod, commits);
         }
 
-        if (!await AnsiConsole.ConfirmAsync("Proceed with update?", true, ct))
+        if (!await TerminalTheme.ConfirmAsync("Proceed with update?", true, ct))
             return false;
 
         var results = await ProgressReporter.WithBatchProgressAsync(
@@ -174,15 +176,14 @@ public class InteractiveMenu
 
         if (availableRepos.Count == 0)
         {
-            AnsiConsole.MarkupLine("[green]All FCP mods are already installed![/]");
+            TerminalTheme.WriteMessage("ALL AVAILABLE FCP MODS ALREADY INSTALLED",
+                TerminalMessageKind.Success);
             WaitForKey();
             return false;
         }
 
         List<RemoteRepo> selectedRepos = await AnsiConsole.PromptAsync(
-            new MultiSelectionPrompt<RemoteRepo>()
-                .Title("[bold]Select mods to install:[/]")
-                .InstructionsText("[grey](Press <space> to mark a mod for install, <enter> to confirm)[/]")
+            TerminalTheme.MultiSelection<RemoteRepo>("Select mods to install")
                 .PageSize(15)
                 .NotRequired()
                 .WrapAround() // Pressing down on last item goes to first
@@ -219,15 +220,13 @@ public class InteractiveMenu
 
         if (installedMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No FCP mods installed.[/]");
+            TerminalTheme.WriteMessage("NO FCP MOD RECORDS INSTALLED", TerminalMessageKind.Warning);
             WaitForKey();
             return false;
         }
 
         List<InstalledMod> selected = await AnsiConsole.PromptAsync(
-            new MultiSelectionPrompt<InstalledMod>()
-                .Title("[bold red]Select mods to uninstall:[/]")
-                .InstructionsText("[grey](Press <space> to mark a mod for uninstallation, <enter> to confirm)[/]")
+            TerminalTheme.MultiSelection<InstalledMod>("Select mods to uninstall")
                 .PageSize(15)
                 .NotRequired()
                 .WrapAround()
@@ -239,25 +238,26 @@ public class InteractiveMenu
             return false;
 
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold red]WARNING: This will permanently delete the following mods:[/]");
+        TerminalTheme.WriteMessage("PERMANENT DELETION AUTHORIZATION REQUIRED",
+            TerminalMessageKind.Failure);
         foreach (InstalledMod mod in selected)
         {
-            AnsiConsole.MarkupLine($"  [red]• {mod.Name}[/] ({mod.Path})");
+            TerminalTheme.WriteMessage($"{mod.Name} // {mod.Path}", TerminalMessageKind.Failure);
         }
 
         AnsiConsole.WriteLine();
 
-        if (!await AnsiConsole.ConfirmAsync("[red]Are you sure you want to delete these mods?[/]", defaultValue: false,
-                cancellationToken: ct))
+        if (!await TerminalTheme.ConfirmAsync("Are you sure you want to delete these mods?",
+                defaultValue: false, cancellationToken: ct))
         {
             return false;
         }
 
         // Double confirmation
-        var confirmText = await AnsiConsole.AskAsync<string>("Type [red]DELETE[/] to confirm:", ct);
+        var confirmText = await TerminalTheme.AskAsync("Type DELETE to confirm:", ct);
         if (confirmText != "DELETE")
         {
-            AnsiConsole.MarkupLine("[grey]Uninstall cancelled.[/]");
+            TerminalTheme.WriteMessage("UNINSTALLATION CANCELLED", TerminalMessageKind.Muted);
             WaitForKey();
             return false;
         }
@@ -292,18 +292,20 @@ public class InteractiveMenu
 
         if (nonGitMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[grey]No local mods found that match FCP repositories.[/]");
+            TerminalTheme.WriteMessage("NO LOCAL MODS MATCH FCP REPOSITORY RECORDS",
+                TerminalMessageKind.Muted);
             WaitForKey();
             return false;
         }
 
         var selected = await AnsiConsole.PromptAsync(
-            new MultiSelectionPrompt<InstalledMod>()
-                .Title("[bold]Select mods to convert to Git:[/]")
+            TerminalTheme.MultiSelection<InstalledMod>("Select mods to convert to Git")
                 .PageSize(15)
                 .Required(false)
                 .AddCancelResult()
-                .UseConverter(m => $"{m.Name} [grey]→ will clone from {m.MatchedRepoName}[/]")
+                .UseConverter(m =>
+                    $"{Markup.Escape(m.Name)} [{TerminalTheme.Dim.ToMarkup()}]// CLONE FROM " +
+                    $"{Markup.Escape(m.MatchedRepoName ?? "UNKNOWN")}[/]")
                 .AddChoices(nonGitMods), ct);
 
         if (selected.Count == 0)
@@ -311,10 +313,12 @@ public class InteractiveMenu
             return false;
         }
 
-        AnsiConsole.MarkupLine("[yellow]Warning: This will replace local folders with fresh git clones.[/]");
-        AnsiConsole.MarkupLine("[yellow]Any local modifications (except About.xml changes) will be lost.[/]");
+        TerminalTheme.WriteMessage("LOCAL FOLDERS WILL BE REPLACED WITH FRESH GIT CLONES",
+            TerminalMessageKind.Warning);
+        TerminalTheme.WriteMessage("LOCAL MODIFICATIONS EXCEPT ABOUT.XML CHANGES WILL BE LOST",
+            TerminalMessageKind.Warning);
 
-        if (!await AnsiConsole.ConfirmAsync("Proceed with conversion?", cancellationToken: ct))
+        if (!await TerminalTheme.ConfirmAsync("Proceed with conversion?", cancellationToken: ct))
         {
             return false;
         }
@@ -360,18 +364,19 @@ public class InteractiveMenu
 
         if (gitMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No git-based mods found.[/]");
+            TerminalTheme.WriteMessage("NO GIT-BASED MOD RECORDS FOUND", TerminalMessageKind.Warning);
             WaitForKey();
             return false;
         }
 
         InstalledMod? mod = await AnsiConsole.PromptAsync(
-            new SelectionPrompt<InstalledMod>()
-                .Title("[bold]Select a mod to manage:[/]")
+            TerminalTheme.Selection<InstalledMod>("Select a mod to manage")
                 .PageSize(15)
                 .AddCancelResult(InstalledMod.Invalid)
                 .UseConverter(m =>
-                    $"{m.Name} [grey]({m.Branch ?? "detached"} @ {m.CurrentCommit?.ShortHash ?? "unknown"})[/]")
+                    $"{Markup.Escape(m.Name)} [{TerminalTheme.Dim.ToMarkup()}]" +
+                    $"({Markup.Escape(m.Branch ?? "DETACHED")} @ " +
+                    $"{Markup.Escape(m.CurrentCommit?.ShortHash ?? "UNKNOWN")})[/]")
                 .AddChoices(gitMods), ct);
 
         if (mod == InstalledMod.Invalid)
@@ -379,20 +384,20 @@ public class InteractiveMenu
 
         // Show current state
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[bold]{mod.Name}[/]");
-        AnsiConsole.MarkupLine($"  Branch: [cyan]{mod.Branch ?? "detached HEAD"}[/]");
-        AnsiConsole.MarkupLine($"  Commit: [grey]{mod.CurrentCommit?.ShortHash ?? "unknown"}[/]");
+        TerminalTheme.WriteSection(mod.Name);
+        TerminalTheme.WriteMessage($"BRANCH // {mod.Branch ?? "DETACHED HEAD"}");
+        TerminalTheme.WriteMessage($"REVISION // {mod.CurrentCommit?.ShortHash ?? "UNKNOWN"}",
+            TerminalMessageKind.Muted);
 
         if (mod.HasLocalChanges)
         {
-            AnsiConsole.MarkupLine("  [yellow]⚠ Has local modifications[/]");
+            TerminalTheme.WriteMessage("LOCAL MODIFICATIONS DETECTED", TerminalMessageKind.Warning);
         }
 
         AnsiConsole.WriteLine();
 
         var action = await AnsiConsole.PromptAsync(
-            new SelectionPrompt<string>()
-                .Title("What would you like to do?")
+            TerminalTheme.Selection<string>("Select version operation")
                 .AddCancelResult("Back to Main Menu")
                 .AddChoices(
                     "Switch Branch",
@@ -405,8 +410,8 @@ public class InteractiveMenu
 
         if (mod.HasLocalChanges)
         {
-            AnsiConsole.MarkupLine("[yellow]Warning: You have local changes that may be affected.[/]");
-            if (!await AnsiConsole.ConfirmAsync("Continue anyway?", cancellationToken: ct))
+            TerminalTheme.WriteMessage("LOCAL CHANGES MAY BE AFFECTED", TerminalMessageKind.Warning);
+            if (!await TerminalTheme.ConfirmAsync("Continue anyway?", cancellationToken: ct))
             {
                 return false;
             }
@@ -438,14 +443,13 @@ public class InteractiveMenu
 
         if (branches.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No remote branches found.[/]");
+            TerminalTheme.WriteMessage("NO REMOTE BRANCH RECORDS FOUND", TerminalMessageKind.Warning);
             WaitForKey();
             return;
         }
 
         var branch = await AnsiConsole.PromptAsync(
-            new SelectionPrompt<string>()
-                .Title("Select branch:")
+            TerminalTheme.Selection<string>("Select branch")
                 .PageSize(15)
                 .AddCancelResult("Exit")
                 .AddChoices(branches), ct);
@@ -457,9 +461,9 @@ public class InteractiveMenu
             $"Switching to {branch}...",
             async () => await _gitService.CheckoutAsync(mod.Path, branch, ct));
 
-        AnsiConsole.MarkupLine(success
-            ? $"[green]Switched to branch '{branch}'[/]"
-            : $"[red]Failed to switch to branch '{branch}'[/]");
+        TerminalTheme.WriteMessage(
+            success ? $"BRANCH ACTIVE // {branch}" : $"BRANCH SWITCH FAILED // {branch}",
+            success ? TerminalMessageKind.Success : TerminalMessageKind.Failure);
 
         WaitForKey();
     }
@@ -472,14 +476,13 @@ public class InteractiveMenu
 
         if (commits.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No commits found.[/]");
+            TerminalTheme.WriteMessage("NO REVISION RECORDS FOUND", TerminalMessageKind.Warning);
             WaitForKey();
             return;
         }
 
         var method = await AnsiConsole.PromptAsync(
-            new SelectionPrompt<string>()
-                .Title("How would you like to select a commit?")
+            TerminalTheme.Selection<string>("Select revision method")
                 .AddCancelResult("Exit")
                 .AddChoices(
                     "Pick from history",
@@ -494,10 +497,10 @@ public class InteractiveMenu
             }
             case "Enter commit hash manually":
             {
-                var manualHash = (await AnsiConsole.AskAsync<string>("Enter commit hash:", ct)).Trim();
+                var manualHash = (await TerminalTheme.AskAsync("Enter commit hash:", ct)).Trim();
                 if (string.IsNullOrEmpty(manualHash))
                 {
-                    AnsiConsole.MarkupLine("[yellow]No commit hash provided.[/]");
+                    TerminalTheme.WriteMessage("NO REVISION HASH PROVIDED", TerminalMessageKind.Warning);
                     WaitForKey();
                     return;
                 }
@@ -510,12 +513,15 @@ public class InteractiveMenu
 
                 if (success)
                 {
-                    AnsiConsole.MarkupLine($"[green]Checked out commit {label}[/]");
-                    AnsiConsole.MarkupLine("[yellow]Note: You are now in 'detached HEAD' state.[/]");
+                    TerminalTheme.WriteMessage($"REVISION ACTIVE // {label}",
+                        TerminalMessageKind.Success);
+                    TerminalTheme.WriteMessage("REPOSITORY NOW IN DETACHED HEAD STATE",
+                        TerminalMessageKind.Warning);
                 }
                 else
                 {
-                    AnsiConsole.MarkupLine($"[red]Failed to checkout commit {label}[/]");
+                    TerminalTheme.WriteMessage($"REVISION CHECKOUT FAILED // {label}",
+                        TerminalMessageKind.Failure);
                 }
 
                 break;
@@ -523,12 +529,13 @@ public class InteractiveMenu
             default:
             {
                 GitCommitInfo commit = await AnsiConsole.PromptAsync(
-                    new SelectionPrompt<GitCommitInfo>()
-                        .Title("Select commit:")
+                    TerminalTheme.Selection<GitCommitInfo>("Select revision")
                         .PageSize(15)
                         .AddCancelResult(GitCommitInfo.Invalid)
                         .UseConverter(c =>
-                            $"[yellow]{c.ShortHash}[/] [grey]{c.Date.ToLocalTime():yyyy-MM-dd}[/] {Markup.Escape(Truncate(c.Message, 50))}")
+                            $"[{TerminalTheme.Warning.ToMarkup()}]{Markup.Escape(c.ShortHash)}[/] " +
+                            $"[{TerminalTheme.Dim.ToMarkup()}]{c.Date.ToLocalTime():yyyy-MM-dd}[/] " +
+                            $"{Markup.Escape(Truncate(c.Message, 50))}")
                         .AddChoices(commits), ct);
 
                 if (commit == GitCommitInfo.Invalid)
@@ -539,9 +546,11 @@ public class InteractiveMenu
                     $"Resetting {currentBranch} to {commit.ShortHash}...",
                     async () => await _gitService.ResetToCommitAsync(mod.Path, commit.Hash, ct));
 
-                AnsiConsole.MarkupLine(success
-                    ? $"[green]Reset branch '{currentBranch}' to commit {commit.ShortHash}[/]"
-                    : $"[red]Failed to reset to commit {commit.ShortHash}[/]");
+                TerminalTheme.WriteMessage(
+                    success
+                        ? $"BRANCH {currentBranch} RESET TO {commit.ShortHash}"
+                        : $"REVISION RESET FAILED // {commit.ShortHash}",
+                    success ? TerminalMessageKind.Success : TerminalMessageKind.Failure);
                 break;
             }
         }
@@ -559,7 +568,7 @@ public class InteractiveMenu
     private static void WaitForKey()
     {
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[grey]Press any key to continue...[/]");
+        TerminalTheme.WriteMessage("PRESS ANY KEY TO CONTINUE", TerminalMessageKind.Muted);
         Console.ReadKey(true);
     }
 
@@ -581,11 +590,14 @@ public class InteractiveMenu
 
     private static string FormatInstallRepoChoice(RemoteRepo repo)
     {
-        var warning = IsNotRecommended(repo) ? " [yellow](not recommended for use)[/]" : string.Empty;
+        var warning = IsNotRecommended(repo)
+            ? $" [{TerminalTheme.Warning.ToMarkup()}](NOT RECOMMENDED FOR USE)[/]"
+            : string.Empty;
 
         return string.IsNullOrEmpty(repo.Description)
-            ? $"{repo.Name}{warning}"
-            : $"{repo.Name}{warning} [grey]— {Truncate(repo.Description, 50)}[/]";
+            ? $"{Markup.Escape(repo.Name)}{warning}"
+            : $"{Markup.Escape(repo.Name)}{warning} [{TerminalTheme.Dim.ToMarkup()}]// " +
+              $"{Markup.Escape(Truncate(repo.Description, 50))}[/]";
     }
 
     private static string Truncate(string text, int maxLength)

@@ -6,25 +6,33 @@ namespace FCPModUpdater.UI;
 
 public static class AppUpdateNoticeRenderer
 {
-    public static void Render(UpdateCheckResult updateResult)
+    public static void Render(UpdateCheckResult updateResult, IAnsiConsole? console = null)
     {
-        var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
+        console ??= AnsiConsole.Console;
+        var label = updateResult.IsPrerelease ? "PRE-RELEASE AVAILABLE" : "UPDATE AVAILABLE";
         var updateCommand = GetUpdateCommand();
         var content = new Rows(
             new Markup(
-                $"[yellow bold]{label}: v{Markup.Escape(updateResult.LatestVersion)}[/] [Grey66](current: [/][Grey66 dim bold]{Markup.Escape(updateResult.CurrentVersion)}[/][Grey66])[/]"),
-            new Markup($"[Grey66]Close this app before updating and run:[/] [underline]{Markup.Escape(updateCommand)}[/]"),
-            new Markup($"[Grey66]Manual download:[/] [link]{Markup.Escape(updateResult.ReleaseUrl)}[/]"));
+                $"[bold {TerminalTheme.Warning.ToMarkup()}]{label} // V{Markup.Escape(updateResult.LatestVersion)}[/] " +
+                $"[{TerminalTheme.Dim.ToMarkup()}](CURRENT: V{Markup.Escape(updateResult.CurrentVersion)})[/]"),
+            new Markup(
+                $"[{TerminalTheme.Dim.ToMarkup()}]PROCEDURE> CLOSE APPLICATION AND EXECUTE:[/] " +
+                $"[underline {TerminalTheme.Bright.ToMarkup()}]{Markup.Escape(updateCommand)}[/]"),
+            new Markup(
+                $"[{TerminalTheme.Dim.ToMarkup()}]MANUAL SOURCE>[/] " +
+                $"[{TerminalTheme.Phosphor.ToMarkup()}]" +
+                $"[link={Markup.Escape(updateResult.ReleaseUrl)}]{Markup.Escape(updateResult.ReleaseUrl)}[/][/]"));
 
         var panel = new Panel(content)
         {
-            Border = BoxBorder.Square,
-            BorderStyle = new Style(Color.Grey, null, Decoration.Dim)
+            Header = new PanelHeader("[[ SYSTEM UPDATE BULLETIN ]]"),
+            Border = console.Profile.Capabilities.Unicode ? BoxBorder.Heavy : BoxBorder.Ascii,
+            BorderStyle = TerminalTheme.WarningStyle
         };
         panel.Padding = new Padding(1, 0, 1, 0);
-        panel.Expand = false;
+        panel.Expand = true;
 
-        AnsiConsole.Write(panel);
+        console.Write(panel);
     }
 
     private static string GetUpdateCommand()

@@ -22,9 +22,10 @@ public class UpdateCommand(
     {
         try
         {
+            TerminalTheme.WriteHeader();
             var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: false);
 
-            AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
+            TerminalTheme.WriteMessage($"MOD DIRECTORY // {modsDirectory}", TerminalMessageKind.Muted);
             AnsiConsole.WriteLine();
 
             Task<UpdateCheckResult?> updateCheckTask = updateCheckService.CheckForUpdateAsync(ct);
@@ -37,15 +38,19 @@ public class UpdateCommand(
 
             if (updateableMods.Count == 0)
             {
-                AnsiConsole.MarkupLine("[green]All FCP mods are up to date![/]");
+                TerminalTheme.WriteMessage("ALL FCP MOD RECORDS CURRENT", TerminalMessageKind.Success);
                 await RenderAppUpdateNoticeAsync(updateCheckTask);
                 return 0;
             }
 
-            AnsiConsole.MarkupLine($"[yellow]Found {updateableMods.Count} mod(s) with updates available:[/]");
+            TerminalTheme.WriteMessage(
+                $"{updateableMods.Count} MOD RECORD(S) REQUIRE UPDATE",
+                TerminalMessageKind.Warning);
             foreach (InstalledMod mod in updateableMods)
             {
-                AnsiConsole.MarkupLine($"  • {mod.Name} [grey]({mod.CommitsBehind} commits behind)[/]");
+                TerminalTheme.WriteMessage(
+                    $"{mod.Name} // {mod.CommitsBehind} REVISIONS BEHIND",
+                    TerminalMessageKind.Warning);
             }
 
             AnsiConsole.WriteLine();
@@ -65,12 +70,12 @@ public class UpdateCommand(
         }
         catch (OperationCanceledException)
         {
-            AnsiConsole.MarkupLine("[grey]Operation cancelled.[/]");
+            TerminalTheme.WriteMessage("OPERATION CANCELLED", TerminalMessageKind.Muted);
             return 1;
         }
         catch (Exception ex)
         {
-            AnsiConsole.WriteException(ex);
+            AnsiConsole.WriteException(ex, TerminalTheme.ExceptionSettings);
             return 1;
         }
     }

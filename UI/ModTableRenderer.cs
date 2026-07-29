@@ -6,23 +6,28 @@ namespace FCPModUpdater.UI;
 public static class ModTableRenderer
 {
     public static void RenderModTable(IReadOnlyList<InstalledMod> mods, int? rateLimit = null,
-        DateTimeOffset? rateLimitReset = null)
+        DateTimeOffset? rateLimitReset = null, IAnsiConsole? console = null)
     {
+        console ??= AnsiConsole.Console;
+
         if (mods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No FCP mods found in the specified directory.[/]");
+            TerminalTheme.WriteMessage("NO FCP MOD RECORDS FOUND IN SPECIFIED DIRECTORY",
+                TerminalMessageKind.Warning, console);
             return;
         }
 
         var table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Grey)
-            .Title("[bold blue]FCP Mod Status[/]")
-            .AddColumn(new TableColumn("[bold]Mod Name[/]").NoWrap())
-            .AddColumn(new TableColumn("[bold]Source[/]").Centered())
-            .AddColumn(new TableColumn("[bold]Branch[/]").Centered())
-            .AddColumn(new TableColumn("[bold]Commit[/]").Centered())
-            .AddColumn(new TableColumn("[bold]Status[/]").Centered());
+            .Border(console.Profile.Capabilities.Unicode ? TableBorder.Heavy : TableBorder.Ascii)
+            .BorderColor(TerminalTheme.Dim)
+            .Title($"[bold {TerminalTheme.Phosphor.ToMarkup()}][[ FCP MOD DATABASE ]][/]")
+            .AddColumn(Header("MOD DESIGNATION").NoWrap())
+            .AddColumn(Header("SOURCE").Centered())
+            .AddColumn(Header("BRANCH").Centered())
+            .AddColumn(Header("REVISION").Centered())
+            .AddColumn(Header("STATUS").Centered());
+
+        var glyphs = TerminalGlyphs.For(console);
 
         foreach (InstalledMod mod in mods)
         {
@@ -31,11 +36,11 @@ public static class ModTableRenderer
                 FormatSource(mod.Source),
                 FormatBranch(mod.Branch),
                 FormatCommit(mod.CurrentCommit),
-                FormatStatus(mod)
+                FormatStatus(mod, glyphs)
             );
         }
 
-        AnsiConsole.Write(table);
+        console.Write(table);
 
         // Status summary
         var gitMods = mods.Where(mod => mod.Source == ModSource.Git).ToList();
@@ -44,9 +49,13 @@ public static class ModTableRenderer
         var localChanges = gitMods.Count(mod => mod.Status == ModStatus.LocalChanges);
         var nonGit = mods.Count(mod => mod.Source != ModSource.Git);
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine(
-            $"[grey]Summary:[/] [green]{upToDate} up to date[/] | [yellow]{behind} updates available[/] | [cyan]{localChanges} with local changes[/] | [grey]{nonGit} non-git[/]");
+        console.WriteLine();
+        console.MarkupLine(
+            $"[{TerminalTheme.Dim.ToMarkup()}]SYS> SUMMARY //[/] " +
+            $"[{TerminalTheme.Phosphor.ToMarkup()}]{upToDate} CURRENT[/] " +
+            $"[{TerminalTheme.Dim.ToMarkup()}]//[/] [{TerminalTheme.Warning.ToMarkup()}]{behind} UPDATE(S)[/] " +
+            $"[{TerminalTheme.Dim.ToMarkup()}]//[/] [{TerminalTheme.Bright.ToMarkup()}]{localChanges} MODIFIED[/] " +
+            $"[{TerminalTheme.Dim.ToMarkup()}]// {nonGit} LOCAL[/]");
 
         if (!rateLimit.HasValue) 
             return;
@@ -54,16 +63,17 @@ public static class ModTableRenderer
         var resetTime = rateLimitReset.HasValue
             ? $" (resets {rateLimitReset.Value.ToLocalTime():HH:mm})"
             : "";
-        var color = rateLimit.Value < 10 ? "yellow" : "grey";
-        AnsiConsole.MarkupLine($"[{color}]GitHub API: {rateLimit.Value} requests remaining{resetTime}[/]");
+        var style = rateLimit.Value < 10 ? TerminalTheme.Warning : TerminalTheme.Dim;
+        console.MarkupLine(
+            $"[{style.ToMarkup()}]NET> GITHUB API // {rateLimit.Value} REQUESTS REMAINING{Markup.Escape(resetTime.ToUpperInvariant())}[/]");
     }
 
     private static string FormatModName(InstalledMod mod)
     {
-        var name = mod.Name;
+        var name = Markup.Escape(mod.Name);
         if (mod.HasLocalChanges)
         {
-            name += " [yellow]*[/]";
+            name += $" [{TerminalTheme.Warning.ToMarkup()}]*[/]";
         }
 
         return name;
@@ -73,94 +83,122 @@ public static class ModTableRenderer
     {
         return source switch
         {
-            ModSource.Git => "[green]Git[/]",
-            ModSource.Local => "[grey]Local[/]",
-            _ => "[grey]?[/]"
+            ModSource.Git => Tag(TerminalTheme.PrimaryStyle, "GIT"),
+            ModSource.Local => Tag(TerminalTheme.DimStyle, "LOCAL"),
+            _ => Tag(TerminalTheme.DimStyle, "?")
         };
     }
 
     private static string FormatBranch(string? branch)
     {
         if (string.IsNullOrEmpty(branch))
-            return "[grey]-[/]";
+            return Tag(TerminalTheme.DimStyle, "-");
 
         return branch == "main" || branch == "master"
-            ? $"[green]{branch}[/]"
-            : $"[yellow]{branch}[/]";
+            ? Tag(TerminalTheme.PrimaryStyle, branch)
+            : Tag(TerminalTheme.WarningStyle, branch);
     }
 
     private static string FormatCommit(GitCommitInfo? commit)
     {
         return commit != null 
-            ? $"[grey]{commit.ShortHash}[/]" 
-            : "[grey]-[/]";
+            ? Tag(TerminalTheme.DimStyle, commit.ShortHash)
+            : Tag(TerminalTheme.DimStyle, "-");
     }
 
-    private static string FormatStatus(InstalledMod mod)
+    private static string FormatStatus(InstalledMod mod, TerminalGlyphs glyphs)
     {
         return mod.Status switch
         {
-            ModStatus.UpToDate => "[green]✓ Up to date[/]",
-            ModStatus.Behind => $"[yellow]↓ {mod.CommitsBehind} behind[/]",
-            ModStatus.Ahead => $"[cyan]↑ {mod.CommitsAhead} ahead[/]",
-            ModStatus.Diverged => $"[red]⇅ Diverged ({mod.CommitsBehind}↓ {mod.CommitsAhead}↑)[/]",
-            ModStatus.LocalChanges => "[cyan]~ Modified[/]",
-            ModStatus.NonGit => "[grey]— Not Git[/]",
-            ModStatus.Error => $"[red]✗ Error[/]",
-            ModStatus.Unknown => "[grey]? Unknown[/]",
-            _ => "[grey]?[/]"
+            ModStatus.UpToDate => Tag(TerminalTheme.PrimaryStyle, $"{glyphs.Success} CURRENT"),
+            ModStatus.Behind => Tag(TerminalTheme.WarningStyle, $"{glyphs.Behind} {mod.CommitsBehind} BEHIND"),
+            ModStatus.Ahead => Tag(TerminalTheme.BrightStyle, $"{glyphs.Ahead} {mod.CommitsAhead} AHEAD"),
+            ModStatus.Diverged => Tag(TerminalTheme.FailureStyle,
+                $"{glyphs.Diverged} DIVERGED ({mod.CommitsBehind}{glyphs.Behind} {mod.CommitsAhead}{glyphs.Ahead})"),
+            ModStatus.LocalChanges => Tag(TerminalTheme.BrightStyle, $"{glyphs.Modified} MODIFIED"),
+            ModStatus.NonGit => Tag(TerminalTheme.DimStyle, $"{glyphs.Empty} NOT GIT"),
+            ModStatus.Error => Tag(TerminalTheme.FailureStyle, $"{glyphs.Failure} ERROR"),
+            ModStatus.Unknown => Tag(TerminalTheme.DimStyle, "? UNKNOWN"),
+            _ => Tag(TerminalTheme.DimStyle, "?")
         };
     }
 
-    public static void RenderUpdateSummary(IReadOnlyList<(string Name, bool Success, string? Error)> results)
+    public static void RenderUpdateSummary(
+        IReadOnlyList<(string Name, bool Success, string? Error)> results,
+        IAnsiConsole? console = null)
     {
-        AnsiConsole.WriteLine();
+        console ??= AnsiConsole.Console;
+        var glyphs = TerminalGlyphs.For(console);
+        console.WriteLine();
 
         Table table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Grey)
-            .Title("[bold]Update Results[/]")
-            .AddColumn("[bold]Mod[/]")
-            .AddColumn("[bold]Result[/]");
+            .Border(console.Profile.Capabilities.Unicode ? TableBorder.Heavy : TableBorder.Ascii)
+            .BorderColor(TerminalTheme.Dim)
+            .Title($"[bold {TerminalTheme.Phosphor.ToMarkup()}][[ OPERATION RESULTS ]][/]")
+            .AddColumn(Header("MOD DESIGNATION"))
+            .AddColumn(Header("RESULT"));
 
         foreach (var (name, success, error) in results)
         {
             var result = success
-                ? "[green]✓ Updated[/]"
-                : $"[red]✗ Failed: {Markup.Escape(error ?? "Unknown error")}[/]";
+                ? Tag(TerminalTheme.PrimaryStyle, $"{glyphs.Success} COMPLETE")
+                : Tag(TerminalTheme.FailureStyle,
+                    $"{glyphs.Failure} FAILED: {error ?? "UNKNOWN ERROR"}");
 
-            table.AddRow(name, result);
+            table.AddRow(Markup.Escape(name), result);
         }
 
-        AnsiConsole.Write(table);
+        console.Write(table);
 
         var successCount = results.Count(r => r.Success);
         var failCount = results.Count(r => !r.Success);
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine(failCount == 0
-            ? $"[green]Successfully updated {successCount} mod(s).[/]"
-            : $"[yellow]Updated {successCount} mod(s), {failCount} failed.[/]");
+        console.WriteLine();
+        TerminalTheme.WriteMessage(
+            failCount == 0
+                ? $"OPERATION COMPLETE // {successCount} MOD(S) PROCESSED"
+                : $"OPERATION PARTIAL // {successCount} COMPLETE // {failCount} FAILED",
+            failCount == 0 ? TerminalMessageKind.Success : TerminalMessageKind.Warning,
+            console);
     }
 
-    public static void RenderIncomingCommits(InstalledMod mod, IReadOnlyList<GitCommitInfo> commits)
+    public static void RenderIncomingCommits(
+        InstalledMod mod,
+        IReadOnlyList<GitCommitInfo> commits,
+        IAnsiConsole? console = null)
     {
+        console ??= AnsiConsole.Console;
+
         if (commits.Count == 0)
         {
-            AnsiConsole.MarkupLine($"[grey]No incoming commits for {mod.Name}[/]");
+            TerminalTheme.WriteMessage($"NO INCOMING REVISIONS FOR {mod.Name}",
+                TerminalMessageKind.Muted, console);
             return;
         }
 
-        var tree = new Tree($"[bold]{mod.Name}[/] [grey]({commits.Count} incoming commits)[/]");
+        var tree = new Tree(
+                $"[bold {TerminalTheme.Bright.ToMarkup()}]{Markup.Escape(mod.Name)}[/] " +
+                $"[{TerminalTheme.Dim.ToMarkup()}]({commits.Count} INCOMING REVISIONS)[/]")
+            .Guide(TreeGuide.BoldLine)
+            .Style(TerminalTheme.DimStyle);
 
         foreach (GitCommitInfo commit in commits)
         {
             var dateStr = commit.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             tree.AddNode(
-                $"[yellow]{commit.ShortHash}[/] [grey]{dateStr}[/] {Markup.Escape(commit.Message)} [grey]— {Markup.Escape(commit.Author)}[/]");
+                $"[{TerminalTheme.Warning.ToMarkup()}]{Markup.Escape(commit.ShortHash)}[/] " +
+                $"[{TerminalTheme.Dim.ToMarkup()}]{dateStr}[/] " +
+                $"[{TerminalTheme.Phosphor.ToMarkup()}]{Markup.Escape(commit.Message)}[/] " +
+                $"[{TerminalTheme.Dim.ToMarkup()}]// {Markup.Escape(commit.Author)}[/]");
         }
 
-        AnsiConsole.Write(tree);
-        AnsiConsole.WriteLine();
+        console.Write(tree);
+        console.WriteLine();
     }
+
+    private static TableColumn Header(string text) =>
+        new($"[bold {TerminalTheme.Phosphor.ToMarkup()}]{text}[/]");
+
+    private static string Tag(Style style, string text) =>
+        $"[{style.ToMarkup()}]{Markup.Escape(text)}[/]";
 }

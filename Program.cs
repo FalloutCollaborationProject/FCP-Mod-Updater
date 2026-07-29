@@ -4,6 +4,7 @@ using FCPModUpdater;
 using FCPModUpdater.Commands;
 using FCPModUpdater.Infrastructure;
 using FCPModUpdater.Services;
+using FCPModUpdater.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -43,7 +44,7 @@ var result = await app.RunAsync(args);
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
     AnsiConsole.WriteLine();
-    AnsiConsole.MarkupLine("[grey]Press any key to exit...[/]");
+    TerminalTheme.WriteMessage("PRESS ANY KEY TO EXIT", TerminalMessageKind.Muted);
     Console.ReadKey(true);
 }
 

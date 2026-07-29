@@ -1,5 +1,6 @@
 using CliWrap;
 using CliWrap.Buffered;
+using FCPModUpdater.UI;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -12,9 +13,11 @@ public sealed class GitRequiredInterceptor : ICommandInterceptor
         if (IsGitInstalled()) return;
         
         // It wasn't installed..
-        AnsiConsole.MarkupLine("[yellow]This application requires Git to manage mods.[/]");
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("Install Git from: [link]https://git-scm.com/downloads[/]");
+        TerminalTheme.WriteHeader();
+        TerminalTheme.WriteMessage("GIT EXECUTABLE NOT DETECTED", TerminalMessageKind.Failure);
+        TerminalTheme.WriteMessage(
+            "MOD MANAGEMENT REQUIRES GIT // INSTALL FROM https://git-scm.com/downloads",
+            TerminalMessageKind.Warning);
 
         throw new GitNotFoundException();
     }

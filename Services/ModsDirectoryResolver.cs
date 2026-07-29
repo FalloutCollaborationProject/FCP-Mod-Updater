@@ -1,4 +1,5 @@
 using Spectre.Console;
+using FCPModUpdater.UI;
 
 namespace FCPModUpdater.Services;
 
@@ -30,27 +31,31 @@ public static class ModsDirectoryResolver
         if (interactive)
         {
             return AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("[bold]Multiple RimWorld installations found. Select one:[/]")
+                TerminalTheme.Selection<string>("Multiple RimWorld installations detected")
                     .PageSize(10)
                     .AddChoices(paths));
         }
 
         // Non-interactive: use first one with warning
-        AnsiConsole.MarkupLine($"[yellow]Multiple installations found, using: {paths[0]}[/]");
-        AnsiConsole.MarkupLine("[grey]Use --directory to specify a different path[/]");
+        TerminalTheme.WriteMessage($"MULTIPLE INSTALLATIONS DETECTED // USING {paths[0]}",
+            TerminalMessageKind.Warning);
+        TerminalTheme.WriteMessage("USE --DIRECTORY TO SPECIFY AN ALTERNATE PATH",
+            TerminalMessageKind.Muted);
         return paths[0];
     }
 
     private static string PromptForPath()
     {
-        AnsiConsole.MarkupLine("[yellow]Could not auto-detect RimWorld Mods folder.[/]");
-        AnsiConsole.MarkupLine("[grey]Tip: Use --directory to skip this prompt in the future[/]");
+        TerminalTheme.WriteMessage("RIMWORLD MOD DIRECTORY AUTO-DETECTION FAILED",
+            TerminalMessageKind.Warning);
+        TerminalTheme.WriteMessage("USE --DIRECTORY TO BYPASS FUTURE PATH SCANS",
+            TerminalMessageKind.Muted);
         AnsiConsole.WriteLine();
 
         return AnsiConsole.Prompt(
-            new TextPrompt<string>("[bold]Enter the path to your RimWorld Mods folder (ctrl + c to exit):[/]")
-                .ValidationErrorMessage("[red]That directory does not exist[/]")
+            TerminalTheme.TextPrompt("Enter RimWorld Mods directory (ctrl + c to exit):")
+                .ValidationErrorMessage(
+                    $"[{TerminalTheme.Failure.ToMarkup()}]DIRECTORY DOES NOT EXIST[/]")
                 .Validate(path => Directory.Exists(path)
                     ? ValidationResult.Success()
                     : ValidationResult.Error()));

@@ -19,9 +19,10 @@ public class ScanCommand(
     {
         try
         {
+            TerminalTheme.WriteHeader();
             var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: true);
 
-            AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
+            TerminalTheme.WriteMessage($"MOD DIRECTORY // {modsDirectory}", TerminalMessageKind.Muted);
             AnsiConsole.WriteLine();
 
             Task<UpdateCheckResult?> updateCheckTask = updateCheckService.CheckForUpdateAsync(cancellationToken);
@@ -39,12 +40,12 @@ public class ScanCommand(
         }
         catch (OperationCanceledException)
         {
-            AnsiConsole.MarkupLine("[grey]Operation cancelled.[/]");
+            TerminalTheme.WriteMessage("OPERATION CANCELLED", TerminalMessageKind.Muted);
             return 1;
         }
         catch (Exception ex)
         {
-            AnsiConsole.WriteException(ex);
+            AnsiConsole.WriteException(ex, TerminalTheme.ExceptionSettings);
             return 1;
         }
     }

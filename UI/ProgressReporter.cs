@@ -4,32 +4,38 @@ namespace FCPModUpdater.UI;
 
 public static class ProgressReporter
 {
-    public static async Task<T> WithStatusAsync<T>(string status, Func<Task<T>> action)
+    public static async Task<T> WithStatusAsync<T>(
+        string status,
+        Func<Task<T>> action,
+        IAnsiConsole? console = null)
     {
-        return await AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .SpinnerStyle(Style.Parse("blue"))
-            .StartAsync(status, async _ => await action());
+        console ??= AnsiConsole.Console;
+        return await console.Status()
+            .Spinner(Spinner.Known.Toggle)
+            .SpinnerStyle(TerminalTheme.PrimaryStyle)
+            .StartAsync($"SYS> {status.ToUpperInvariant()}", async _ => await action());
     }
 
-    public static async Task WithStatusAsync(string status, Func<Task> action)
+    public static async Task WithStatusAsync(
+        string status,
+        Func<Task> action,
+        IAnsiConsole? console = null)
     {
-        await AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .SpinnerStyle(Style.Parse("blue"))
-            .StartAsync(status, async _ => await action());
+        console ??= AnsiConsole.Console;
+        await console.Status()
+            .Spinner(Spinner.Known.Toggle)
+            .SpinnerStyle(TerminalTheme.PrimaryStyle)
+            .StartAsync($"SYS> {status.ToUpperInvariant()}", async _ => await action());
     }
 
     public static async Task WithProgressAsync(
         string description,
-        IEnumerable<(string Name, Func<ProgressTask, Task> Action)> tasks)
+        IEnumerable<(string Name, Func<ProgressTask, Task> Action)> tasks,
+        IAnsiConsole? console = null)
     {
-        await AnsiConsole.Progress()
-            .Columns(
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new SpinnerColumn())
+        console ??= AnsiConsole.Console;
+        await console.Progress()
+            .Columns(CreateColumns())
             .StartAsync(async ctx =>
             {
                 var taskList = tasks.ToList();
@@ -49,24 +55,24 @@ public static class ProgressReporter
         string description,
         IReadOnlyList<T> items,
         Func<T, string> nameSelector,
-        Func<T, IProgress<double>, Task<(bool Success, string? Error)>> action)
+        Func<T, IProgress<double>, Task<(bool Success, string? Error)>> action,
+        IAnsiConsole? console = null)
     {
+        console ??= AnsiConsole.Console;
         var itemTasks = new List<ProgressTask>();
 
-        await AnsiConsole.Progress()
-            .Columns(
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new SpinnerColumn())
+        await console.Progress()
+            .Columns(CreateColumns())
             .StartAsync(async ctx =>
             {
-                ProgressTask overallTask = ctx.AddTask($"[bold]{description}[/]", maxValue: items.Count);
+                ProgressTask overallTask = ctx.AddTask(
+                    $"[bold {TerminalTheme.Phosphor.ToMarkup()}]SYS> {Markup.Escape(description.ToUpperInvariant())}[/]",
+                    maxValue: items.Count);
 
                 foreach (T item in items)
                 {
                     var name = nameSelector(item);
-                    ProgressTask itemTask = ctx.AddTask($"  {name}");
+                    ProgressTask itemTask = ctx.AddTask($"  {Markup.Escape(name)}");
                     itemTasks.Add(itemTask);
 
                     var progress = new Progress<double>(p => itemTask.Value = p);
@@ -78,14 +84,15 @@ public static class ProgressReporter
                         itemTask.Value = 100;
 
                         itemTask.Description = success
-                            ? $"  [green]{name}[/]"
-                            : $"  [red]{name}[/]";
+                            ? $"  [{TerminalTheme.Phosphor.ToMarkup()}]{Markup.Escape(name)}[/]"
+                            : $"  [{TerminalTheme.Failure.ToMarkup()}]{Markup.Escape(name)}[/]";
                     }
                     catch (Exception ex)
                     {
                         itemTask.Tag(new BatchResult(name, false, ex.Message));
                         itemTask.Value = 100;
-                        itemTask.Description = $"  [red]{name}[/]";
+                        itemTask.Description =
+                            $"  [{TerminalTheme.Failure.ToMarkup()}]{Markup.Escape(name)}[/]";
                     }
 
                     overallTask.Increment(1);
@@ -97,6 +104,31 @@ public static class ProgressReporter
             .Select(r => (r.Name, r.Success, r.Error))
             .ToList();
     }
+
+    internal static ProgressColumn[] CreateColumns() =>
+    [
+        new TaskDescriptionColumn(),
+        new ProgressBarColumn
+        {
+            CompletedStyle = TerminalTheme.PrimaryStyle,
+            FinishedStyle = TerminalTheme.BrightStyle,
+            RemainingStyle = TerminalTheme.DimStyle,
+            IndeterminateStyle = TerminalTheme.WarningStyle
+        },
+        new PercentageColumn
+        {
+            Style = TerminalTheme.DimStyle,
+            CompletedStyle = TerminalTheme.PrimaryStyle
+        },
+        new SpinnerColumn(Spinner.Known.Toggle)
+        {
+            Style = TerminalTheme.PrimaryStyle,
+            CompletedText = "OK",
+            CompletedStyle = TerminalTheme.PrimaryStyle,
+            PendingText = "--",
+            PendingStyle = TerminalTheme.DimStyle
+        }
+    ];
 
     private record BatchResult(string Name, bool Success, string? Error);
 }
