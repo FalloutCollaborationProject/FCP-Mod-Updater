@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="FCPModUpdater.csproj" />
+  <Project Path="FCPModUpdater.Core/FCPModUpdater.Core.csproj" />
+  <Project Path="FCPModUpdater.Gui/FCPModUpdater.Gui.csproj" />
   <Project Path="FCPModUpdater.Tests/FCPModUpdater.Tests.csproj" />
 </Solution>

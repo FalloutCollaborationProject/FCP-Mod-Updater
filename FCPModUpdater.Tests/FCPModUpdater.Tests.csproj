@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../FCPModUpdater.csproj" />
+    <ProjectReference Include="../FCPModUpdater.Core/FCPModUpdater.Core.csproj" />
+    <ProjectReference Include="../FCPModUpdater.Gui/FCPModUpdater.Gui.csproj" />
   </ItemGroup>
 
 </Project>

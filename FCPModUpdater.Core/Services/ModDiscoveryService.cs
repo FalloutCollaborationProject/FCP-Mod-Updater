@@ -134,6 +134,7 @@ public class ModDiscoveryService : IModDiscoveryService
             string? branch = branchTask.Result;
             GitCommitInfo? currentCommit = commitTask.Result;
             bool hasLocalChanges = changesTask.Result;
+            GitOperationResult fetchResult = fetchTask.Result;
 
             // Phase 2: Get commit difference (needs fetch to complete first)
             (int behind, int ahead) = await _gitService.GetCommitDifferenceAsync(path, ct);
@@ -151,7 +152,8 @@ public class ModDiscoveryService : IModDiscoveryService
                 Status = status,
                 CommitsBehind = behind,
                 CommitsAhead = ahead,
-                HasLocalChanges = hasLocalChanges
+                HasLocalChanges = hasLocalChanges,
+                FetchError = fetchResult is { Success: false } ? fetchResult : null
             };
         }
         catch (Exception ex)

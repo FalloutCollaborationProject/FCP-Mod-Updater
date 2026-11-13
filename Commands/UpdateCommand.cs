@@ -15,7 +15,7 @@ public class UpdateCommand(
     UpdateCheckService updateCheckService) : AsyncCommand<ModPathSettings>
 {
     public static IReadOnlyList<InstalledMod> GetUpdateableMods(IReadOnlyList<InstalledMod> mods)
-        => mods.Where(m => m.Source == ModSource.Git && m.Status == ModStatus.Behind).ToList();
+        => ModCatalog.GetUpdateableMods(mods);
 
     protected override async Task<int> ExecuteAsync(CommandContext context, ModPathSettings settings,
         CancellationToken ct)

@@ -1,5 +1,4 @@
-using CliWrap;
-using CliWrap.Buffered;
+using FCPModUpdater.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -9,7 +8,7 @@ public sealed class GitRequiredInterceptor : ICommandInterceptor
 {
     public void Intercept(CommandContext context, CommandSettings settings)
     {
-        if (IsGitInstalled()) return;
+        if (GitService.IsGitInstalledAsync().GetAwaiter().GetResult()) return;
         
         // It wasn't installed..
         AnsiConsole.MarkupLine("[yellow]This application requires Git to manage mods.[/]");
@@ -17,25 +16,6 @@ public sealed class GitRequiredInterceptor : ICommandInterceptor
         AnsiConsole.MarkupLine("Install Git from: [link]https://git-scm.com/downloads[/]");
 
         throw new GitNotFoundException();
-    }
-
-    private static bool IsGitInstalled()
-    {
-        try
-        {
-            var result = Cli.Wrap("git")
-                .WithArguments("--version")
-                .WithValidation(CommandResultValidation.None)
-                .ExecuteBufferedAsync()
-                .GetAwaiter()
-                .GetResult();
-
-            return result.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
-        }
     }
 }
 

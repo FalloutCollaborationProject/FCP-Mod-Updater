@@ -1,20 +1,14 @@
-using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using FCPModUpdater;
 using FCPModUpdater.Commands;
 using FCPModUpdater.Infrastructure;
-using FCPModUpdater.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 var services = new ServiceCollection();
 
-services.AddHttpClient<IGitHubApiService, GitHubApiService>(ConfigureGitHubClient);
-services.AddHttpClient<UpdateCheckService>(ConfigureGitHubClient);
-
-services.AddSingleton<IGitService, GitService>();
-services.AddSingleton<IModDiscoveryService, ModDiscoveryService>();
+services.AddFcpCore();
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -48,14 +42,3 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 }
 
 return result;
-
-void ConfigureGitHubClient(HttpClient client)
-{
-    client.BaseAddress = new Uri("https://api.github.com");
-    client.DefaultRequestHeaders.UserAgent.ParseAdd($"FCPModUpdater/{AppVersion.SemanticVersion}");
-    client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
-
-    var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-    if (!string.IsNullOrEmpty(token))
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-}

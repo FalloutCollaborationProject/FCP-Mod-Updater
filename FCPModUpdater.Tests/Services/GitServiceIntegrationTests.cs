@@ -51,6 +51,73 @@ public class GitServiceIntegrationTests : IDisposable
         return dir;
     }
 
+    private sealed class RecordingSink : IGitOutputSink
+    {
+        public List<string> Events { get; } = [];
+
+        public void CommandStarted(string target, string arguments)
+        {
+            lock (Events) Events.Add($"start {Path.GetFileName(target)} {arguments}");
+        }
+
+        public void OutputLine(string target, string arguments, string line)
+        {
+            lock (Events) Events.Add($"line {line}");
+        }
+
+        public void CommandFinished(string target, string arguments, int exitCode, TimeSpan duration, string? error)
+        {
+            lock (Events) Events.Add($"finish {exitCode} {(error is null ? "ok" : "error")}");
+        }
+    }
+
+    [Fact]
+    public async Task OutputSink_ReceivesCommandOutputAndExitCode()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await InitRepoWithCommit();
+        File.WriteAllText(Path.Combine(_tempDir, "new.txt"), "x");
+        var sink = new RecordingSink();
+        var service = new GitService(sink);
+
+        Assert.True(await service.HasLocalChangesAsync(_tempDir, ct));
+
+        Assert.Equal(
+            [$"start {Path.GetFileName(_tempDir)} status --porcelain", "line ?? new.txt", "finish 0 ok"],
+            sink.Events);
+    }
+
+    [Fact]
+    public async Task OutputSink_ReportsFailedCommandWithItsError()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await InitRepoWithCommit();
+        var sink = new RecordingSink();
+        var service = new GitService(sink);
+
+        Assert.False(await service.CheckoutAsync(_tempDir, "no-such-branch", ct));
+
+        Assert.StartsWith("start", sink.Events[0]);
+        Assert.Equal("finish 1 error", sink.Events[^1]);
+    }
+
+    [Fact]
+    public async Task GetRemoteBranchInfoAsync_ListsRemoteBranchesWithDates()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var origin = Path.Combine(_tempDir, "origin");
+        var clone = Path.Combine(_tempDir, "clone");
+        Directory.CreateDirectory(origin);
+        await InitRepoWithCommit(origin);
+        await RunGitAsync(origin, "branch dev");
+        await RunGitAsync(_tempDir, $"clone \"{origin}\" clone");
+
+        IReadOnlyList<GitBranchInfo> branches = await _service.GetRemoteBranchInfoAsync(clone, ct);
+
+        Assert.Equal(["dev", "main"], branches.Select(b => b.Name).Order());
+        Assert.All(branches, b => Assert.NotNull(b.LastCommitDate));
+    }
+
     [Fact]
     public async Task IsGitRepositoryAsync_ValidRepo_ReturnsTrue()
     {

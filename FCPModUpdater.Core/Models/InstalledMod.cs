@@ -21,4 +21,7 @@ public record InstalledMod
     public string? MatchedRepoName { get; init; }
     public string? ErrorMessage { get; init; }
     public bool HasLocalChanges { get; init; }
+
+    /// <summary>Set when the fetch during the last scan failed, so the status shown may be stale.</summary>
+    public GitOperationResult? FetchError { get; init; }
 }

@@ -6,8 +6,6 @@ namespace FCPModUpdater.UI;
 
 public class InteractiveMenu
 {
-    internal const string NotRecommendedTopic = "fcp-not-recommended";
-
     private readonly IGitService _gitService;
     private readonly IGitHubApiService _gitHubApiService;
     private readonly IModDiscoveryService _modDiscoveryService;
@@ -109,9 +107,7 @@ public class InteractiveMenu
 
     private async Task<bool> HandleUpdateAsync(CancellationToken ct)
     {
-        var updateableMods = _mods
-            .Where(mod => mod.Source == ModSource.Git && mod.Status == ModStatus.Behind)
-            .ToList();
+        var updateableMods = ModCatalog.GetUpdateableMods(_mods);
 
         if (updateableMods.Count == 0)
         {
@@ -170,7 +166,7 @@ public class InteractiveMenu
             "Fetching available mods...",
             async () => await _gitHubApiService.GetOrganizationReposAsync(ct));
 
-        List<RemoteRepo> availableRepos = GetAvailableInstallRepos(orgRepos, _mods.Select(m => m.Name));
+        List<RemoteRepo> availableRepos = ModCatalog.GetAvailableInstallRepos(orgRepos, _mods.Select(m => m.Name));
 
         if (availableRepos.Count == 0)
         {
@@ -198,13 +194,7 @@ public class InteractiveMenu
             selectedRepos.ToList(),
             repo => repo.Name,
             async (repo, progress) =>
-            {
-                var targetPath = Path.Combine(_modsDirectory, repo.Name);
-
-                var result = await _gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
-
-                return (result.Success, result.Error);
-            });
+                await ModOperations.InstallAsync(_gitService, repo, _modsDirectory, progress, ct));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
@@ -266,15 +256,8 @@ public class InteractiveMenu
 
         foreach (InstalledMod mod in selected)
         {
-            try
-            {
-                Directory.Delete(mod.Path, recursive: true);
-                results.Add((mod.Name, true, null));
-            }
-            catch (Exception ex)
-            {
-                results.Add((mod.Name, false, ex.Message));
-            }
+            var (success, error) = ModOperations.Uninstall(mod);
+            results.Add((mod.Name, success, error));
         }
 
         ModTableRenderer.RenderUpdateSummary(results);
@@ -286,9 +269,7 @@ public class InteractiveMenu
 
     private async Task<bool> HandleConvertAsync(CancellationToken ct)
     {
-        var nonGitMods = _mods
-            .Where(mod => mod.Source != ModSource.Git && !string.IsNullOrEmpty(mod.MatchedRepoName))
-            .ToList();
+        var nonGitMods = ModCatalog.GetConvertibleMods(_mods);
 
         if (nonGitMods.Count == 0)
         {
@@ -324,26 +305,7 @@ public class InteractiveMenu
             items: selected.ToList(),
             nameSelector: mod => mod.Name,
             action: async (mod, progress) =>
-            {
-                RemoteRepo? repo = await _gitHubApiService.GetRepoByNameAsync(mod.MatchedRepoName!, ct);
-                if (repo == null)
-                    return (Success: false, Error: "Repository not found");
-
-                try
-                {
-                    // Delete existing folder
-                    Directory.Delete(mod.Path, recursive: true);
-
-                    // Clone fresh with progress
-                    var result = await _gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);  
-
-                    return (result.Success, result.Error);        
-                }
-                catch (Exception ex)
-                {
-                    return (Success: false, Error: ex.Message);
-                }
-            });
+                await ModOperations.ConvertToGitAsync(_gitService, _gitHubApiService, mod, progress, ct));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
@@ -563,25 +525,9 @@ public class InteractiveMenu
         Console.ReadKey(true);
     }
 
-    private static List<RemoteRepo> GetAvailableInstallRepos(
-        IReadOnlyList<RemoteRepo> orgRepos,
-        IEnumerable<string> installedNames)
-    {
-        var installedNameSet = new HashSet<string>(installedNames, StringComparer.OrdinalIgnoreCase);
-
-        return orgRepos
-            .Where(repo => !installedNameSet.Contains(repo.Name))
-            .OrderBy(IsNotRecommended)
-            .ThenBy(repo => repo.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static bool IsNotRecommended(RemoteRepo repo) =>
-        repo.Topics.Contains(NotRecommendedTopic, StringComparer.OrdinalIgnoreCase);
-
     private static string FormatInstallRepoChoice(RemoteRepo repo)
     {
-        var warning = IsNotRecommended(repo) ? " [yellow](not recommended for use)[/]" : string.Empty;
+        var warning = ModCatalog.IsNotRecommended(repo) ? " [yellow](not recommended for use)[/]" : string.Empty;
 
         return string.IsNullOrEmpty(repo.Description)
             ? $"{repo.Name}{warning}"

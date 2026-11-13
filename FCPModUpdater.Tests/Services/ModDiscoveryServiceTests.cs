@@ -168,6 +168,33 @@ public class DiscoverModsAsyncTests : IDisposable
         Assert.Single(result);
         Assert.Equal(ModSource.Git, result[0].Source);
         Assert.Equal(ModStatus.UpToDate, result[0].Status);
+        Assert.Null(result[0].FetchError);
+    }
+
+    [Fact]
+    public async Task GitRepoWhoseFetchFails_KeepsStatusAndRecordsFetchError()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        CreateModFolder("FCP-Weapons");
+        _gitHubApiService.GetOrganizationReposAsync(Arg.Any<CancellationToken>())
+            .Returns([MakeRepo("FCP-Weapons")]);
+        _gitService.IsGitRepositoryAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+        _gitService.GetRemoteUrlAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("https://github.com/FalloutCollaborationProject/FCP-Weapons.git");
+        _gitService.GetCurrentBranchAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("main");
+        _gitService.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new GitOperationResult(false, 128, "fatal: Could not resolve host: github.com"));
+        _gitService.GetCommitDifferenceAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((Behind: 0, Ahead: 0));
+
+        IReadOnlyList<InstalledMod> result = await _service.DiscoverModsAsync(_tempDir, ct: token);
+
+        InstalledMod mod = Assert.Single(result);
+        Assert.Equal(ModStatus.UpToDate, mod.Status);
+        Assert.Equal(128, mod.FetchError?.ExitCode);
+        Assert.Equal("fatal: Could not resolve host: github.com", mod.FetchError?.Error);
     }
 
     [Fact]

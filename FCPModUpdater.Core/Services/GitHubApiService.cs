@@ -15,6 +15,7 @@ public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
     private DateTimeOffset _cacheTime = DateTimeOffset.MinValue;
 
     public int? RemainingRateLimit { get; private set; }
+    public int? RateLimitTotal { get; private set; }
     public DateTimeOffset? RateLimitReset { get; private set; }
 
     public void ClearCache()
@@ -101,6 +102,12 @@ public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
         {
             if (int.TryParse(remaining.FirstOrDefault(), out var value))
                 RemainingRateLimit = value;
+        }
+
+        if (response.Headers.TryGetValues("X-RateLimit-Limit", out var limit))
+        {
+            if (int.TryParse(limit.FirstOrDefault(), out var value))
+                RateLimitTotal = value;
         }
 
         if (response.Headers.TryGetValues("X-RateLimit-Reset", out var reset))

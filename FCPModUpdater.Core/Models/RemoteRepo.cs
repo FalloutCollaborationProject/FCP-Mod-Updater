@@ -9,4 +9,10 @@ public record RemoteRepo(
     [property: JsonPropertyName("description")] string? Description,
     [property: JsonPropertyName("html_url")] string HtmlUrl,
     [property: JsonPropertyName("topics")] IReadOnlyList<string> Topics
-);
+)
+{
+    [JsonPropertyName("pushed_at")] public DateTimeOffset? PushedAt { get; init; }
+
+    /// <summary>Repository size as reported by GitHub, in kilobytes.</summary>
+    [JsonPropertyName("size")] public long? SizeKb { get; init; }
+}
