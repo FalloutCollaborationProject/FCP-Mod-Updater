@@ -7,6 +7,7 @@ on:
 
 env:
   APP_NAME: FCPModUpdater
+  GUI_NAME: FCPModManager
 
 jobs:
   release:
@@ -45,6 +46,12 @@ jobs:
           dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
           cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
 
+      - name: Build GUI Windows x64 (self-contained)
+        run: dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64
+
+      - name: Build GUI Linux x64 (self-contained)
+        run: dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
+
       - name: Create archives
         run: |
           cp ./update-fcp-mod-manager.bat ./publish/
@@ -54,7 +61,9 @@ jobs:
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
           zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
           tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
-          sha256sum "${{ env.APP_NAME }}"-*.zip "${{ env.APP_NAME }}"-*.tar.gz > checksums.txt
+          zip -r "${{ env.GUI_NAME }}-win-x64.zip" gui-win-x64
+          tar -czvf "${{ env.GUI_NAME }}-linux-x64.tar.gz" gui-linux-x64
+          sha256sum "${{ env.APP_NAME }}"-*.zip "${{ env.APP_NAME }}"-*.tar.gz "${{ env.GUI_NAME }}"-*.zip "${{ env.GUI_NAME }}"-*.tar.gz > checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -66,6 +75,8 @@ jobs:
             ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
             ./publish/${{ env.APP_NAME }}-win-x64.zip
             ./publish/${{ env.APP_NAME }}-linux-x64.tar.gz
+            ./publish/${{ env.GUI_NAME }}-win-x64.zip
+            ./publish/${{ env.GUI_NAME }}-linux-x64.tar.gz
             ./publish/checksums.txt
             ./publish/update-fcp-mod-manager.bat
             ./publish/update-fcp-mod-manager.sh

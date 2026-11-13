@@ -29,6 +29,9 @@ public class ModDiscoveryService : IModDiscoveryService
 
         var orgRepos = await _gitHubApiService.GetOrganizationReposAsync(ct);
         var orgRepoNames = orgRepos.Select(r => r.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var reposByName = orgRepos
+            .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var directories = Directory.GetDirectories(modsDirectory);
         var mods = new ConcurrentBag<InstalledMod>();
@@ -43,7 +46,8 @@ public class ModDiscoveryService : IModDiscoveryService
                 InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, token);
                 if (mod != null)
                 {
-                    mods.Add(mod);
+                    RemoteRepo? repo = FindRepo(mod, orgRepoNames, reposByName);
+                    mods.Add(repo is null ? mod : mod with { Topics = repo.Topics });
                 }
             });
 
@@ -168,6 +172,30 @@ public class ModDiscoveryService : IModDiscoveryService
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    private static RemoteRepo? FindRepo(InstalledMod mod, HashSet<string> orgRepoNames, Dictionary<string, RemoteRepo> reposByName)
+    {
+        var name = mod.MatchedRepoName
+                   ?? RepoNameFromUrl(mod.RemoteUrl)
+                   ?? MatchRepoName(System.IO.Path.GetFileName(mod.Path), orgRepoNames);
+        if (name is not null && reposByName.TryGetValue(name, out RemoteRepo? repo))
+            return repo;
+        var folderMatch = MatchRepoName(System.IO.Path.GetFileName(mod.Path), orgRepoNames);
+        return folderMatch is not null ? reposByName.GetValueOrDefault(folderMatch) : null;
+    }
+
+    /// <summary>"https://github.com/Org/FCP-Core.git" → "FCP-Core".</summary>
+    internal static string? RepoNameFromUrl(string? remoteUrl)
+    {
+        if (string.IsNullOrWhiteSpace(remoteUrl))
+            return null;
+        var trimmed = remoteUrl.Trim().TrimEnd('/');
+        if (trimmed.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            trimmed = trimmed[..^4];
+        var slash = trimmed.LastIndexOfAny(['/', ':']);
+        var name = slash >= 0 ? trimmed[(slash + 1)..] : trimmed;
+        return name.Length > 0 ? name : null;
     }
 
     /// <summary>

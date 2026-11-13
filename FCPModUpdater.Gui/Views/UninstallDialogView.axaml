@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:models="using:FCPModUpdater.Models"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.UninstallDialogView"
+             x:DataType="vm:UninstallDialogViewModel"
+             MaxWidth="560" Margin="0,32,0,0">
+  <Border Classes="dialog">
+    <DockPanel>
+      <Border DockPanel.Dock="Bottom" Background="{StaticResource Window}" BorderBrush="{StaticResource Line}"
+              BorderThickness="0,1,0,0" Padding="24,14">
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+          <Button Classes="outline" Padding="16,8" Content="Cancel" Command="{Binding CancelCommand}"
+                  IsCancel="True" />
+          <Button Classes="danger" Content="{Binding DeleteLabel}" Command="{Binding DeleteCommand}" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel Spacing="16" Margin="24,22">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Width="40" Height="40" CornerRadius="5" Background="{StaticResource DangerSurface}"
+                  VerticalAlignment="Top">
+            <c:Icon Data="{StaticResource IconTrash}" Size="20" Foreground="{StaticResource Danger}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" Margin="14,0,0,0">
+            <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                       Text="{Binding Title}" />
+            <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" LineHeight="19.5"
+                       Text="{Binding Description}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+
+        <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Mods}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:InstalledMod">
+                <Border Classes="tile" Padding="12,10">
+                  <StackPanel Spacing="2">
+                    <TextBlock Classes="strong" Text="{Binding Name}" />
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                               Text="{Binding Path}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <Border Classes="errorBlock" IsVisible="{Binding HasError}">
+          <SelectableTextBlock Classes="mono" FontSize="12" Foreground="{StaticResource ErrorBlockText}"
+                               Text="{Binding Error}" TextWrapping="Wrap" />
+        </Border>
+
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}">
+            <Run Text="Type " /><Run FontFamily="{StaticResource Mono}" FontWeight="Bold"
+                                    Foreground="{StaticResource Danger}" Text="DELETE" /><Run Text=" to confirm" />
+          </TextBlock>
+          <TextBox Name="ConfirmBox" Classes="mono" Classes.armed="{Binding IsConfirmed}" FontSize="14"
+                   LetterSpacing="1" Text="{Binding ConfirmText}">
+            <TextBox.Styles>
+              <Style Selector="TextBox.armed /template/ Border#PART_BorderElement">
+                <Setter Property="BorderBrush" Value="{StaticResource Danger}" />
+              </Style>
+            </TextBox.Styles>
+          </TextBox>
+        </StackPanel>
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</UserControl>

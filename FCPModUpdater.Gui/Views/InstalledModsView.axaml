@@ -1,0 +1,462 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:svc="using:FCPModUpdater.Gui.Services"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.InstalledModsView"
+             x:DataType="vm:InstalledModsViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Views/VersionMenus.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- App update banner -->
+    <Border Grid.Row="0" Background="{StaticResource AccentSurface}" BorderBrush="{StaticResource BannerBorder}"
+            BorderThickness="0,0,0,1" Padding="24,8" IsVisible="{Binding ShowBanner}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <c:Icon Data="{StaticResource IconDownload}" Size="16" Foreground="{StaticResource Accent}"
+                VerticalAlignment="Center" />
+        <WrapPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+          <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource AccentHover}"
+                     Text="{Binding BannerTitle}" VerticalAlignment="Center" />
+          <TextBlock FontSize="13" Foreground="{StaticResource BannerMuted}" Margin="6,0,0,0"
+                     Text="{Binding BannerCurrent}" VerticalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" IsVisible="{Binding HasBannerCommand}">
+            <TextBlock FontSize="13" Foreground="{StaticResource BannerText}" Margin="6,0"
+                       Text="— close the app and run" VerticalAlignment="Center" />
+            <Border Background="{StaticResource BannerCode}" CornerRadius="4" Padding="6,1">
+              <SelectableTextBlock Classes="mono" FontSize="13" Foreground="{StaticResource BannerText}"
+                                   Text="{Binding BannerCommand}" />
+            </Border>
+          </StackPanel>
+        </WrapPanel>
+        <Button Grid.Column="2" Classes="link" FontSize="13" FontWeight="SemiBold" Content="Release page"
+                Command="{Binding OpenReleasePageCommand}" />
+        <Button Grid.Column="3" Classes="ghost icon" Padding="4" Margin="8,0,0,0"
+                Foreground="{StaticResource BannerMuted}" Command="{Binding DismissBannerCommand}"
+                ToolTip.Tip="Dismiss" AutomationProperties.Name="Dismiss update notice">
+          <c:Icon Data="{StaticResource IconClose}" Size="16" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Header -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="24,18,24,14">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="h1" Text="Installed mods" />
+        <TextBlock Classes="sub" Text="{Binding Summary}" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="secondary" VerticalAlignment="Center" FontWeight="Medium"
+              Command="{Binding RefreshCommand}" IsEnabled="{Binding !Shell.IsScanning}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <c:Icon Data="{StaticResource IconRefresh}" Size="16" />
+          <TextBlock Text="Clear cache &amp; refresh" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="2" Classes="primary" VerticalAlignment="Center" Margin="12,0,0,0" Padding="16,9"
+              Command="{Binding UpdateCheckedCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <c:Icon Data="{StaticResource IconDownload}" Size="16" Stroke="2.2" />
+          <TextBlock Text="{Binding UpdateLabel}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <!-- Table + detail -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,320">
+      <DockPanel>
+        <!-- Segmented filter bar, flush into the search field -->
+        <Border DockPanel.Dock="Top" Height="42" Background="{StaticResource Sidebar}"
+                BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,1">
+          <Grid ColumnDefinitions="5*,1.6*" MinWidth="0">
+            <ItemsControl ItemsSource="{Binding Chips}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:FilterChipViewModel">
+                  <Panel>
+                    <Button Classes="seg" Classes.active="{Binding IsActive}" Command="{Binding PickCommand}"
+                            ToolTip.Tip="{Binding Label}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Ellipse Width="8" Height="8" Fill="{Binding Dot}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Label}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Count}" Foreground="{StaticResource TextDim}" FontWeight="Medium"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                    <Border Classes="segUnderline" Margin="0,0,1,0" IsVisible="{Binding IsActive}" />
+                  </Panel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Grid Grid.Column="1" Background="{StaticResource Control}" ColumnDefinitions="Auto,*">
+              <c:Icon Data="{StaticResource IconSearch}" Size="15" Foreground="{StaticResource TextDim}"
+                      Margin="14,0,0,0" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Classes="bare" Watermark="Search mods" Text="{Binding SearchText}"
+                       VerticalAlignment="Stretch" AutomationProperties.Name="Search mods" />
+            </Grid>
+          </Grid>
+        </Border>
+
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="52,*,132,112,160,52" Height="38">
+          <Grid.Styles>
+            <Style Selector="TextBlock">
+              <Setter Property="FontSize" Value="12" />
+              <Setter Property="FontWeight" Value="Medium" />
+              <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+              <Setter Property="VerticalAlignment" Value="Center" />
+              <Setter Property="Margin" Value="8,0" />
+            </Style>
+          </Grid.Styles>
+          <CheckBox Classes="big" Margin="20,0,0,0" IsChecked="{Binding AllChecked}" IsEnabled="{Binding HasUpdateable}"
+                    VerticalAlignment="Center" AutomationProperties.Name="Select all mods with updates"
+                    ToolTip.Tip="Select all mods with updates" />
+          <TextBlock Grid.Column="1" Text="Mod" />
+          <TextBlock Grid.Column="2" Text="Branch" />
+          <TextBlock Grid.Column="3" Text="Commit" />
+          <TextBlock Grid.Column="4" Text="Status" />
+        </Grid>
+
+        <Panel>
+          <ListBox Name="Table" Classes="rows" ItemsSource="{Binding Rows}"
+                   SelectedItem="{Binding SelectedRow}" SelectionMode="Multiple"
+                   SelectionChanged="OnTableSelectionChanged">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ModRowViewModel">
+                <Border BorderBrush="{StaticResource RowLine}" BorderThickness="0,1,0,0">
+                  <Grid ColumnDefinitions="52,*,132,112,160,52" MinHeight="42">
+                    <CheckBox Classes="big" Margin="20,0,0,0" IsChecked="{Binding IsChecked}" IsEnabled="{Binding CanUpdate}"
+                              VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}" />
+
+                    <!-- Name truncates; tags never do -->
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto,Auto" Margin="8,0" VerticalAlignment="Center"
+                          HorizontalAlignment="Left">
+                      <TextBlock Classes="strong" FontSize="13" Text="{Binding Name}" ToolTip.Tip="{Binding Name}"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <Ellipse Grid.Column="1" Width="7" Height="7" Fill="{StaticResource Info}" Margin="8,0,0,0"
+                               VerticalAlignment="Center" IsVisible="{Binding IsDirty}"
+                               ToolTip.Tip="Uncommitted local changes" />
+                      <Border Grid.Column="2" Classes="warnTag" Margin="8,0,0,0" IsVisible="{Binding IsNotRecommended}"
+                              ToolTip.Tip="Tagged fcp-not-recommended on GitHub">
+                        <TextBlock Text="Not recommended" />
+                      </Border>
+                      <Border Grid.Column="3" Classes="localTag" Margin="8,0,0,0" IsVisible="{Binding IsLocal}">
+                        <TextBlock Text="Local" />
+                      </Border>
+                    </Grid>
+
+                    <!-- Branch dropdown -->
+                    <Panel Grid.Column="2" Margin="8,6">
+                      <Button Classes="cell" Classes.open="{Binding Menu.IsBranchOpen, FallbackValue=False}"
+                              IsVisible="{Binding IsGit}" Command="{Binding Menu.OpenBranchesCommand}"
+                              AutomationProperties.Name="Choose branch">
+                        <Button.Flyout>
+                          <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover"
+                                  Opened="OnMenuOpened" Closed="OnMenuClosed">
+                            <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource BranchMenuTemplate}" />
+                          </Flyout>
+                        </Button.Flyout>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Branch}" Foreground="{Binding BranchBrush}"
+                                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                          <c:Icon Grid.Column="1" Data="{StaticResource IconChevronDown}" Size="12" Stroke="2.5"
+                                  Foreground="{StaticResource TextDim}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                      </Button>
+                      <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextFaint}" Text="—"
+                                 Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsLocal}" />
+                    </Panel>
+
+                    <!-- Commit selector -->
+                    <Panel Grid.Column="3" Margin="8,6">
+                      <Button Classes="cell" Classes.open="{Binding Menu.IsCommitOpen, FallbackValue=False}"
+                              IsVisible="{Binding IsGit}" Command="{Binding Menu.OpenCommitsCommand}"
+                              AutomationProperties.Name="Choose commit">
+                        <Button.Flyout>
+                          <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover"
+                                  Opened="OnMenuOpened" Closed="OnMenuClosed">
+                            <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource CommitMenuTemplate}" />
+                          </Flyout>
+                        </Button.Flyout>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Commit}" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center" />
+                          <c:Icon Grid.Column="1" Data="{StaticResource IconChevronDown}" Size="12" Stroke="2.5"
+                                  Foreground="{StaticResource TextDim}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                      </Button>
+                      <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextFaint}" Text="—"
+                                 Margin="8,0,0,0" VerticalAlignment="Center" IsVisible="{Binding IsLocal}" />
+                    </Panel>
+
+                    <Border Grid.Column="4" Classes="pill" Background="{Binding Badge.Background}"
+                            HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0">
+                      <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding Badge.Label}"
+                                 Foreground="{Binding Badge.Foreground}" TextTrimming="CharacterEllipsis" />
+                    </Border>
+
+                    <Button Grid.Column="5" Classes="ghost icon" Width="30" Height="30" Padding="0" Margin="0,0,14,0"
+                            HorizontalAlignment="Center" Foreground="{StaticResource TextDim}"
+                            IsVisible="{Binding HasRepoUrl}" ToolTip.Tip="Open on GitHub"
+                            AutomationProperties.Name="Open on GitHub"
+                            Command="{Binding $parent[ListBox].((vm:InstalledModsViewModel)DataContext).OpenRepoCommand}"
+                            CommandParameter="{Binding}">
+                      <c:Icon Data="{StaticResource IconExternal}" Size="16" />
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Classes="sub" Text="No mods match this filter." HorizontalAlignment="Center"
+                     Margin="0,48,0,0" IsVisible="{Binding !Rows.Count}" />
+        </Panel>
+      </DockPanel>
+
+        <!-- Detail pane -->
+        <Border Grid.Column="1" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}"
+                BorderThickness="1,1,0,0" Padding="20,18,0,18">
+          <Panel>
+            <TextBlock Classes="sub" Text="Select a mod to see its details." IsVisible="{Binding !HasSelection}" />
+            <DockPanel IsVisible="{Binding HasSelection}">
+              <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,16,20,0">
+                <Button Classes="primary" HorizontalAlignment="Stretch" Padding="10" Content="Update this mod"
+                        Command="{Binding UpdateSelectedCommand}"
+                        IsVisible="{Binding SelectedRow.CanUpdate, FallbackValue=False}" />
+                <Button Classes="secondary" HorizontalAlignment="Stretch" Padding="9" Content="Migrate to Git…"
+                        Command="{Binding ConvertSelectedCommand}"
+                        IsVisible="{Binding SelectedRow.CanConvert, FallbackValue=False}" />
+                <Grid ColumnDefinitions="*,8,*">
+                  <Button Classes="secondary" HorizontalAlignment="Stretch" Padding="9" Content="Switch version…"
+                          Command="{Binding SwitchVersionCommand}" />
+                  <Button Grid.Column="2" Classes="dangerOutline" HorizontalAlignment="Stretch" Padding="9"
+                          Content="{Binding UninstallLabel}" Command="{Binding UninstallCommand}" />
+                </Grid>
+              </StackPanel>
+
+              <!-- The pane's right padding lives inside the scroller so the scrollbar sits in the gutter -->
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="16" Margin="0,0,20,0">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="eyebrow" Text="SELECTED" />
+                    <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                               Text="{Binding SelectedRow.Name}" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding SelectedRow.Name}" />
+                    <Border Classes="warnTag" IsVisible="{Binding SelectedRow.IsNotRecommended, FallbackValue=False}"
+                            ToolTip.Tip="Tagged fcp-not-recommended on GitHub">
+                      <TextBlock Text="Not recommended" />
+                    </Border>
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                               Text="{Binding SelectedRow.Folder}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Button Classes="link" FontSize="12" Content="Open on GitHub"
+                              IsVisible="{Binding SelectedRow.HasRepoUrl, FallbackValue=False}"
+                              Command="{Binding OpenRepoCommand}" />
+                      <Button Classes="link" FontSize="12" Content="Open folder"
+                              Command="{Binding OpenSelectedFolderCommand}" />
+                    </StackPanel>
+                  </StackPanel>
+
+                  <Grid ColumnDefinitions="*,10,*">
+                    <Border Classes="tile" Padding="10">
+                      <StackPanel Spacing="4">
+                        <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="Branch" />
+                        <TextBlock Classes="mono" FontSize="13" Text="{Binding SelectedRow.Branch}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="tile" Padding="10">
+                      <StackPanel Spacing="4">
+                        <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="Commit" />
+                        <TextBlock Classes="mono" FontSize="13" Text="{Binding SelectedRow.Commit}" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+
+                  <Border Classes="pill" Background="{Binding SelectedRow.Badge.Background}"
+                          HorizontalAlignment="Left">
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding SelectedRow.Badge.Label}"
+                               Foreground="{Binding SelectedRow.Badge.Foreground}" />
+                  </Border>
+
+                  <StackPanel Spacing="8" IsVisible="{Binding HasIncoming}">
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}"
+                               Text="Incoming commits" />
+                    <ItemsControl ItemsSource="{Binding Incoming}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CommitViewModel">
+                          <Border Background="{StaticResource Control}" CornerRadius="6" Padding="10,8">
+                            <StackPanel Spacing="2">
+                              <TextBlock FontSize="13" Text="{Binding Message}" TextWrapping="Wrap" />
+                              <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" TextWrapping="Wrap">
+                                <Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource Accent}"
+                                     Text="{Binding Hash}" /><Run Text="{Binding Meta}" />
+                              </TextBlock>
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+
+                  <StackPanel Spacing="8" IsVisible="{Binding SelectedRow.HasError, FallbackValue=False}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Danger}"
+                                 Text="{Binding SelectedRow.ErrorTitle}" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="Show in output"
+                              Command="{Binding ShowSelectedInOutputCommand}" />
+                    </Grid>
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                               Text="{Binding SelectedRow.ErrorCommand}" TextWrapping="Wrap"
+                               IsVisible="{Binding SelectedRow.ErrorCommand, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Border Classes="errorBlock" Padding="10">
+                      <SelectableTextBlock Classes="mono" FontSize="11.5" LineHeight="17"
+                                           Foreground="{StaticResource ErrorBlockText}"
+                                           Text="{Binding SelectedRow.ErrorText}" TextWrapping="Wrap" />
+                    </Border>
+                  </StackPanel>
+                </StackPanel>
+              </ScrollViewer>
+            </DockPanel>
+          </Panel>
+        </Border>
+    </Grid>
+
+    <!-- Output dock -->
+    <Border Grid.Row="3" Background="{StaticResource Sidebar}" BorderBrush="{StaticResource Line}"
+            BorderThickness="0,1,0,0">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" Height="36" Margin="16,0,12,0">
+          <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button Classes="tab" Classes.active="{Binding IsLogTab}" FontSize="12" Padding="12,0"
+                    VerticalAlignment="Stretch" Content="Git output" Command="{Binding ShowLogTabCommand}" />
+            <Button Classes="tab" Classes.active="{Binding IsProblemsTab}" FontSize="12" Padding="12,0"
+                    VerticalAlignment="Stretch" Command="{Binding ShowProblemsTabCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="Problems" VerticalAlignment="Center" />
+                <Border Background="{StaticResource DangerStrong}" CornerRadius="9" MinWidth="18" Height="18"
+                        Padding="5,0" IsVisible="{Binding HasProblems}">
+                  <TextBlock FontSize="11" FontWeight="Bold" Foreground="White" Text="{Binding ProblemCount}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+          <CheckBox Grid.Column="2" IsChecked="{Binding OnlySelected}" Margin="8,0" FontSize="12"
+                    Padding="6,0,0,0" Content="Selected mod only" VerticalAlignment="Center" />
+          <Button Grid.Column="3" Classes="ghost" FontSize="12" Padding="8,6" CornerRadius="4"
+                  Command="{Binding CopyOutputCommand}" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource IconCopy}" Size="14" />
+              <TextBlock Text="Copy" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="4" Classes="ghost" FontSize="12" Padding="8,6" CornerRadius="4"
+                  Command="{Binding ClearOutputCommand}" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <c:Icon Data="{StaticResource IconTrash}" Size="14" />
+              <TextBlock Text="Clear" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="5" Classes="ghost icon" CornerRadius="4" Command="{Binding ToggleDockCommand}"
+                  VerticalAlignment="Center" ToolTip.Tip="Toggle output panel"
+                  AutomationProperties.Name="Toggle output panel">
+            <Panel>
+              <c:Icon Data="{StaticResource IconChevronDown}" Size="16" IsVisible="{Binding IsDockOpen}" />
+              <c:Icon Data="{StaticResource IconChevronUp}" Size="16" IsVisible="{Binding !IsDockOpen}" />
+            </Panel>
+          </Button>
+        </Grid>
+
+        <Border Height="200" Background="{StaticResource Sunken}" BorderBrush="{StaticResource Line}"
+                BorderThickness="0,1,0,0" IsVisible="{Binding ShowLog}">
+          <ListBox Name="LogList" Classes="log" ItemsSource="{Binding VisibleLines}" Padding="0,8"
+                   FontFamily="{StaticResource Mono}" FontSize="12">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="svc:LogLine">
+                <Border Background="{Binding RowBackground}" Padding="16,1.5">
+                  <Grid ColumnDefinitions="Auto,142,*">
+                    <TextBlock Foreground="{StaticResource TextFaint}" Text="{Binding Time}" />
+                    <TextBlock Grid.Column="1" Foreground="{StaticResource TextDim}" Text="{Binding Mod}"
+                               Margin="14,0" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Foreground="{Binding Brush}" FontStyle="{Binding FontStyle}"
+                               Text="{Binding Text}" TextWrapping="Wrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Border>
+
+        <Border Height="200" Background="{StaticResource Sunken}" BorderBrush="{StaticResource Line}"
+                BorderThickness="0,1,0,0" IsVisible="{Binding ShowProblems}">
+          <Panel>
+            <TextBlock Classes="sub" Text="No problems." Margin="16,12" IsVisible="{Binding !VisibleProblems.Count}" />
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding VisibleProblems}" Margin="16,10">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="10" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="svc:Problem">
+                    <Border Background="{StaticResource Window}" BorderBrush="{StaticResource Line}"
+                            BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                      <Grid ColumnDefinitions="3,*">
+                        <Border Background="{Binding Stripe}" />
+                        <StackPanel Grid.Column="1" Spacing="8" Margin="11,12,14,12">
+                          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                            <Border Width="20" Height="20" CornerRadius="4" Background="{Binding IconBackground}"
+                                    VerticalAlignment="Center">
+                              <TextBlock FontSize="12" FontWeight="Bold" Text="{Binding Icon}"
+                                         Foreground="{Binding IconForeground}" HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Classes="strong" FontSize="13" Text="{Binding Mod}"
+                                       Margin="10,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" FontSize="12" Foreground="{StaticResource TextMuted}"
+                                       Text="{Binding Summary}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="3" FontSize="11" Foreground="{StaticResource TextDim}"
+                                       Text="{Binding When}" Margin="10,0" VerticalAlignment="Center" />
+                            <Button Grid.Column="4" Classes="secondary small" Content="Copy error"
+                                    Command="{Binding $parent[ItemsControl].((vm:InstalledModsViewModel)DataContext).CopyProblemCommand}"
+                                    CommandParameter="{Binding}" />
+                            <Button Grid.Column="5" Classes="secondary small" Margin="6,0,0,0"
+                                    Content="{Binding ActionLabel}"
+                                    Command="{Binding $parent[ItemsControl].((vm:InstalledModsViewModel)DataContext).ProblemActionCommand}"
+                                    CommandParameter="{Binding}" />
+                          </Grid>
+                          <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                                     Text="{Binding CommandLine}" TextWrapping="Wrap" />
+                          <Border Background="{Binding BlockBackground}" BorderBrush="{Binding BlockBorder}"
+                                  BorderThickness="1" CornerRadius="5" Padding="12,10">
+                            <SelectableTextBlock Classes="mono" FontSize="12" LineHeight="18.5"
+                                                 Foreground="{Binding BlockForeground}" Text="{Binding Detail}"
+                                                 TextWrapping="Wrap" />
+                          </Border>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

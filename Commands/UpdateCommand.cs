@@ -1,6 +1,7 @@
 using FCPModUpdater.Commands.Settings;
 using FCPModUpdater.Models;
 using FCPModUpdater.Services;
+using FCPModUpdater.Settings;
 using FCPModUpdater.UI;
 using JetBrains.Annotations;
 using Spectre.Console;
@@ -12,7 +13,8 @@ namespace FCPModUpdater.Commands;
 public class UpdateCommand(
     IGitService gitService,
     IModDiscoveryService modDiscoveryService,
-    UpdateCheckService updateCheckService) : AsyncCommand<ModPathSettings>
+    UpdateCheckService updateCheckService,
+    SettingsStore settingsStore) : AsyncCommand<ModPathSettings>
 {
     public static IReadOnlyList<InstalledMod> GetUpdateableMods(IReadOnlyList<InstalledMod> mods)
         => ModCatalog.GetUpdateableMods(mods);
@@ -22,12 +24,14 @@ public class UpdateCommand(
     {
         try
         {
-            var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: false);
+            var modsDirectory = ModsDirectoryResolver.Resolve(settings.ModDirectory?.FullName, interactive: false, settingsStore);
 
             AnsiConsole.MarkupLine($"[grey]Using mods directory: {modsDirectory}[/]");
             AnsiConsole.WriteLine();
 
-            Task<UpdateCheckResult?> updateCheckTask = updateCheckService.CheckForUpdateAsync(ct);
+            Task<UpdateCheckResult?> updateCheckTask = settingsStore.Current.CheckForUpdatesOnLaunch
+                ? updateCheckService.CheckAndRecordAsync(settingsStore, ct)
+                : Task.FromResult<UpdateCheckResult?>(null);
 
             var mods = await ProgressReporter.WithStatusAsync(
                 "Scanning mods directory...",

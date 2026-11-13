@@ -11,6 +11,7 @@ public class InteractiveMenu
     private readonly IModDiscoveryService _modDiscoveryService;
     private readonly string _modsDirectory;
     private readonly Task<UpdateCheckResult?> _updateCheckTask;
+    private readonly SettingsMenu? _settingsMenu;
 
     private IReadOnlyList<InstalledMod> _mods = [];
     private bool _updateNotificationShown;
@@ -20,8 +21,10 @@ public class InteractiveMenu
         IGitHubApiService gitHubApiService,
         IModDiscoveryService modDiscoveryService,
         string modsDirectory,
-        Task<UpdateCheckResult?> updateCheckTask)
+        Task<UpdateCheckResult?> updateCheckTask,
+        SettingsMenu? settingsMenu = null)
     {
+        _settingsMenu = settingsMenu;
         _gitService = gitService;
         _gitHubApiService = gitHubApiService;
         _modDiscoveryService = modDiscoveryService;
@@ -65,6 +68,7 @@ public class InteractiveMenu
                         "Convert Local to Git",
                         "Mod Version Selector",
                         "Clear Cache & Refresh",
+                        "Settings",
                         "Exit"
                     ), ct);
 
@@ -78,6 +82,7 @@ public class InteractiveMenu
                     "Convert Local to Git" => await HandleConvertAsync(ct),
                     "Mod Version Selector" => await HandleVersionSelectorAsync(ct),
                     "Clear Cache & Refresh" => await HandleClearCacheAndRefreshAsync(ct),
+                    "Settings" => await HandleSettingsAsync(ct),
                     "Exit" => true,
                     _ => false
                 };
@@ -385,6 +390,13 @@ public class InteractiveMenu
         }
 
         await RefreshModsAsync(ct);
+        return false;
+    }
+
+    private async Task<bool> HandleSettingsAsync(CancellationToken ct)
+    {
+        if (_settingsMenu != null)
+            await _settingsMenu.RunAsync(ct);
         return false;
     }
 

@@ -1,4 +1,6 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FCPModUpdater.Models;
 
 namespace FCPModUpdater.Services;
@@ -94,6 +96,42 @@ public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
         var repos = await GetOrganizationReposAsync(ct);
         return repos.FirstOrDefault(r =>
             r.Name.Equals(repoName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<RateLimitCheck> GetRateLimitAsync(string? token = null, CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "rate_limit");
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
+
+            using HttpResponseMessage response = await _httpClient.SendAsync(request, ct);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                return new RateLimitCheck(null, "GitHub rejected the token (401 Unauthorized).");
+            if (!response.IsSuccessStatusCode)
+                return new RateLimitCheck(null, $"GitHub returned {(int)response.StatusCode} {response.ReasonPhrase}.");
+
+            using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            JsonElement core = doc.RootElement.GetProperty("resources").GetProperty("core");
+            var info = new RateLimitInfo(
+                core.GetProperty("remaining").GetInt32(),
+                core.GetProperty("limit").GetInt32(),
+                DateTimeOffset.FromUnixTimeSeconds(core.GetProperty("reset").GetInt64()));
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                RemainingRateLimit = info.Remaining;
+                RateLimitTotal = info.Limit;
+                RateLimitReset = info.Reset;
+            }
+
+            return new RateLimitCheck(info, null);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            return new RateLimitCheck(null, ex.Message);
+        }
     }
 
     private void UpdateRateLimitInfo(HttpResponseMessage response)

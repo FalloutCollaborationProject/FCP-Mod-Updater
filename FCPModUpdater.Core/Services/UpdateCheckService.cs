@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using FCPModUpdater.Models;
+using FCPModUpdater.Settings;
 
 namespace FCPModUpdater.Services;
 
@@ -10,9 +11,9 @@ public class UpdateCheckService(HttpClient httpClient)
 
     /// <summary>
     /// Check if a newer version is available. Returns null if check fails or no update needed.
-    /// Checks both stable and prerelease versions.
+    /// Pre-releases are considered only when <paramref name="includePrereleases"/> is true.
     /// </summary>
-    public async Task<UpdateCheckResult?> CheckForUpdateAsync(CancellationToken ct = default)
+    public async Task<UpdateCheckResult?> CheckForUpdateAsync(bool includePrereleases = true, CancellationToken ct = default)
     {
         try
         {
@@ -28,7 +29,7 @@ public class UpdateCheckService(HttpClient httpClient)
 
             foreach (ReleaseInfo release in releases)
             {
-                if (release.Draft)
+                if (release.Draft || (release.Prerelease && !includePrereleases))
                     continue;
 
                 var tagBase = GetBaseVersion(release.TagName.TrimStart('v'));
@@ -70,6 +71,34 @@ public class UpdateCheckService(HttpClient httpClient)
             return null;
         }
     }
+
+    /// <summary>
+    /// Checks using the saved pre-release preference and records when the check ran and what it found.
+    /// </summary>
+    public async Task<UpdateCheckResult?> CheckAndRecordAsync(SettingsStore settings, CancellationToken ct = default)
+    {
+        UpdateCheckResult? result = await CheckForUpdateAsync(settings.Current.EffectiveIncludePrereleases, ct);
+        try
+        {
+            settings.Update(s => s with
+            {
+                LastUpdateCheck = DateTimeOffset.Now,
+                LastUpdateCheckResult = result?.LatestVersion,
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Recording the check is best effort
+        }
+
+        return result;
+    }
+
+    /// <summary>The updater script shipped next to the app for this platform, or null when there is none.</summary>
+    public static string? GetUpdaterCommand() =>
+        OperatingSystem.IsWindows() ? "update-fcp-mod-manager.bat"
+        : OperatingSystem.IsLinux() ? "./update-fcp-mod-manager.sh"
+        : null;
 
     private static string GetBaseVersion(string version)
     {

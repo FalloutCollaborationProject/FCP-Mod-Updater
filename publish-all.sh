@@ -28,3 +28,13 @@ zip -r "${APP_NAME}-win-x64.zip" win-x64-fd
 tar -czvf "${APP_NAME}-linux-x64.tar.gz" linux-x64-fd
 sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz > checksums.txt
 cd ..
+
+# GUI (FCP Mod Manager, Avalonia): self-contained single file
+GUI_NAME="FCPModManager"
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64 ./FCPModUpdater.Gui/FCPModUpdater.Gui.csproj
+dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64 ./FCPModUpdater.Gui/FCPModUpdater.Gui.csproj
+cd ./publish
+zip -r "${GUI_NAME}-win-x64.zip" gui-win-x64 && rm -rf gui-win-x64
+tar -czvf "${GUI_NAME}-linux-x64.tar.gz" gui-linux-x64 && rm -rf gui-linux-x64
+sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz "${GUI_NAME}"-*.zip "${GUI_NAME}"-*.tar.gz > checksums.txt
+cd ..

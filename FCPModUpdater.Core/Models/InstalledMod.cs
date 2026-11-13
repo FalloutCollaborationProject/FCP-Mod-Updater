@@ -22,6 +22,9 @@ public record InstalledMod
     public string? ErrorMessage { get; init; }
     public bool HasLocalChanges { get; init; }
 
+    /// <summary>Topics of the matching org repository, empty when none matched.</summary>
+    public IReadOnlyList<string> Topics { get; init; } = [];
+
     /// <summary>Set when the fetch during the last scan failed, so the status shown may be stale.</summary>
     public GitOperationResult? FetchError { get; init; }
 }

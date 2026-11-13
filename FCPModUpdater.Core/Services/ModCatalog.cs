@@ -9,8 +9,10 @@ public static class ModCatalog
 {
     public const string NotRecommendedTopic = "fcp-not-recommended";
 
-    public static bool IsNotRecommended(RemoteRepo repo) =>
-        repo.Topics.Contains(NotRecommendedTopic, StringComparer.OrdinalIgnoreCase);
+    public static bool IsNotRecommended(RemoteRepo repo) => IsNotRecommended(repo.Topics);
+
+    public static bool IsNotRecommended(IReadOnlyList<string> topics) =>
+        topics.Contains(NotRecommendedTopic, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Org repos that are not installed yet; recommended ones first, then by name.</summary>
     public static List<RemoteRepo> GetAvailableInstallRepos(

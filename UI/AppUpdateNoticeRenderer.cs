@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using FCPModUpdater.Services;
 using Spectre.Console;
 
@@ -27,14 +26,6 @@ public static class AppUpdateNoticeRenderer
         AnsiConsole.Write(panel);
     }
 
-    private static string GetUpdateCommand()
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return @"update-fcp-mod-manager.bat";
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            return "./update-fcp-mod-manager.sh";
-
-        return "download the latest release manually";
-    }
+    private static string GetUpdateCommand() =>
+        UpdateCheckService.GetUpdaterCommand() ?? "download the latest release manually";
 }

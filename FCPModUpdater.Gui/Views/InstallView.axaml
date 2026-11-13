@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.InstallView"
+             x:DataType="vm:InstallViewModel">
+  <DockPanel>
+
+    <!-- Action bar -->
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}"
+            BorderThickness="0,1,0,0" Padding="24,14">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" VerticalAlignment="Center">
+          <Run FontWeight="Bold" Foreground="{StaticResource TextStrong}" Text="{Binding SelectedCount, Mode=OneWay}" />
+          <Run Text=" selected" />
+        </TextBlock>
+        <Button Grid.Column="1" Classes="outline" Content="Clear" Command="{Binding ClearCommand}" />
+        <Button Grid.Column="2" Classes="primary" Margin="12,0,0,0" Content="{Binding Cta}"
+                Command="{Binding ConfirmCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- Header -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="24,24,24,16">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="h1" Text="{Binding Heading}" />
+        <TextBlock Classes="sub" Text="{Binding Subheading}" />
+      </StackPanel>
+      <Border Grid.Column="1" Background="{StaticResource Control}" BorderBrush="{StaticResource LineStrong}"
+              BorderThickness="1" CornerRadius="6" Padding="3" VerticalAlignment="Bottom">
+        <StackPanel Orientation="Horizontal">
+          <Button Classes="segment" Classes.active="{Binding IsInstall}" Content="From GitHub"
+                  Command="{Binding ShowInstallCommand}" />
+          <Button Classes="segment" Classes.active="{Binding IsConvert}" Content="Migrate local mods"
+                  Command="{Binding ShowConvertCommand}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Panel>
+      <!-- From GitHub -->
+      <DockPanel IsVisible="{Binding IsInstall}">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="24,0,24,14">
+          <TextBox Width="360" Watermark="Search repositories" Text="{Binding SearchText}">
+            <TextBox.InnerLeftContent>
+              <c:Icon Data="{StaticResource IconSearch}" Size="14" Foreground="{StaticResource TextDim}"
+                      Margin="10,0,0,0" VerticalAlignment="Center" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+          <Button Grid.Column="2" Classes="outline" Padding="12,8" Content="Select all recommended"
+                  Command="{Binding SelectAllRecommendedCommand}" />
+        </Grid>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Repos}" Margin="24,0,24,24">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <c:AutoGrid MinColumnWidth="320" Gap="12" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RepoCardViewModel">
+                <ToggleButton Classes="card" IsChecked="{Binding IsChecked}" Opacity="{Binding CardOpacity}">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Top" Margin="0,2,14,0"
+                              IsHitTestVisible="False" Focusable="False" />
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <WrapPanel>
+                        <TextBlock Classes="strong" Text="{Binding Name}" Margin="0,0,8,0"
+                                   VerticalAlignment="Center" />
+                        <Border Classes="pill" Padding="8,2" Background="{StaticResource WarnSurface}"
+                                IsVisible="{Binding NotRecommended}">
+                          <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Warn}"
+                                     Text="Not recommended" />
+                        </Border>
+                      </WrapPanel>
+                      <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" LineHeight="19"
+                                 Text="{Binding Description}" TextWrapping="Wrap"
+                                 IsVisible="{Binding HasDescription}" />
+                      <TextBlock Classes="meta" Text="{Binding Meta}"
+                                 IsVisible="{Binding Meta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                  </Grid>
+                </ToggleButton>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+
+      <!-- Convert local folders -->
+      <ScrollViewer IsVisible="{Binding IsConvert}">
+        <StackPanel Spacing="12" Margin="24,0,24,24">
+          <Border Classes="note">
+            <Grid ColumnDefinitions="Auto,*">
+              <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}" Margin="0,1,10,0"
+                      VerticalAlignment="Top" />
+              <TextBlock Grid.Column="1" TextWrapping="Wrap" LineHeight="19.5">
+                <Run Text="Migrating replaces each folder with a fresh Git clone. Local edits are lost, except changes to " /><Run FontFamily="{StaticResource Mono}" Text="About.xml" /><Run Text="." />
+              </TextBlock>
+            </Grid>
+          </Border>
+          <ItemsControl ItemsSource="{Binding Locals}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="12" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LocalFolderViewModel">
+                <ToggleButton Classes="card flat" IsChecked="{Binding IsChecked}">
+                  <Grid ColumnDefinitions="Auto,*,Auto,*">
+                    <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Center" Margin="0,0,14,0"
+                              IsHitTestVisible="False" Focusable="False" />
+                    <TextBlock Grid.Column="1" Classes="mono" FontSize="13" Text="{Binding Folder}"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <c:Icon Grid.Column="2" Data="{StaticResource IconArrowRight}"
+                            Foreground="{StaticResource TextDim}" Margin="14,0" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="3" Spacing="2">
+                      <TextBlock Classes="strong" Text="{Binding Repo}" />
+                      <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                                 Text="{Binding Url}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Grid>
+                </ToggleButton>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <TextBlock Classes="sub" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Panel>
+  </DockPanel>
+</UserControl>

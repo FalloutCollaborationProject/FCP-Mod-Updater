@@ -128,6 +128,21 @@ public class DiscoverModsAsyncTests : IDisposable
     }
 
     [Fact]
+    public async Task MatchedRepoTopics_AreCarriedOntoTheMod()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        CreateModFolder("FCP-Weapons-main");
+        _gitHubApiService.GetOrganizationReposAsync(Arg.Any<CancellationToken>())
+            .Returns([MakeRepo("FCP-Weapons") with { Topics = ["rimworld-mod", ModCatalog.NotRecommendedTopic] }]);
+        _gitService.IsGitRepositoryAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        IReadOnlyList<InstalledMod> result = await _service.DiscoverModsAsync(_tempDir, ct: token);
+
+        Assert.Contains(ModCatalog.NotRecommendedTopic, Assert.Single(result).Topics);
+    }
+
+    [Fact]
     public async Task NonGitFolderNotMatching_ReturnsEmpty()
     {
         CancellationToken token = TestContext.Current.CancellationToken;
@@ -334,4 +349,15 @@ public class DiscoverModsAsyncTests : IDisposable
         Assert.Equal(ModStatus.Behind, result[0].Status);
         Assert.Equal(3, result[0].CommitsBehind);
     }
+}
+
+public class RepoNameFromUrlTests
+{
+    [Theory]
+    [InlineData("https://github.com/FalloutCollaborationProject/FCP-Core.git", "FCP-Core")]
+    [InlineData("https://github.com/FalloutCollaborationProject/FCP-Core/", "FCP-Core")]
+    [InlineData("git@github.com:FalloutCollaborationProject/FCP-Core.git", "FCP-Core")]
+    [InlineData("", null)]
+    public void ExtractsRepoName(string url, string? expected) =>
+        Assert.Equal(expected, ModDiscoveryService.RepoNameFromUrl(url));
 }

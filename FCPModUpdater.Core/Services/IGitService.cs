@@ -19,4 +19,10 @@ public interface IGitService
     Task<bool> ResetToCommitAsync(string path, string commitHash, CancellationToken ct = default);
     Task<bool> HasLocalChangesAsync(string path, CancellationToken ct = default);
     Task<IReadOnlyList<GitCommitInfo>> GetCommitHistoryAsync(string path, int limit = 20, CancellationToken ct = default);
+
+    /// <summary>Latest commits on <c>origin/&lt;branch&gt;</c>, newest first.</summary>
+    Task<IReadOnlyList<GitCommitInfo>> GetBranchCommitsAsync(string path, string branch, int limit = 20, CancellationToken ct = default);
+
+    /// <summary>Moves the current branch forward to <paramref name="commit"/> (<c>git merge --ff-only</c>).</summary>
+    Task<bool> FastForwardToAsync(string path, string commit, CancellationToken ct = default);
 }

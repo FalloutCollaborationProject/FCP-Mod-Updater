@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.VersionsView"
+             x:DataType="vm:VersionsViewModel">
+  <Grid ColumnDefinitions="300,*">
+
+    <!-- Git mod list -->
+    <Border BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="eyebrow" Text="GIT MODS" Margin="16,20,16,10" />
+        <ListBox Classes="rows rounded" ItemsSource="{Binding Mods}" SelectedItem="{Binding SelectedMod}"
+                 Margin="8,0,8,16">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:VersionModViewModel">
+              <StackPanel Spacing="3" Margin="12,9">
+                <TextBlock Classes="strong" FontSize="13" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding Ref}"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- Detail -->
+    <Panel Grid.Column="1">
+      <TextBlock Classes="sub" Text="No git-based mods found." HorizontalAlignment="Center"
+                 VerticalAlignment="Center" IsVisible="{Binding !HasMod}" />
+
+      <DockPanel IsVisible="{Binding HasMod}">
+        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1"
+                Padding="24,20,24,0">
+          <StackPanel Spacing="12">
+            <WrapPanel>
+              <TextBlock Classes="h1" Text="{Binding SelectedMod.Name}" Margin="0,0,12,0" />
+              <TextBlock Classes="mono" FontSize="13" Foreground="{StaticResource TextSoft}"
+                         Text="{Binding SelectedMod.Ref}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+            </WrapPanel>
+            <Border Classes="note" Padding="12,10" IsVisible="{Binding NeedsDirtyConfirmation}">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <c:Icon Data="{StaticResource IconWarning}" Size="16" Foreground="{StaticResource Warn}"
+                        VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Margin="10,0" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Text="This mod has uncommitted local changes. Switching may discard them." />
+                <CheckBox Grid.Column="2" IsChecked="{Binding DirtyAcknowledged}" Content="Continue anyway"
+                          Foreground="{StaticResource WarnText}" FontSize="13" />
+              </Grid>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Tabs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="4" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TabViewModel">
+                  <Button Classes="tab" Classes.active="{Binding IsActive}" Content="{Binding Label}"
+                          Command="{Binding PickCommand}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}"
+                BorderThickness="0,1,0,0" Padding="24,14">
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <Panel VerticalAlignment="Center">
+              <TextBlock Classes="meta" Text="{Binding Hint}" TextWrapping="Wrap" IsVisible="{Binding !HasResult}" />
+              <TextBlock FontSize="13" Text="{Binding ResultMessage}" TextWrapping="Wrap"
+                         IsVisible="{Binding HasResult}" Classes.error="{Binding ResultIsError}"
+                         Foreground="{StaticResource Ok}">
+                <TextBlock.Styles>
+                  <Style Selector="TextBlock.error">
+                    <Setter Property="Foreground" Value="{StaticResource Danger}" />
+                  </Style>
+                </TextBlock.Styles>
+              </TextBlock>
+            </Panel>
+            <Button Grid.Column="1" Classes="outline" Margin="10,0,0,0" Content="Cancel"
+                    Command="{Binding CancelCommand}" />
+            <Button Grid.Column="2" Classes="primary" Margin="10,0,0,0" Content="{Binding Cta}"
+                    Command="{Binding ApplyCommand}" />
+          </Grid>
+        </Border>
+
+        <Panel Margin="24,13,24,13">
+          <!-- Branches -->
+          <ListBox Classes="choices" ItemsSource="{Binding Branches}" SelectedItem="{Binding SelectedBranch}"
+                   IsVisible="{Binding IsBranches}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:BranchViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="12,11">
+                  <Panel Width="16" Height="16" VerticalAlignment="Center">
+                    <Ellipse Classes="radioRing" Stroke="{StaticResource TextFaint}" StrokeThickness="1.5" />
+                    <Ellipse Classes="radioDot" Width="8" Height="8" Fill="{StaticResource Accent}" />
+                  </Panel>
+                  <TextBlock Grid.Column="1" Classes="mono" FontSize="13" Text="{Binding Display}" Margin="12,0"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <Border Grid.Column="2" Classes="tag" IsVisible="{Binding IsCurrent}" Margin="0,0,12,0">
+                    <TextBlock Text="CURRENT" />
+                  </Border>
+                  <TextBlock Grid.Column="3" Classes="meta" Text="{Binding Age}" VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- History -->
+          <ListBox Classes="choices" ItemsSource="{Binding Commits}" SelectedItem="{Binding SelectedCommit}"
+                   IsVisible="{Binding IsHistory}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:HistoryCommitViewModel">
+                <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="12,10">
+                  <Panel Width="16" Height="16" VerticalAlignment="Center">
+                    <Ellipse Classes="radioRing" Stroke="{StaticResource TextFaint}" StrokeThickness="1.5" />
+                    <Ellipse Classes="radioDot" Width="8" Height="8" Fill="{StaticResource Accent}" />
+                  </Panel>
+                  <TextBlock Grid.Column="1" Classes="mono" FontSize="12" Foreground="{StaticResource Accent}"
+                             Text="{Binding Hash}" Margin="12,0" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Classes="meta" Text="{Binding Date}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" FontSize="13" Text="{Binding Message}" Margin="12,0"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <Border Grid.Column="4" Classes="tag" IsVisible="{Binding IsHead}">
+                    <TextBlock Text="HEAD" />
+                  </Border>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- Manual hash -->
+          <StackPanel Spacing="8" MaxWidth="420" HorizontalAlignment="Left" Margin="0,3,0,0"
+                      IsVisible="{Binding IsManual}">
+            <TextBlock FontSize="13" FontWeight="SemiBold" Text="Commit hash" />
+            <TextBox Classes="mono" Width="420" Watermark="e.g. 3c7d2b8" Text="{Binding ManualHash}" />
+            <TextBlock Classes="meta" Text="Checks out the commit in detached HEAD state." />
+          </StackPanel>
+
+          <TextBlock Classes="sub" Text="Loading…" Margin="0,3,0,0" IsVisible="{Binding IsLoading}" />
+          <TextBlock Classes="sub" Text="{Binding EmptyText}" Margin="0,3,0,0"
+                     IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </Panel>
+      </DockPanel>
+    </Panel>
+  </Grid>
+</UserControl>

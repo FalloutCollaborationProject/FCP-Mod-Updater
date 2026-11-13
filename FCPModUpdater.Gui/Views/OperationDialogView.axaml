@@ -1,0 +1,291 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:svc="using:FCPModUpdater.Gui.Services"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.OperationDialogView"
+             x:DataType="vm:OperationDialogViewModel"
+             MaxWidth="780">
+  <Border Classes="dialog">
+    <DockPanel>
+
+      <!-- Header: title + steps -->
+      <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1"
+              Padding="24,22,24,18">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock FontSize="19" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                       Text="{Binding Title}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="ghost icon" CornerRadius="6" Foreground="{StaticResource TextDim}"
+                    Command="{Binding CloseCommand}" IsEnabled="{Binding CanClose}" ToolTip.Tip="Close"
+                    AutomationProperties.Name="Close">
+              <c:Icon Data="{StaticResource IconClose}" />
+            </Button>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Steps}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StepViewModel">
+                <Border Classes="step" Classes.active="{Binding IsActive}" Classes.past="{Binding IsPast}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Classes="stepNumber" Width="22" Height="22" CornerRadius="11">
+                      <TextBlock Text="{Binding Number}" FontSize="12" FontWeight="Bold"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Classes="stepLabel" FontSize="13" Text="{Binding Label}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            <ItemsControl.Styles>
+              <Style Selector="Border.step">
+                <Setter Property="Background" Value="{StaticResource Control}" />
+                <Setter Property="CornerRadius" Value="5" />
+                <Setter Property="Padding" Value="6,6,12,6" />
+              </Style>
+              <Style Selector="Border.step TextBlock.stepLabel">
+                <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+                <Setter Property="FontWeight" Value="Medium" />
+              </Style>
+              <Style Selector="Border.step Border.stepNumber">
+                <Setter Property="Background" Value="{StaticResource LineStrong}" />
+              </Style>
+              <Style Selector="Border.step Border.stepNumber TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+              </Style>
+              <Style Selector="Border.step.past TextBlock.stepLabel">
+                <Setter Property="Foreground" Value="{StaticResource TextSoft}" />
+              </Style>
+              <Style Selector="Border.step.past Border.stepNumber">
+                <Setter Property="Background" Value="{StaticResource AccentSurface}" />
+              </Style>
+              <Style Selector="Border.step.past Border.stepNumber TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource Ok}" />
+              </Style>
+              <Style Selector="Border.step.active">
+                <Setter Property="Background" Value="{StaticResource AccentSurface}" />
+              </Style>
+              <Style Selector="Border.step.active TextBlock.stepLabel">
+                <Setter Property="Foreground" Value="{StaticResource AccentHover}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+              </Style>
+              <Style Selector="Border.step.active Border.stepNumber">
+                <Setter Property="Background" Value="{StaticResource Accent}" />
+              </Style>
+              <Style Selector="Border.step.active Border.stepNumber TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource OnAccent}" />
+              </Style>
+            </ItemsControl.Styles>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- Footer -->
+      <Border DockPanel.Dock="Bottom" Background="{StaticResource Window}" BorderBrush="{StaticResource Line}"
+              BorderThickness="0,1,0,0" Padding="24,14">
+        <Panel>
+          <Grid ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding IsReview}">
+            <TextBlock Classes="meta" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="Mods are updated with a fast-forward pull. Nothing is overwritten." />
+            <Button Grid.Column="1" Classes="outline" Margin="10,0,0,0" Content="Back"
+                    Command="{Binding CloseCommand}" />
+            <Button Grid.Column="2" Classes="primary" Margin="10,0,0,0" Content="{Binding StartLabel}"
+                    Command="{Binding StartCommand}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsRunning}">
+            <TextBlock Classes="meta" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="The mod in progress will finish; the rest are skipped."
+                       IsVisible="{Binding CancelRequested}" />
+            <Button Grid.Column="1" Classes="outline" Content="Cancel remaining"
+                    Command="{Binding CancelRemainingCommand}" IsEnabled="{Binding !CancelRequested}" />
+          </Grid>
+          <Button Classes="primary" HorizontalAlignment="Right" Content="Done &amp; rescan"
+                  Command="{Binding CloseCommand}" IsVisible="{Binding IsResults}" />
+        </Panel>
+      </Border>
+
+      <Panel>
+        <!-- Step 1: review incoming commits -->
+        <ScrollViewer IsVisible="{Binding IsReview}" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="14" Margin="24,18">
+            <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" Text="{Binding ReviewIntro}" />
+            <ItemsControl ItemsSource="{Binding Items}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="14" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:OperationItemViewModel">
+                  <Border Classes="tile" CornerRadius="6" Padding="16,14">
+                    <StackPanel Spacing="10">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="strong" Text="{Binding Name}" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Classes="pill" Background="{StaticResource WarnSurface}">
+                          <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Warn}"
+                                     Text="{Binding BehindLabel}" />
+                        </Border>
+                      </Grid>
+                      <Border BorderBrush="{StaticResource LineStrong}" BorderThickness="2,0,0,0"
+                              Padding="12,0,0,0" Margin="4,0,0,0">
+                        <StackPanel Spacing="6">
+                          <ItemsControl ItemsSource="{Binding Commits}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <StackPanel Spacing="6" />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:CommitViewModel">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                  <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource Accent}"
+                                             Text="{Binding Hash}" VerticalAlignment="Center" />
+                                  <TextBlock Grid.Column="1" FontSize="13" Text="{Binding Message}" Margin="10,0"
+                                             TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                  <TextBlock Grid.Column="2" Classes="meta" Text="{Binding AuthorAndTime}"
+                                             VerticalAlignment="Center" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <TextBlock Classes="meta" Text="{Binding MoreLabel}" IsVisible="{Binding HasMore}" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Step 2: progress -->
+        <DockPanel IsVisible="{Binding IsRunning}" Margin="24,20">
+          <StackPanel DockPanel.Dock="Top" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding RunningTitle}" />
+              <TextBlock Grid.Column="1" FontSize="13" Foreground="{StaticResource TextDim}"
+                         Text="{Binding DoneLabel}" />
+            </Grid>
+            <c:Meter Height="8" Value="{Binding OverallPercent}" Track="{StaticResource Line}"
+                     Fill="{StaticResource Accent}" />
+          </StackPanel>
+
+          <Border DockPanel.Dock="Bottom" Height="180" Background="{StaticResource Sunken}"
+                  BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="5" Margin="0,18,0,0"
+                  ClipToBounds="True">
+            <ListBox Name="RunLog" Classes="log" ItemsSource="{Binding LogLines}" Padding="0,10"
+                     FontFamily="{StaticResource Mono}" FontSize="12">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="svc:LogLine">
+                  <TextBlock Margin="14,1.5" TextWrapping="Wrap">
+                    <Run Foreground="{StaticResource TextDim}" Text="{Binding Bracketed, Mode=OneWay}" />
+                    <Run Text=" " />
+                    <Run Foreground="{Binding Brush}" Text="{Binding Text, Mode=OneWay}" />
+                  </TextBlock>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,18,0,0">
+            <ItemsControl ItemsSource="{Binding Items}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:OperationItemViewModel">
+                  <Grid ColumnDefinitions="200,*,110">
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}"
+                               Foreground="{Binding NameBrush}" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                    <c:Meter Grid.Column="1" Height="6" Margin="14,0" Value="{Binding Percent}"
+                             Track="{StaticResource Line}" Fill="{Binding BarBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" FontSize="13" Text="{Binding StateText}"
+                               Foreground="{Binding StateBrush}" TextAlignment="Right" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- Step 3: results -->
+        <ScrollViewer IsVisible="{Binding IsResults}" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="14" Margin="24,20">
+            <Border Classes="note" Classes.ok="{Binding AllSucceeded}">
+              <Border.Styles>
+                <Style Selector="Border.note.ok">
+                  <Setter Property="Background" Value="{StaticResource AccentSurface}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource BannerBorder}" />
+                </Style>
+                <Style Selector="Border.note.ok TextBlock">
+                  <Setter Property="Foreground" Value="{StaticResource BannerText}" />
+                </Style>
+              </Border.Styles>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}"
+                        IsVisible="{Binding !AllSucceeded}" />
+                <c:Icon Data="{StaticResource IconCheck}" Foreground="{StaticResource Accent}"
+                        IsVisible="{Binding AllSucceeded}" />
+                <TextBlock Text="{Binding Summary}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <StackPanel>
+              <Grid ColumnDefinitions="220,*" Margin="0,8">
+                <TextBlock Classes="meta" FontWeight="Medium" Text="Mod" />
+                <TextBlock Grid.Column="1" Classes="meta" FontWeight="Medium" Text="Result" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:OperationItemViewModel">
+                    <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,11">
+                      <Grid ColumnDefinitions="220,*">
+                        <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding Name}"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Top" />
+                        <StackPanel Grid.Column="1" Spacing="8">
+                          <TextBlock FontSize="13" Text="{Binding ResultText}"
+                                     Foreground="{Binding ResultBrush}" />
+                          <StackPanel Spacing="8" IsVisible="{Binding HasError}">
+                            <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
+                                       Text="{Binding CommandLine}" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasCommandLine}" />
+                            <Border Classes="errorBlock">
+                              <SelectableTextBlock Classes="mono" FontSize="12" LineHeight="18.5"
+                                                   Foreground="{StaticResource ErrorBlockText}"
+                                                   Text="{Binding Error}" TextWrapping="Wrap" />
+                            </Border>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <Button Classes="secondary small" Content="Copy error"
+                                      Command="{Binding $parent[ItemsControl].((vm:OperationDialogViewModel)DataContext).CopyErrorCommand}"
+                                      CommandParameter="{Binding}" />
+                              <Button Classes="secondary small" Content="Open folder"
+                                      Command="{Binding $parent[ItemsControl].((vm:OperationDialogViewModel)DataContext).OpenFolderCommand}"
+                                      CommandParameter="{Binding}" />
+                              <Button Classes="secondary small" Content="Resolve in version selector…"
+                                      IsVisible="{Binding CanResolve}"
+                                      Command="{Binding $parent[ItemsControl].((vm:OperationDialogViewModel)DataContext).ResolveCommand}"
+                                      CommandParameter="{Binding}" />
+                            </StackPanel>
+                          </StackPanel>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Panel>
+    </DockPanel>
+  </Border>
+</UserControl>

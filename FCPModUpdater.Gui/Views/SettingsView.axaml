@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="820" HorizontalAlignment="Left" Margin="32,24,32,40" Spacing="20">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="h1" Text="Settings" />
+        <TextBlock Classes="sub" Text="Changes save automatically." />
+      </StackPanel>
+
+      <!-- Mods folder -->
+      <Border Classes="section">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="Mods folder" />
+          <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="RimWorld Mods directory" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBox Name="FolderBox" Classes="mono field" FontSize="13" Text="{Binding FolderText}"
+                     KeyDown="OnFolderKeyDown" LostFocus="OnFolderLostFocus"
+                     AutomationProperties.Name="RimWorld Mods directory" />
+            <Button Grid.Column="1" Classes="secondary" Content="Browse…" Command="{Binding BrowseCommand}" />
+            <Button Grid.Column="2" Classes="secondary" Content="Open" Command="{Binding OpenFolderCommand}" />
+          </Grid>
+          <WrapPanel ItemSpacing="14" LineSpacing="8">
+            <TextBlock FontSize="12" Text="{Binding FolderStatus}" VerticalAlignment="Center"
+                       Foreground="{Binding FolderOk, Converter={x:Static vm:SettingsBrushes.Status}}" />
+            <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding FolderSource}"
+                       VerticalAlignment="Center" />
+            <Button Classes="link" FontSize="12" Padding="2,2" Content="Detect again" Command="{Binding DetectAgainCommand}" />
+          </WrapPanel>
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap" LineHeight="18">
+            <Run Text="A folder passed with " /><Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource TextSoft}" Text="--directory" /><Run Text=" is used for that run instead of this one." />
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
+      <!-- GitHub access -->
+      <Border Classes="section">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="h2" Text="GitHub access" />
+            <TextBlock Grid.Column="1" FontSize="12" Foreground="{StaticResource TextDim}" Text="Optional"
+                       VerticalAlignment="Center" />
+          </Grid>
+          <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" LineHeight="20"
+                     Text="Without a token GitHub allows 60 requests an hour, which a large refresh can use up. A personal access token raises this to 5,000. It needs no scopes: public repository access is enough." />
+          <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="Personal access token" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBox Classes="mono field" FontSize="13" Text="{Binding Token}" PasswordChar="{Binding PasswordChar}"
+                     Watermark="github_pat_…" AutomationProperties.Name="Personal access token">
+              <TextBox.InnerRightContent>
+                <Button Classes="ghost icon" Padding="8" Margin="0,0,2,0" Foreground="{StaticResource TextDim}"
+                        Command="{Binding ToggleShowCommand}" ToolTip.Tip="{Binding ShowTokenLabel}"
+                        AutomationProperties.Name="{Binding ShowTokenLabel}">
+                  <Panel>
+                    <c:Icon Data="{StaticResource IconEye}" Size="16" IsVisible="{Binding !ShowToken}" />
+                    <c:Icon Data="{StaticResource IconEyeOff}" Size="16" IsVisible="{Binding ShowToken}" />
+                  </Panel>
+                </Button>
+              </TextBox.InnerRightContent>
+            </TextBox>
+            <Button Grid.Column="1" Classes="secondary" Content="Test token" Command="{Binding TestTokenCommand}" />
+            <Button Grid.Column="2" Classes="outline" Content="Remove" Command="{Binding RemoveTokenCommand}" />
+          </Grid>
+          <TextBlock FontSize="12" Text="{Binding TestResult}" TextWrapping="Wrap"
+                     Foreground="{Binding TestOk, Converter={x:Static vm:SettingsBrushes.Status}}"
+                     IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <WrapPanel ItemSpacing="10" LineSpacing="6">
+            <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Text="Saved in your settings file, readable only by your user account." />
+            <Button Classes="link" FontSize="12" Padding="0" Content="Create a token on GitHub"
+                    Command="{Binding CreateTokenCommand}" />
+          </WrapPanel>
+
+          <Border Background="{StaticResource Sidebar}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                  CornerRadius="5" Padding="14,12">
+            <StackPanel Spacing="8">
+              <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}"
+                         Text="Token in use right now" />
+              <Border Classes="sourceBox" Classes.active="{Binding HasActiveToken}" CornerRadius="4" Padding="10,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="1">
+                    <TextBlock FontSize="13" Text="{Binding ActiveSourceLabel}" />
+                    <TextBlock FontSize="11.5" Foreground="{StaticResource TextDim}" Text="{Binding ActiveSourceDescription}" />
+                  </StackPanel>
+                  <Border Grid.Column="1" Classes="headTag" IsVisible="{Binding HasActiveToken}">
+                    <TextBlock Text="ACTIVE" />
+                  </Border>
+                </Grid>
+              </Border>
+              <TextBlock FontSize="11.5" Foreground="{StaticResource TextDim}" TextWrapping="Wrap" LineHeight="17">
+                <Run Text="A token passed in at launch takes priority: " /><Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource TextSoft}" Text="--github-token" /><Run Text=" first, then the " /><Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource TextSoft}" Text="GITHUB_TOKEN" /><Run Text=" environment variable, then the token saved here." />
+              </TextBlock>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- App updates -->
+      <Border Classes="section">
+        <StackPanel Spacing="14">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+            <TextBlock Classes="h2" Text="App updates" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}"
+                       Text="{Binding Version}" VerticalAlignment="Center" />
+            <Border Grid.Column="2" Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
+              <TextBlock Text="BETA" />
+            </Border>
+            <Button Grid.Column="3" Classes="secondary" Padding="12,7" Content="Check now"
+                    Command="{Binding CheckNowCommand}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+            <StackPanel Spacing="2">
+              <TextBlock FontSize="13" Text="Check for updates on launch" />
+              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="Asks GitHub for the latest release once per run." />
+            </StackPanel>
+            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding CheckOnLaunch}"
+                          VerticalAlignment="Center" AutomationProperties.Name="Check for updates on launch" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+            <StackPanel Spacing="2">
+              <TextBlock FontSize="13" Text="Include pre-releases" />
+              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                         Text="Show beta builds as well as stable releases." />
+            </StackPanel>
+            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding IncludePrereleases}"
+                          VerticalAlignment="Center" AutomationProperties.Name="Include pre-releases" />
+          </Grid>
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding LastCheckText}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Git -->
+      <Border Classes="section">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="Git" />
+          <WrapPanel ItemSpacing="14" LineSpacing="8">
+            <TextBlock FontSize="13" Text="{Binding GitVersion}" VerticalAlignment="Center"
+                       Foreground="{Binding GitOk, Converter={x:Static vm:SettingsBrushes.Status}}" />
+            <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding GitPath}"
+                       VerticalAlignment="Center" />
+          </WrapPanel>
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="The app uses the git on your PATH." />
+        </StackPanel>
+      </Border>
+
+      <TextBlock FontSize="11" Foreground="{StaticResource TextFaint}" TextWrapping="Wrap">
+        <Run Text="Settings file: " /><Run FontFamily="{StaticResource Mono}" Text="{Binding FilePath, Mode=OneWay}" />
+      </TextBlock>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

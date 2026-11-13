@@ -1,0 +1,156 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+        xmlns:c="using:FCPModUpdater.Gui.Controls"
+        x:Class="FCPModUpdater.Gui.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="FCP Mod Manager"
+        Icon="/Assets/fcp_logo.png"
+        Width="1280" Height="800" MinWidth="980" MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Window}"
+        Foreground="{StaticResource Text}"
+        FontFamily="{StaticResource Sans}"
+        FontSize="14">
+  <Panel>
+    <Grid ColumnDefinitions="232,*">
+
+      <!-- Sidebar -->
+      <Border Background="{StaticResource Sidebar}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0"
+              Padding="14,20">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="6,0,6,24">
+            <Image Source="/Assets/fcp_logo.png" Width="36" Height="36" />
+            <StackPanel Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="FCP Mod Manager" FontWeight="Bold" FontSize="15" LetterSpacing="0.2" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding VersionLabel}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="120"
+                           ToolTip.Tip="{Binding VersionLabel}" />
+                <Border Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
+                  <TextBlock Text="BETA" />
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel DockPanel.Dock="Bottom" Spacing="14" Margin="6,0">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="eyebrow" Text="MODS FOLDER" />
+              <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap"
+                         Text="{Binding ModsDirectory, FallbackValue=Not set, TargetNullValue=Not set}"
+                         ToolTip.Tip="{Binding ModsDirectory}" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="secondary small" Padding="10,5" Command="{Binding OpenModsFolderCommand}"
+                        IsEnabled="{Binding HasModsDirectory}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <c:Icon Data="{StaticResource IconFolder}" Size="14" />
+                    <TextBlock Text="Open" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="outline small" Padding="10,5" Content="Change…" Command="{Binding GoToSettingsCommand}" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Spacing="6">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="meta" Text="GitHub API" />
+                <TextBlock Classes="meta" Grid.Column="1" Text="{Binding RateLimitText}" />
+              </Grid>
+              <c:Meter Height="4" Value="{Binding RateLimitPercent}" Track="{StaticResource Line}"
+                       Fill="{Binding RateLimitBrush}" />
+              <WrapPanel>
+                <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding RateLimitHint}"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding RateLimitHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text=" · " VerticalAlignment="Center">
+                  <TextBlock.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                      <Binding Path="ShowAddToken" />
+                      <Binding Path="RateLimitHint" Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
+                    </MultiBinding>
+                  </TextBlock.IsVisible>
+                </TextBlock>
+                <Button Classes="link" FontSize="11" Padding="0" Content="Add a token" VerticalAlignment="Center"
+                        Command="{Binding GoToSettingsCommand}" IsVisible="{Binding ShowAddToken}" />
+              </WrapPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel VerticalAlignment="Top" Spacing="4">
+          <ItemsControl ItemsSource="{Binding NavItems}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="4" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NavItemViewModel">
+                <Button Classes="nav" Classes.active="{Binding IsActive}" Command="{Binding GoCommand}">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <c:Icon Classes="navicon" VerticalAlignment="Center"
+                            Data="{Binding IconKey, Converter={x:Static c:GeometryKeyConverter.Instance}}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Label}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="meta" FontWeight="Normal" Text="{Binding Count}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Height="1" Background="{StaticResource Line}" Margin="4,4" />
+          <Button Classes="nav" Classes.active="{Binding SettingsNav.IsActive}" Command="{Binding SettingsNav.GoCommand}">
+            <Grid ColumnDefinitions="Auto,*">
+              <c:Icon Classes="navicon" VerticalAlignment="Center" Data="{StaticResource IconSettings}" />
+              <TextBlock Grid.Column="1" Text="Settings" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Page -->
+      <DockPanel Grid.Column="1">
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" CornerRadius="0"
+                     Foreground="{StaticResource Accent}" Background="Transparent"
+                     IsVisible="{Binding IsScanning}" />
+        <Border DockPanel.Dock="Top" Classes="note" Margin="24,16,24,0" CornerRadius="5"
+                IsVisible="{Binding ScanError, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}" />
+            <TextBlock Text="{Binding ScanError}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <Panel>
+          <ContentControl Content="{Binding CurrentPage}" IsVisible="{Binding ShowPage}" />
+
+          <!-- No Mods folder found -->
+          <StackPanel IsVisible="{Binding ShowChooseFolder}" Spacing="12" MaxWidth="460"
+                      HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Classes="h1" Text="Choose your RimWorld Mods folder" TextWrapping="Wrap" />
+            <TextBlock Classes="sub" TextWrapping="Wrap" LineHeight="20"
+                       Text="RimWorld wasn't found in the usual Steam, GOG or Lutris locations. Pick the Mods folder to continue, or start the app with --directory to skip this step." />
+            <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0"
+                    Content="Choose Mods folder…" Command="{Binding ChangeFolderCommand}" />
+          </StackPanel>
+
+          <!-- Git not installed -->
+          <StackPanel IsVisible="{Binding GitMissing}" Spacing="12" MaxWidth="460"
+                      HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Classes="h1" Text="Git is required" />
+            <TextBlock Classes="sub" TextWrapping="Wrap" LineHeight="20"
+                       Text="This application uses Git to manage mods, and it wasn't found on your PATH. Install Git, then restart FCP Mod Manager." />
+            <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0"
+                    Content="Get Git" Click="OnGetGitClick" />
+          </StackPanel>
+        </Panel>
+      </DockPanel>
+    </Grid>
+
+    <!-- Modal overlay -->
+    <Border Background="{StaticResource Scrim}" IsVisible="{Binding HasDialog}">
+      <ContentControl Content="{Binding Dialog}" Margin="16,48" VerticalAlignment="Top"
+                      HorizontalAlignment="Stretch" />
+    </Border>
+  </Panel>
+</Window>

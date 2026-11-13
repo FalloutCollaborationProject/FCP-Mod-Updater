@@ -1,0 +1,102 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Design tokens from the "FCP Mod Manager — Avalonia GUI" canvas. Keep in step with Services/Palette.cs. -->
+
+  <FontFamily x:Key="Sans">avares://FCPModManager/Assets/Fonts#Noto Sans</FontFamily>
+  <FontFamily x:Key="Mono">avares://FCPModManager/Assets/Fonts#JetBrains Mono</FontFamily>
+
+  <!-- Surfaces -->
+  <SolidColorBrush x:Key="Sunken" Color="#141618" />
+  <SolidColorBrush x:Key="Scrim" Color="#E6141618" />
+  <SolidColorBrush x:Key="Sidebar" Color="#1B1E20" />
+  <SolidColorBrush x:Key="Window" Color="#202326" />
+  <SolidColorBrush x:Key="Panel" Color="#292C30" />
+  <SolidColorBrush x:Key="Control" Color="#2A2E32" />
+  <SolidColorBrush x:Key="Hover" Color="#31363B" />
+  <SolidColorBrush x:Key="GhostHover" Color="#383D42" />
+  <SolidColorBrush x:Key="Line" Color="#3A3F44" />
+  <SolidColorBrush x:Key="RowLine" Color="#31363B" />
+  <SolidColorBrush x:Key="LineStrong" Color="#4A5056" />
+  <SolidColorBrush x:Key="LineHover" Color="#5A6168" />
+
+  <!-- Text -->
+  <SolidColorBrush x:Key="TextStrong" Color="#FCFCFC" />
+  <SolidColorBrush x:Key="Text" Color="#EFF0F1" />
+  <SolidColorBrush x:Key="TextSoft" Color="#D1D5D9" />
+  <SolidColorBrush x:Key="TextMuted" Color="#BDC3C7" />
+  <SolidColorBrush x:Key="TextDim" Color="#A1A9B1" />
+  <SolidColorBrush x:Key="TextFaint" Color="#7F8C8D" />
+
+  <!-- Accent -->
+  <SolidColorBrush x:Key="Accent" Color="#36E27F" />
+  <SolidColorBrush x:Key="AccentHover" Color="#5BEA98" />
+  <SolidColorBrush x:Key="OnAccent" Color="#0B1A10" />
+  <SolidColorBrush x:Key="AccentSurface" Color="#1B3326" />
+  <SolidColorBrush x:Key="AccentSelected" Color="#233A2C" />
+  <SolidColorBrush x:Key="AccentBorder" Color="#2A8C52" />
+  <SolidColorBrush x:Key="BannerBorder" Color="#2A6B45" />
+  <SolidColorBrush x:Key="BannerText" Color="#D6F5E2" />
+  <SolidColorBrush x:Key="BannerMuted" Color="#9CC9AE" />
+  <SolidColorBrush x:Key="BannerCode" Color="#24432F" />
+
+  <!-- Status -->
+  <SolidColorBrush x:Key="Ok" Color="#7FD49A" />
+  <SolidColorBrush x:Key="Info" Color="#5CC0F0" />
+  <SolidColorBrush x:Key="CheckBorder" Color="#8A949E" />
+  <SolidColorBrush x:Key="Popover" Color="#2A2E32" />
+  <SolidColorBrush x:Key="Warn" Color="#F6A13B" />
+  <SolidColorBrush x:Key="WarnSurface" Color="#3A2A16" />
+  <SolidColorBrush x:Key="WarnBorder" Color="#6B4A1E" />
+  <SolidColorBrush x:Key="WarnText" Color="#F6D9B5" />
+  <SolidColorBrush x:Key="Danger" Color="#ED6A75" />
+  <SolidColorBrush x:Key="DangerStrong" Color="#DA4453" />
+  <SolidColorBrush x:Key="DangerHover" Color="#E35D6A" />
+  <SolidColorBrush x:Key="DangerSurface" Color="#3A1F23" />
+  <SolidColorBrush x:Key="DangerBorder" Color="#7A2E36" />
+  <SolidColorBrush x:Key="DangerDisabledText" Color="#B9848A" />
+  <SolidColorBrush x:Key="ErrorBlock" Color="#2A1A1D" />
+  <SolidColorBrush x:Key="ErrorBlockBorder" Color="#5A2A31" />
+  <SolidColorBrush x:Key="ErrorBlockText" Color="#F3B5BB" />
+
+  <!-- Fluent TextBox recoloured to the canvas's input style -->
+  <SolidColorBrush x:Key="TextControlBackground" Color="#2A2E32" />
+  <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2A2E32" />
+  <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#2A2E32" />
+  <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#2A2E32" />
+  <SolidColorBrush x:Key="TextControlBorderBrush" Color="#4A5056" />
+  <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#5A6168" />
+  <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#36E27F" />
+  <SolidColorBrush x:Key="TextControlForeground" Color="#EFF0F1" />
+  <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#EFF0F1" />
+  <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#EFF0F1" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#A1A9B1" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#A1A9B1" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#A1A9B1" />
+  <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#2A8C52" />
+  <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+  <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+
+  <!-- Icons: 24×24 stroke paths, drawn by Controls/Icon -->
+  <StreamGeometry x:Key="IconInstalled">M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18 M9 10v10</StreamGeometry>
+  <StreamGeometry x:Key="IconDownload">M12 3v12 M7 10l5 5 5-5 M5 21h14</StreamGeometry>
+  <StreamGeometry x:Key="IconConvert">M3.5 6a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M15.5 18a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M6 8.5v4a5 5 0 0 0 5 5h4.5</StreamGeometry>
+  <StreamGeometry x:Key="IconBranch">M3.5 5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M3.5 19a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M15.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M6 7.5v9 M18 11.5a6 6 0 0 1-6 6H8.5</StreamGeometry>
+  <StreamGeometry x:Key="IconRefresh">M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7</StreamGeometry>
+  <StreamGeometry x:Key="IconSearch">M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0 M20 20l-3.5-3.5</StreamGeometry>
+  <StreamGeometry x:Key="IconClose">M6 6l12 12 M18 6L6 18</StreamGeometry>
+  <StreamGeometry x:Key="IconWarning">M12 3l10 18H2L12 3z M12 10v5 M12 18v.01</StreamGeometry>
+  <StreamGeometry x:Key="IconCopy">M11 9h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M5 15V5a2 2 0 0 1 2-2h8</StreamGeometry>
+  <StreamGeometry x:Key="IconTrash">M4 7h16 M10 11v6 M14 11v6 M6 7l1 13h10l1-13 M9 7V4h6v3</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronDown">M6 9l6 6 6-6</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronUp">M6 15l6-6 6 6</StreamGeometry>
+  <StreamGeometry x:Key="IconArrowRight">M5 12h14 M13 6l6 6-6 6</StreamGeometry>
+  <StreamGeometry x:Key="IconCheck">M5 12.5l4.5 4.5L19 7.5</StreamGeometry>
+  <StreamGeometry x:Key="IconSettings">M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z</StreamGeometry>
+  <StreamGeometry x:Key="IconExternal">M14 4h6v6 M10 14L20 4 M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronRight">M9 6l6 6-6 6</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronLeft">M15 6l-6 6 6 6</StreamGeometry>
+  <StreamGeometry x:Key="IconEye">M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0</StreamGeometry>
+  <StreamGeometry x:Key="IconEyeOff">M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2 M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2</StreamGeometry>
+  <StreamGeometry x:Key="IconFolder">M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z</StreamGeometry>
+</ResourceDictionary>

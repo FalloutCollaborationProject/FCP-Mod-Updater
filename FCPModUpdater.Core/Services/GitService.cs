@@ -130,6 +130,70 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         return ParseCommitLog(output);
     }
 
+    public async Task<IReadOnlyList<GitCommitInfo>> GetBranchCommitsAsync(string path, string branch, int limit = 20,
+        CancellationToken ct = default)
+    {
+        const string format = "%H%n%h%n%s%n%an%n%aI%n---";
+        var (exitCode, output, _) = await RunGitCommandAsync(path,
+            $"log \"origin/{branch}\" --format=\"{format}\" -n {limit}", ct);
+
+        return exitCode == 0 ? ParseCommitLog(output) : [];
+    }
+
+    public async Task<bool> FastForwardToAsync(string path, string commit, CancellationToken ct = default)
+    {
+        var (exitCode, _, _) = await RunGitCommandAsync(path, $"merge --ff-only \"{commit}\"", ct);
+        if (exitCode != 0)
+            return false;
+
+        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        return true;
+    }
+
+    /// <summary>The <c>git --version</c> text and the git executable found on PATH, or nulls when git is missing.</summary>
+    public static async Task<(string? Version, string? ExecutablePath)> GetGitInfoAsync()
+    {
+        string? version = null;
+        try
+        {
+            BufferedCommandResult result = await Cli.Wrap("git")
+                .WithArguments("--version")
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+            if (result.ExitCode == 0)
+                version = result.StandardOutput.Trim();
+        }
+        catch
+        {
+            // git is not installed
+        }
+
+        return (version, FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git"));
+    }
+
+    internal static string? FindOnPath(string executable)
+    {
+        var path = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(path))
+            return null;
+
+        foreach (var dir in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var candidate = Path.Combine(dir.Trim('"'), executable);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+            catch (ArgumentException)
+            {
+                // Malformed PATH entry
+            }
+        }
+
+        return null;
+    }
+
     public async Task<GitOperationResult> FetchAsync(string path, IProgress<string>? progress = null,
         CancellationToken ct = default)
     {

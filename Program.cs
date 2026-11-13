@@ -8,7 +8,7 @@ using Spectre.Console.Cli;
 
 var services = new ServiceCollection();
 
-services.AddFcpCore();
+services.AddFcpCore(CommandLine.FindOption(args, "--github-token"));
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -27,6 +27,19 @@ app.Configure(config =>
         .WithDescription("Update all FCP mods (non-interactive)")
         .WithExample("update")
         .WithExample("update", "--directory", "/path/to/RimWorld/Mods");
+
+    config.AddBranch("settings", settings =>
+    {
+        settings.SetDescription("Show or change saved settings");
+        settings.SetDefaultCommand<SettingsShowCommand>();
+        settings.AddCommand<SettingsSetCommand>("set")
+            .WithDescription("Save a setting")
+            .WithExample("settings", "set", "mods-directory", "/path/to/RimWorld/Mods")
+            .WithExample("settings", "set", "include-prereleases", "false");
+        settings.AddCommand<SettingsUnsetCommand>("unset")
+            .WithDescription("Reset a setting to its default")
+            .WithExample("settings", "unset", "github-token");
+    });
 });
 
 app.SetDefaultCommand<ScanCommand>();

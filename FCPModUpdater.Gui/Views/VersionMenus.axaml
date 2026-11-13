@@ -1,0 +1,146 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+                    xmlns:c="using:FCPModUpdater.Gui.Controls">
+
+  <!-- Branch menu (300px): origin branches with ✓ on the current one; picking lists its commits -->
+  <DataTemplate x:Key="BranchMenuTemplate" x:DataType="vm:VersionMenuViewModel">
+    <StackPanel Width="300">
+      <Border BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="12,8,8,8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Text="Switch branch"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="ghost icon" Padding="3" CornerRadius="4" Foreground="{StaticResource TextDim}"
+                  Command="{Binding CloseCommand}" AutomationProperties.Name="Close">
+            <c:Icon Data="{StaticResource IconClose}" Size="14" />
+          </Button>
+        </Grid>
+      </Border>
+      <Panel MinHeight="44">
+        <ProgressBar IsIndeterminate="True" Height="2" MinHeight="2" VerticalAlignment="Top"
+                     Foreground="{StaticResource Accent}" Background="Transparent" IsVisible="{Binding IsLoading}" />
+        <TextBlock Classes="sub" FontSize="12" Margin="12,12" TextWrapping="Wrap" Text="{Binding EmptyText}"
+                   IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ScrollViewer MaxHeight="280">
+          <ItemsControl ItemsSource="{Binding Branches}" Margin="4">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MenuBranchViewModel">
+                <Button Classes="menuitem" Command="{Binding PickCommand}">
+                  <Grid ColumnDefinitions="14,*,Auto,Auto" ColumnSpacing="10">
+                    <TextBlock Text="{Binding Mark}" Foreground="{StaticResource Accent}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="1">
+                      <TextBlock Classes="mono" FontSize="12.5" Foreground="{StaticResource Text}" Text="{Binding Display}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding Age}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" FontSize="11" Foreground="{StaticResource TextDim}" Text="Commits"
+                               VerticalAlignment="Center" />
+                    <c:Icon Grid.Column="3" Data="{StaticResource IconChevronRight}" Size="14"
+                            Foreground="{StaticResource TextDim}" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Panel>
+      <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="4">
+        <Button Classes="link" FontSize="12" HorizontalAlignment="Left" Padding="8,6"
+                Content="Open version selector…" Command="{Binding FullHistoryCommand}" />
+      </Border>
+    </StackPanel>
+  </DataTemplate>
+
+  <!-- Commit selector (400px): incoming, HEAD, older history; radio pick; action depends on the pick -->
+  <DataTemplate x:Key="CommitMenuTemplate" x:DataType="vm:VersionMenuViewModel">
+    <StackPanel Width="400">
+      <Border BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="12,8,8,8">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <Button Classes="ghost" Padding="2,3,6,3" CornerRadius="4" FontSize="12" Foreground="{StaticResource TextSoft}"
+                  IsVisible="{Binding FromBranch}" Command="{Binding BackCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <c:Icon Data="{StaticResource IconChevronLeft}" Size="14" />
+              <TextBlock Text="Branches" />
+            </StackPanel>
+          </Button>
+          <TextBlock Grid.Column="1" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}"
+                     VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+            <Run Text="Commits on " /><Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource TextStrong}"
+                                           Text="origin/" /><Run FontFamily="{StaticResource Mono}" Foreground="{StaticResource TextStrong}"
+                                           Text="{Binding Branch, Mode=OneWay}" />
+          </TextBlock>
+          <Button Grid.Column="2" Classes="ghost icon" Padding="3" CornerRadius="4" Foreground="{StaticResource TextDim}"
+                  Command="{Binding CloseCommand}" AutomationProperties.Name="Close">
+            <c:Icon Data="{StaticResource IconClose}" Size="14" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <Panel MinHeight="44">
+        <ProgressBar IsIndeterminate="True" Height="2" MinHeight="2" VerticalAlignment="Top"
+                     Foreground="{StaticResource Accent}" Background="Transparent" IsVisible="{Binding IsLoading}" />
+        <TextBlock Classes="sub" FontSize="12" Margin="12,12" Text="{Binding EmptyText}"
+                   IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ScrollViewer MaxHeight="236">
+          <ItemsControl ItemsSource="{Binding Commits}" Margin="4">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:MenuCommitViewModel">
+                <Button Classes="menuitem" Classes.picked="{Binding IsPicked}" Padding="10,8"
+                        Command="{Binding PickCommand}">
+                  <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+                    <Panel Width="15" Height="15" VerticalAlignment="Center">
+                      <Ellipse Width="15" Height="15" StrokeThickness="1.5"
+                               Stroke="{Binding IsPicked, Converter={x:Static vm:PickBrushes.Ring}}" />
+                      <Ellipse Width="7" Height="7" Fill="{StaticResource Accent}" IsVisible="{Binding IsPicked}" />
+                    </Panel>
+                    <TextBlock Grid.Column="1" Classes="mono" FontSize="12" Foreground="{StaticResource Accent}"
+                               Text="{Binding Hash}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" Spacing="1">
+                      <TextBlock FontSize="12.5" Foreground="{StaticResource Text}" Text="{Binding Message}"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Message}" />
+                      <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding Meta}" />
+                    </StackPanel>
+                    <Panel Grid.Column="3" VerticalAlignment="Center">
+                      <Border Classes="headTag" IsVisible="{Binding IsHeadTag}">
+                        <TextBlock Text="{Binding TagText}" />
+                      </Border>
+                      <Border Classes="warnTag" Height="19" IsVisible="{Binding IsWarnTag}">
+                        <TextBlock Text="{Binding TagText}" />
+                      </Border>
+                    </Panel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Panel>
+
+      <!-- Local changes: same warning and acknowledgement as the version selector -->
+      <Border Classes="note" Margin="12,0,12,10" Padding="10,8" CornerRadius="5" IsVisible="{Binding IsDirty}">
+        <StackPanel Spacing="6">
+          <TextBlock FontSize="12" TextWrapping="Wrap"
+                     Text="This mod has uncommitted local changes. Changing version may discard them." />
+          <CheckBox FontSize="12" Content="I understand" IsChecked="{Binding DirtyAcknowledged}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="errorBlock" Margin="12,0,12,10" Padding="10,8"
+              IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+        <SelectableTextBlock Classes="mono" FontSize="11.5" Foreground="{StaticResource ErrorBlockText}"
+                             Text="{Binding Error}" TextWrapping="Wrap" />
+      </Border>
+
+      <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="12,10">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+          <Button Classes="link" FontSize="12" Padding="0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Content="Full history…" Command="{Binding FullHistoryCommand}" />
+          <Button Grid.Column="1" Classes="outline small" Padding="12,6" Content="Cancel" Command="{Binding CloseCommand}" />
+          <Button Grid.Column="2" Classes="primary small" Padding="12,7" FontWeight="Bold" Content="{Binding Cta}"
+                  Command="{Binding ApplyCommand}" />
+        </Grid>
+      </Border>
+    </StackPanel>
+  </DataTemplate>
+</ResourceDictionary>

@@ -9,8 +9,13 @@ namespace FCPModUpdater.Commands.Settings;
 public class ModPathSettings : CommandSettings
 {
     [CommandOption("-d|--directory")]
-    [Description("Path to the RimWorld/Mods folder. If not specified, will attempt to auto-discover.")]
+    [Description("Path to the RimWorld/Mods folder. Overrides the saved folder; auto-discovered if neither is set.")]
     public DirectoryInfo? ModDirectory { get; init; }
+
+    // Read before the command runs (Program.cs) so the HTTP clients get it; declared here for parsing and --help.
+    [CommandOption("--github-token <TOKEN>")]
+    [Description("GitHub token for this run. Takes priority over GITHUB_TOKEN and the saved token.")]
+    public string? GitHubToken { get; init; }
 
     public override ValidationResult Validate()
     {
