@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="FCPModUpdater"
-ARCHIVE="FCPModUpdater-linux-x64-selfcontained.tar.gz"
 BASE_URL="https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest/download"
 RELEASES_API="https://api.github.com/repos/FalloutCollaborationProject/FCP-Mod-Updater/releases?per_page=50"
 
@@ -17,7 +15,16 @@ if [[ "${1:-}" != "--from-temp" ]]; then
     exit "${exit_code}"
 fi
 
-if [[ ! -f "./${APP_NAME}" ]]; then
+# The same script updates the GUI (FCPModManager) and the CLI (FCPModUpdater); the install folder says which.
+if [[ -f "./FCPModManager" ]]; then
+    APP_NAME="FCPModManager"
+    ARCHIVE="FCPModManager-linux-x64.tar.gz"
+    ARCHIVE_DIR="gui-linux-x64"
+elif [[ -f "./FCPModUpdater" ]]; then
+    APP_NAME="FCPModUpdater"
+    ARCHIVE="FCPModUpdater-linux-x64-selfcontained.tar.gz"
+    ARCHIVE_DIR="linux-x64-sc"
+else
     echo "Run this script from the existing FCP Mod Manager install folder."
     exit 1
 fi
@@ -114,10 +121,10 @@ if ! grep " ${ARCHIVE}$" checksums.txt | sha256sum -c -; then
 fi
 
 tar -xzf "${ARCHIVE}"
-source_dir="${staging}/linux-x64-sc"
+source_dir="${staging}/${ARCHIVE_DIR}"
 
 if [[ ! -d "${source_dir}" ]]; then
-    echo "Downloaded archive did not contain the expected linux-x64-sc folder."
+    echo "Downloaded archive did not contain the expected ${ARCHIVE_DIR} folder."
     exit 1
 fi
 

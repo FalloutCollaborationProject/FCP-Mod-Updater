@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=FCP Mod Manager
+Comment=Manage RimWorld mods from the Fallout Collaboration Project
+Exec=./FCPModManager
+Icon=./fcp_logo.png
+Terminal=false
+Categories=Game;Utility;

@@ -10,8 +10,16 @@ if /I not "%~1"=="--from-temp" (
     exit /b %EXIT_CODE%
 )
 
-set "APP_NAME=FCPModUpdater.exe"
-set "ARCHIVE=FCPModUpdater-win-x64-selfcontained.zip"
+rem The same script updates the GUI (FCPModManager) and the CLI (FCPModUpdater); the install folder says which.
+if exist ".\FCPModManager.exe" (
+    set "APP_NAME=FCPModManager.exe"
+    set "ARCHIVE=FCPModManager-win-x64.zip"
+    set "ARCHIVE_DIR=gui-win-x64"
+) else (
+    set "APP_NAME=FCPModUpdater.exe"
+    set "ARCHIVE=FCPModUpdater-win-x64-selfcontained.zip"
+    set "ARCHIVE_DIR=win-x64-sc"
+)
 set "BASE_URL=https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest/download"
 set "RELEASES_API=https://api.github.com/repos/FalloutCollaborationProject/FCP-Mod-Updater/releases?per_page=50"
 set "STAGING=%TEMP%\FCPModUpdater-update-%RANDOM%%RANDOM%"
@@ -82,14 +90,14 @@ if not "%ERRORLEVEL%"=="0" (
     exit /b 1
 )
 
-if not exist "%STAGING%\win-x64-sc" (
-    echo Downloaded archive did not contain the expected win-x64-sc folder.
+if not exist "%STAGING%\%ARCHIVE_DIR%" (
+    echo Downloaded archive did not contain the expected %ARCHIVE_DIR% folder.
     rmdir /S /Q "%STAGING%" >nul 2>nul
     exit /b 1
 )
 
 echo Installing update...
-robocopy "%STAGING%\win-x64-sc" "%CD%" /E /COPY:DAT /R:3 /W:1 /NFL /NDL
+robocopy "%STAGING%\%ARCHIVE_DIR%" "%CD%" /E /COPY:DAT /R:3 /W:1 /NFL /NDL
 set "COPY_EXIT=%ERRORLEVEL%"
 rmdir /S /Q "%STAGING%" >nul 2>nul
 

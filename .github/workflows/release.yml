@@ -47,16 +47,21 @@ jobs:
           cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
 
       - name: Build GUI Windows x64 (self-contained)
-        run: dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64
+        run: |
+          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64
+          cp ./update-fcp-mod-manager.bat ./publish/gui-win-x64/
 
       - name: Build GUI Linux x64 (self-contained)
-        run: dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
+        run: |
+          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
+          cp ./update-fcp-mod-manager.sh ./fcp-mod-manager-gui.desktop ./FCPModUpdater.Gui/Assets/fcp_logo.png ./publish/gui-linux-x64/
 
       - name: Create archives
         run: |
           cp ./update-fcp-mod-manager.bat ./publish/
           cp ./update-fcp-mod-manager.sh ./publish/
           cd ./publish
+          chmod +x linux-x64-sc/${{ env.APP_NAME }} linux-x64-sc/update-fcp-mod-manager.sh gui-linux-x64/${{ env.GUI_NAME }} gui-linux-x64/update-fcp-mod-manager.sh
           zip -r "${{ env.APP_NAME }}-win-x64-selfcontained.zip" win-x64-sc
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
           zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
