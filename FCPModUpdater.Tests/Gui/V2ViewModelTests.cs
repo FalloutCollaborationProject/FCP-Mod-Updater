@@ -17,6 +17,14 @@ public sealed class V2ViewModelTests : IDisposable
             Directory.Delete(_dir, true);
     }
 
+    /// <summary>Navigation starts the rescan without awaiting it; discovery runs on the thread pool.</summary>
+    private static async Task WaitForScanAsync(ShellFixture f)
+    {
+        for (var i = 0; i < 200 && (f.Shell.IsScanning || f.Shell.LastScanned is null); i++)
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
+    }
+
     private static GitCommitInfo C(string hash, string message) =>
         new(hash + "0000000000", hash, message, "kaz", DateTimeOffset.UtcNow);
 
@@ -229,6 +237,50 @@ public sealed class V2ViewModelTests : IDisposable
 
         Assert.True(f.Shell.Settings.TestOk);
         Assert.StartsWith("✓ Token valid · 4,982 of 5,000 requests left", f.Shell.Settings.TestResult);
+    }
+
+    [Fact]
+    public async Task Settings_TestingTheTokenInUse_RefreshesSidebarCounter()
+    {
+        var f = new ShellFixture(_dir);
+        var info = new RateLimitCheck(new RateLimitInfo(4982, 5000, DateTimeOffset.UtcNow), null);
+        f.GitHub.GetRateLimitAsync(Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(info);
+        f.GitHub.GetRateLimitAsync(null, Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            f.GitHub.RemainingRateLimit.Returns(4982);
+            f.GitHub.RateLimitTotal.Returns(5000);
+            return info;
+        });
+        await f.Shell.InitializeAsync();
+
+        f.Shell.Settings.Token = "tok";
+        await f.Shell.Settings.TestTokenCommand.ExecuteAsync(null);
+
+        await f.GitHub.Received(1).GetRateLimitAsync(null, Arg.Any<CancellationToken>());
+        Assert.Equal("4,982 / 5,000", f.Shell.RateLimitText);
+    }
+
+    [Fact]
+    public async Task Settings_NewToken_ClearsRepoCache_AndRescansOnLeavingSettings()
+    {
+        var f = new ShellFixture(_dir);
+        await f.Shell.InitializeAsync();
+        f.Shell.Navigate(Page.Settings);
+        f.GitHub.ClearReceivedCalls();
+        f.Discovery.ClearReceivedCalls();
+
+        f.Shell.Settings.Token = "tok";
+        f.GitHub.Received().ClearCache();
+
+        f.Shell.Navigate(Page.Installed);
+        await WaitForScanAsync(f);
+        await f.Discovery.Received(1).DiscoverModsAsync(_dir, Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>());
+
+        // No second rescan without another change.
+        f.Shell.Navigate(Page.Settings);
+        f.Shell.Navigate(Page.Installed);
+        await WaitForScanAsync(f);
+        await f.Discovery.Received(1).DiscoverModsAsync(_dir, Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

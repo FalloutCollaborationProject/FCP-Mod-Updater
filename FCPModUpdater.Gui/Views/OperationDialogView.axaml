@@ -194,7 +194,7 @@
           </Border>
 
           <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,18,0,0">
-            <ItemsControl ItemsSource="{Binding Items}">
+            <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,18,0">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                   <StackPanel Spacing="10" />

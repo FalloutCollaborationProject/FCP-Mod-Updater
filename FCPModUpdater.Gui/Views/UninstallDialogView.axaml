@@ -33,7 +33,7 @@
         </Grid>
 
         <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding Mods}">
+          <ItemsControl ItemsSource="{Binding Mods}" Margin="0,0,14,0">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Spacing="6" />

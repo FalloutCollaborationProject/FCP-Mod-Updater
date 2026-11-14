@@ -326,6 +326,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void Navigate(Page page)
     {
+        // Leaving Settings after changing the token: rescan so the repo list reflects it.
+        if (page != Page.Settings && CurrentPage == Settings)
+            _ = Settings.ApplyTokenChangeAsync();
+
         switch (page)
         {
             case Page.Install:

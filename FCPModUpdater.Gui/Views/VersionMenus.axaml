@@ -22,7 +22,7 @@
         <TextBlock Classes="sub" FontSize="12" Margin="12,12" TextWrapping="Wrap" Text="{Binding EmptyText}"
                    IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <ScrollViewer MaxHeight="280">
-          <ItemsControl ItemsSource="{Binding Branches}" Margin="4">
+          <ItemsControl ItemsSource="{Binding Branches}" Margin="4,4,14,4">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MenuBranchViewModel">
                 <Button Classes="menuitem" Command="{Binding PickCommand}">
@@ -83,7 +83,7 @@
         <TextBlock Classes="sub" FontSize="12" Margin="12,12" Text="{Binding EmptyText}"
                    IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <ScrollViewer MaxHeight="236">
-          <ItemsControl ItemsSource="{Binding Commits}" Margin="4">
+          <ItemsControl ItemsSource="{Binding Commits}" Margin="4,4,14,4">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MenuCommitViewModel">
                 <Button Classes="menuitem" Classes.picked="{Binding IsPicked}" Padding="10,8"

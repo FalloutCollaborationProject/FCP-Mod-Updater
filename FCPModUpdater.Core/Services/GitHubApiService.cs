@@ -39,7 +39,7 @@ public class GitHubApiService(HttpClient httpClient) : IGitHubApiService
 
         while (true)
         {
-            var url = $"orgs/{OrgName}/repos?per_page={perPage}&page={page}";
+            var url = $"orgs/{OrgName}/repos?type=all&per_page={perPage}&page={page}";
 
             try
             {

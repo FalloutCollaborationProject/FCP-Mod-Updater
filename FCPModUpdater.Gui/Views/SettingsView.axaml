@@ -45,7 +45,7 @@
                        VerticalAlignment="Center" />
           </Grid>
           <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" LineHeight="20"
-                     Text="Without a token GitHub allows 60 requests an hour, which a large refresh can use up. A personal access token raises this to 5,000. It needs no scopes: public repository access is enough." />
+                     Text="Without a token GitHub allows 60 requests an hour, which a large refresh can use up. A personal access token raises this to 5,000. For public repositories it needs no permissions. To see private FCP repositories, give it read access to the FalloutCollaborationProject organization's repositories (fine-grained token: resource owner FalloutCollaborationProject, Contents read-only; classic token: repo scope)." />
           <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="Personal access token" />
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <TextBox Classes="mono field" FontSize="13" Text="{Binding Token}" PasswordChar="{Binding PasswordChar}"

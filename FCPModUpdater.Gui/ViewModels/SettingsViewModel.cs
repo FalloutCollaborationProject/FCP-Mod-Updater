@@ -161,6 +161,22 @@ public partial class SettingsViewModel : ObservableObject
         Save(s => s with { GitHubToken = string.IsNullOrWhiteSpace(value) ? null : value.Trim() });
         RefreshTokenSource();
         _shell.RefreshRateLimit();
+
+        // The cached repo list was fetched with the old token; a token can see private org repos.
+        _gitHub.ClearCache();
+        HasPendingTokenChange = true;
+    }
+
+    /// <summary>Set when the token changed since the last scan; the shell rescans when it is applied.</summary>
+    public bool HasPendingTokenChange { get; private set; }
+
+    /// <summary>Rescans with the new token, at most once per change.</summary>
+    public Task ApplyTokenChangeAsync()
+    {
+        if (!HasPendingTokenChange)
+            return Task.CompletedTask;
+        HasPendingTokenChange = false;
+        return _shell.RescanAsync(clearCache: true);
     }
 
     public TokenSource ActiveSource => _tokens.ActiveSource;
@@ -211,7 +227,14 @@ public partial class SettingsViewModel : ObservableObject
                 TestResult = $"✗ {check.Error}";
             }
 
+            // A check with an explicit token leaves the sidebar numbers alone (that token may not be the one
+            // in use). When it is the token in use, re-read the limit for it so the counter updates now.
+            if (check.Success && typed is not null && typed == _tokens.Token)
+                await _gitHub.GetRateLimitAsync();
+
             _shell.RefreshRateLimit();
+            if (check.Success)
+                await ApplyTokenChangeAsync();
         }
         finally
         {
@@ -227,6 +250,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         Token = "";
         ShowToken = false;
+        _ = ApplyTokenChangeAsync();
     }
 
     [RelayCommand]
