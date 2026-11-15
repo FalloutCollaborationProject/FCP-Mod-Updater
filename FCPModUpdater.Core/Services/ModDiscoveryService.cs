@@ -133,6 +133,9 @@ public class ModDiscoveryService : IModDiscoveryService
     {
         try
         {
+            // Leftover checkouts of removed submodules would otherwise show the mod as modified.
+            await _gitService.RemoveStaleSubmodulesAsync(path, ct);
+
             // Phase 1: Run all independent operations in parallel
             var branchTask = _gitService.GetCurrentBranchAsync(path, ct);
             var commitTask = _gitService.GetCurrentCommitAsync(path, ct);

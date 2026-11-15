@@ -146,7 +146,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         if (exitCode != 0)
             return false;
 
-        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        await UpdateSubmodulesAsync(path, ct);
         return true;
     }
 
@@ -228,8 +228,68 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
 
         if (!result.Success)
             progress?.Report($"Pull failed: {result.Error ?? $"git exited with code {result.ExitCode}"}");
+        else
+            await RemoveStaleSubmodulesAsync(path, ct);
 
         return result;
+    }
+
+    private async Task UpdateSubmodulesAsync(string path, CancellationToken ct)
+    {
+        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        await RemoveStaleSubmodulesAsync(path, ct);
+    }
+
+    /// <summary>
+    /// Moving to a commit that no longer has a submodule leaves its checkout behind ("unable to rmdir"), so the
+    /// mod shows as modified. Deletes untracked folders that are exactly such leftovers: their <c>.git</c> is a
+    /// file pointing into this repo's <c>.git/modules</c>. Anything else untracked is left alone.
+    /// </summary>
+    public async Task RemoveStaleSubmodulesAsync(string path, CancellationToken ct = default)
+    {
+        var (exitCode, output, _) = await RunGitCommandAsync(path, "status --porcelain --untracked-files=normal", ct);
+        if (exitCode != 0)
+            return;
+
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!line.StartsWith("?? ") || !line.TrimEnd().EndsWith('/'))
+                continue;
+            var relative = line[3..].Trim().Trim('"').TrimEnd('/');
+            var dir = Path.Combine(path, relative);
+            if (IsStaleSubmoduleCheckout(path, dir))
+            {
+                try
+                {
+                    DeleteDirectory(dir);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Leave it; the mod simply keeps showing as modified.
+                }
+            }
+        }
+    }
+
+    internal static bool IsStaleSubmoduleCheckout(string repoPath, string dir)
+    {
+        var gitFile = Path.Combine(dir, ".git");
+        if (!File.Exists(gitFile))
+            return false;
+        var first = File.ReadLines(gitFile).FirstOrDefault()?.Trim() ?? "";
+        if (!first.StartsWith("gitdir:", StringComparison.Ordinal))
+            return false;
+        var target = Path.GetFullPath(Path.Combine(dir, first["gitdir:".Length..].Trim()));
+        var modules = Path.GetFullPath(Path.Combine(repoPath, ".git", "modules")) + Path.DirectorySeparatorChar;
+        return target.StartsWith(modules, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
+
+    /// <summary>Recursive delete that also clears read-only files (git marks objects read-only on Windows).</summary>
+    private static void DeleteDirectory(string dir)
+    {
+        foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            File.SetAttributes(file, FileAttributes.Normal);
+        Directory.Delete(dir, recursive: true);
     }
 
     public async Task<(bool Success, string? Error)> CloneAsync(string url, string targetPath, IProgress<string>? progress = null,
@@ -329,7 +389,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         if (exitCode != 0)
             return false;
 
-        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        await UpdateSubmodulesAsync(path, ct);
         return true;
     }
 
@@ -345,7 +405,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         if (exitCode != 0)
             return false;
 
-        await RunGitCommandAsync(path, "submodule update --init --recursive", ct);
+        await UpdateSubmodulesAsync(path, ct);
         return true;
     }
 

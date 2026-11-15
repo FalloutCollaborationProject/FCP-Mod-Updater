@@ -168,7 +168,12 @@
                         <Button.Flyout>
                           <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover"
                                   Opened="OnMenuOpened" Closed="OnMenuClosed">
-                            <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource BranchMenuTemplate}" />
+                            <Panel>
+                              <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource BranchMenuTemplate}"
+                                              IsVisible="{Binding Menu.IsBranchOpen, FallbackValue=False}" />
+                              <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource CommitMenuTemplate}"
+                                              IsVisible="{Binding Menu.IsCommitOpen, FallbackValue=False}" />
+                            </Panel>
                           </Flyout>
                         </Button.Flyout>
                         <Grid ColumnDefinitions="*,Auto">
@@ -190,7 +195,12 @@
                         <Button.Flyout>
                           <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover"
                                   Opened="OnMenuOpened" Closed="OnMenuClosed">
-                            <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource CommitMenuTemplate}" />
+                            <Panel>
+                              <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource BranchMenuTemplate}"
+                                              IsVisible="{Binding Menu.IsBranchOpen, FallbackValue=False}" />
+                              <ContentControl Content="{Binding Menu}" ContentTemplate="{StaticResource CommitMenuTemplate}"
+                                              IsVisible="{Binding Menu.IsCommitOpen, FallbackValue=False}" />
+                            </Panel>
                           </Flyout>
                         </Button.Flyout>
                         <Grid ColumnDefinitions="*,Auto">
@@ -364,8 +374,10 @@
                 <TextBlock Text="Problems" VerticalAlignment="Center" />
                 <Border Background="{StaticResource DangerStrong}" CornerRadius="9" MinWidth="18" Height="18"
                         Padding="5,0" IsVisible="{Binding HasProblems}">
+                  <!-- LineHeight = badge height so the digit sits on the badge's centre line, not the font's ascent -->
                   <TextBlock FontSize="11" FontWeight="Bold" Foreground="White" Text="{Binding ProblemCount}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                             LineHeight="18" TextAlignment="Center" HorizontalAlignment="Center"
+                             VerticalAlignment="Center" LineSpacing="0" />
                 </Border>
               </StackPanel>
             </Button>

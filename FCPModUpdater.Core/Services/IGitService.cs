@@ -26,5 +26,7 @@ public interface IGitService
     /// <summary>Moves the current branch forward to <paramref name="commit"/> (<c>git merge --ff-only</c>).</summary>
     /// <summary><c>git merge-base --is-ancestor</c>: true when <paramref name="commit"/> is contained in <paramref name="of"/>.</summary>
     Task<bool> IsAncestorAsync(string path, string commit, string of, CancellationToken ct = default);
+    /// <summary>Deletes checkouts of submodules the current commit no longer has (git can't remove them itself).</summary>
+    Task RemoveStaleSubmodulesAsync(string path, CancellationToken ct = default);
     Task<bool> FastForwardToAsync(string path, string commit, CancellationToken ct = default);
 }
