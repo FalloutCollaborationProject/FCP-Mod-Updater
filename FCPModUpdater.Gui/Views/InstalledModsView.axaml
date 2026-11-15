@@ -33,6 +33,9 @@
                                    Text="{Binding BannerCommand}" />
             </Border>
           </StackPanel>
+          <TextBlock FontSize="13" Foreground="{StaticResource BannerText}" Margin="6,0"
+                     Text="— download the new AppImage from the release page" VerticalAlignment="Center"
+                     IsVisible="{Binding ShowAppImageHint}" />
         </WrapPanel>
         <Button Grid.Column="2" Classes="link" FontSize="13" FontWeight="SemiBold" Content="Release page"
                 Command="{Binding OpenReleasePageCommand}" />

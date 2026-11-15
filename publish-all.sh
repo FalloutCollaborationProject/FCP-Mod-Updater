@@ -9,7 +9,7 @@ CLI_PROJECT="./FCPModUpdater.csproj"
 GUI_PROJECT="./FCPModUpdater.Gui/FCPModUpdater.Gui.csproj"
 OUT="./publish"
 
-for tool in dotnet zip tar sha256sum; do
+for tool in dotnet zip tar sha256sum curl; do
     command -v "$tool" >/dev/null || { echo "Missing required tool: $tool"; exit 1; }
 done
 
@@ -39,6 +39,9 @@ publish "$GUI_PROJECT" linux-x64 true gui-linux-x64
 cp ./update-fcp-mod-manager.bat "$OUT/gui-win-x64/"
 cp ./update-fcp-mod-manager.sh ./fcp-mod-manager-gui.desktop ./FCPModUpdater.Gui/Assets/fcp_logo.png "$OUT/gui-linux-x64/"
 
+# GUI AppImage (single-file Linux download)
+./packaging/build-appimage.sh "$OUT/gui-linux-x64" "$OUT"
+
 # Standalone updater scripts are release assets too
 cp ./update-fcp-mod-manager.bat ./update-fcp-mod-manager.sh "$OUT/"
 
@@ -51,7 +54,7 @@ tar -czf "${APP_NAME}-linux-x64.tar.gz" linux-x64-fd
 zip -qr "${GUI_NAME}-GUI-win-x64.zip" gui-win-x64
 tar -czf "${GUI_NAME}-GUI-linux-x64.tar.gz" gui-linux-x64
 rm -rf win-x64-sc linux-x64-sc win-x64-fd linux-x64-fd gui-win-x64 gui-linux-x64
-sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz "${GUI_NAME}"-*.zip "${GUI_NAME}"-*.tar.gz > checksums.txt
+sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz "${GUI_NAME}"-*.zip "${GUI_NAME}"-*.tar.gz "${GUI_NAME}"-*.AppImage > checksums.txt
 cd ..
 
 # Single-file publish adds Microsoft.NET.ILLink.Tasks to the lock files; don't leave that behind.

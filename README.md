@@ -70,6 +70,7 @@
 | Archive | What it is | Who it's for |
 |---------|------------|--------------|
 | `FCPModManager-GUI-win-x64.zip` / `FCPModManager-GUI-linux-x64.tar.gz` | Desktop app, everything bundled | **Most users**: download this one |
+| `FCPModManager-GUI-x86_64.AppImage` | Desktop app for Linux as one file: `chmod +x` it and run | Linux users who prefer an AppImage |
 | `FCPModUpdater-*-selfcontained.zip` / `.tar.gz` | Command-line app, everything bundled | Terminal users |
 | `FCPModUpdater-win-x64.zip` / `FCPModUpdater-linux-x64.tar.gz` | Command-line app, smaller, requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download) | Users who already have .NET installed |
 

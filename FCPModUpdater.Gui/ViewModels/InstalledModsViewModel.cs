@@ -445,6 +445,9 @@ public partial class InstalledModsViewModel : ObservableObject
 
     public bool HasBannerCommand => BannerCommand.Length > 0;
 
+    /// <summary>An AppImage has no updater script; it is updated by replacing the file.</summary>
+    public bool ShowAppImageHint => UpdateCheckService.IsAppImage;
+
     partial void OnAppUpdateChanged(UpdateCheckResult? value)
     {
         OnPropertyChanged(nameof(BannerTitle));

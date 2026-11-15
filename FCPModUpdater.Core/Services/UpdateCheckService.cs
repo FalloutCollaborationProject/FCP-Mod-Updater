@@ -94,9 +94,18 @@ public class UpdateCheckService(HttpClient httpClient)
         return result;
     }
 
+    /// <summary>True when the app runs from an AppImage (its runtime sets <c>APPIMAGE</c> to the file's path).</summary>
+    public static bool IsAppImage => IsAppImagePath(Environment.GetEnvironmentVariable("APPIMAGE"));
+
+    internal static bool IsAppImagePath(string? appImage) => !string.IsNullOrWhiteSpace(appImage);
+
     /// <summary>The updater script shipped next to the app for this platform, or null when there is none.</summary>
-    public static string? GetUpdaterCommand() =>
-        OperatingSystem.IsWindows() ? "update-fcp-mod-manager.bat"
+    public static string? GetUpdaterCommand() => GetUpdaterCommand(IsAppImage);
+
+    // An AppImage is one read-only file with no script beside it; it is updated by replacing the file.
+    internal static string? GetUpdaterCommand(bool isAppImage) =>
+        isAppImage ? null
+        : OperatingSystem.IsWindows() ? "update-fcp-mod-manager.bat"
         : OperatingSystem.IsLinux() ? "./update-fcp-mod-manager.sh"
         : null;
 
