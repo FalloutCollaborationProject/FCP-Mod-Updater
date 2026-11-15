@@ -6,8 +6,11 @@ namespace FCPModUpdater.UI;
 public static class ModTableRenderer
 {
     public static void RenderModTable(IReadOnlyList<InstalledMod> mods, int? rateLimit = null,
-        DateTimeOffset? rateLimitReset = null)
+        DateTimeOffset? rateLimitReset = null, Services.GameVersion? gameVersion = null)
     {
+        if (gameVersion is not null)
+            AnsiConsole.MarkupLine($"[grey]RimWorld {Markup.Escape(gameVersion.Raw)}[/]");
+
         if (mods.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No FCP mods found in the specified directory.[/]");
@@ -31,7 +34,7 @@ public static class ModTableRenderer
                 FormatSource(mod.Source),
                 FormatBranch(mod.Branch),
                 FormatCommit(mod.CurrentCommit),
-                FormatStatus(mod)
+                FormatStatus(mod) + FormatVersionMismatch(mod, gameVersion)
             );
         }
 
@@ -95,6 +98,24 @@ public static class ModTableRenderer
             ? $"[grey]{commit.ShortHash}[/]" 
             : "[grey]-[/]";
     }
+
+    private static string FormatVersionMismatch(InstalledMod mod, Services.GameVersion? gameVersion) =>
+        mod.VersionMismatch == VersionMismatch.None || mod.VersionBranch is null
+            ? ""
+            : $"\n[yellow]⚠ {Markup.Escape(gameVersion?.Short ?? "game")} → {Markup.Escape(mod.VersionBranch)}[/]";
+
+    /// <summary>One line per mod explaining why it is on the wrong branch for the game.</summary>
+    public static string DescribeVersionMismatch(InstalledMod mod, Services.GameVersion? gameVersion) =>
+        mod.VersionMismatch switch
+        {
+            VersionMismatch.OnMainline =>
+                $"{mod.Name} is on {mod.Branch}, which may need a newer RimWorld than {gameVersion?.Short}; use {mod.VersionBranch}",
+            VersionMismatch.OnOlderVersionBranch =>
+                $"{mod.Name} is on {mod.Branch}, made for an older RimWorld; use {mod.VersionBranch} for {gameVersion?.Short}",
+            VersionMismatch.AheadOfVersionBranch =>
+                $"{mod.Name} has commits newer than {mod.VersionBranch}, which may need a newer RimWorld than {gameVersion?.Short}",
+            _ => mod.Name
+        };
 
     private static string FormatStatus(InstalledMod mod)
     {

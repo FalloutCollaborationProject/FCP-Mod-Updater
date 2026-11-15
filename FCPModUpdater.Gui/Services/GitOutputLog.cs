@@ -57,10 +57,14 @@ public sealed class Problem
     /// <summary>Found while scanning (replaced by the next scan) rather than caused by a user action.</summary>
     public bool FromScan { get; init; }
 
+    /// <summary>Set for "wrong branch for the game" warnings: the action switches the mod to this branch.</summary>
+    public string? SwitchBranch { get; init; }
+
     public string Folder => $"Mods/{Path.GetFileName(Target)}";
     public string CommandLine => $"$ git {Command} · in {Folder} · {ExitLabel}";
     public string Icon => IsError ? "✗" : "⚠";
-    public string ActionLabel => IsError ? "Open folder" : "Open version selector";
+    public string ActionLabel => SwitchBranch is not null ? $"Switch to {SwitchBranch}"
+        : IsError ? "Open folder" : "Open version selector";
     public string CopyText => $"{CommandLine}\n{Detail}";
 
     public IBrush IconForeground => IsError ? Palette.Error : Palette.Warn;
@@ -204,7 +208,7 @@ public sealed partial class GitOutputLog(Action<Action> post) : IGitOutputSink
     }
 
     /// <summary>Call on the UI thread when a scan ends; adds warnings git itself does not report.</summary>
-    public void EndScan(IReadOnlyList<InstalledMod> mods, TimeSpan elapsed)
+    public void EndScan(IReadOnlyList<InstalledMod> mods, TimeSpan elapsed, string? gameVersion = null)
     {
         // Sink callbacks posted during the scan are already queued ahead of this call.
         _scanning = false;
@@ -229,6 +233,58 @@ public sealed partial class GitOutputLog(Action<Action> post) : IGitOutputSink
                     "A fast-forward pull (git pull --ff-only) cannot apply these updates.\n" +
                     $"Reset to origin/{mod.Branch} to discard the local commits, or keep them and update manually.",
                 FromScan = true
+            });
+        }
+
+        foreach (InstalledMod mod in ModCatalog.GetVersionMismatchedMods(mods))
+        {
+            if (mod.VersionMismatch == VersionMismatch.OnOlderVersionBranch)
+            {
+                var older = $"On {mod.Branch}, made for an older RimWorld — {mod.VersionBranch} has the build for {gameVersion}";
+                Add(new LogLine(now, mod.Path, mod.Name, $"⚠ {older}", LogKind.Warning));
+                Problems.Add(new Problem
+                {
+                    Target = mod.Path,
+                    Mod = mod.Name,
+                    IsError = false,
+                    Summary = older,
+                    When = now.ToString("HH:mm:ss"),
+                    Command = "rev-parse --abbrev-ref HEAD",
+                    ExitLabel = "exit 0",
+                    Detail =
+                        $"{mod.Branch} holds the last build for an older RimWorld, and you're now on {gameVersion}.\n" +
+                        $"Switch to {mod.VersionBranch} to get the build for {gameVersion}." +
+                        (mod.HasLocalChanges ? "\nUncommitted local changes will be discarded." : ""),
+                    FromScan = true,
+                    SwitchBranch = mod.VersionBranch
+                });
+                continue;
+            }
+
+            var onMain = mod.VersionMismatch == VersionMismatch.OnMainline;
+            var summary = onMain
+                ? $"On {mod.Branch ?? "detached HEAD"} — {mod.VersionBranch} is the build for RimWorld {gameVersion}"
+                : $"Newer than {mod.VersionBranch} — may need a newer RimWorld than {gameVersion}";
+            Add(new LogLine(now, mod.Path, mod.Name, $"⚠ {summary}", LogKind.Warning));
+
+            Problems.Add(new Problem
+            {
+                Target = mod.Path,
+                Mod = mod.Name,
+                IsError = false,
+                Summary = summary,
+                When = now.ToString("HH:mm:ss"),
+                Command = $"merge-base --is-ancestor HEAD origin/{mod.VersionBranch}",
+                ExitLabel = onMain ? "exit 0" : "exit 1",
+                Detail =
+                    $"This repo keeps its RimWorld {gameVersion} build on {mod.VersionBranch}; main has moved on to a newer game version.\n" +
+                    (onMain
+                        ? $"Updating from {mod.Branch ?? "this commit"} can pull changes your game can't load, so Update skips this mod.\n"
+                        : $"The checked-out commit is not on origin/{mod.VersionBranch}.\n") +
+                    $"Switch to {mod.VersionBranch} to get the last build made for {gameVersion}." +
+                    (mod.HasLocalChanges ? "\nUncommitted local changes will be discarded." : ""),
+                FromScan = true,
+                SwitchBranch = mod.VersionBranch
             });
         }
 

@@ -102,7 +102,7 @@ public partial class InstalledModsViewModel : ObservableObject
             row.PropertyChanged -= OnRowChanged;
 
         _allRows = _shell.Mods
-            .Select(m => new ModRowViewModel(m) { Menu = m.Source == ModSource.Git ? new VersionMenuViewModel(this, _git, m) : null })
+            .Select(m => new ModRowViewModel(m, _shell.GameVersion?.Short) { Menu = m.Source == ModSource.Git ? new VersionMenuViewModel(this, _git, m) : null })
             .ToList();
 
         foreach (ModRowViewModel row in _allRows)
@@ -115,6 +115,7 @@ public partial class InstalledModsViewModel : ObservableObject
         SelectedRow = Rows.FirstOrDefault(r => r.Path == selectedPath) ?? Rows.FirstOrDefault();
         UpdateCheckedCount();
         OnPropertyChanged(nameof(HasUpdateable));
+        WrongBranchCount = _allRows.Count(r => r.IsWrongBranch);
         RefreshSummary();
         RefreshProblems();
     }
@@ -283,6 +284,25 @@ public partial class InstalledModsViewModel : ObservableObject
     [RelayCommand]
     private Task Refresh() => _shell.RescanAsync(clearCache: true);
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWrongBranch))]
+    [NotifyPropertyChangedFor(nameof(SwitchAllLabel))]
+    private int _wrongBranchCount;
+
+    public bool HasWrongBranch => WrongBranchCount > 0;
+    public string SwitchAllLabel => $"Switch {Humanize.Count(WrongBranchCount, "mod")} to {_shell.GameVersion?.Short} build";
+
+    [RelayCommand]
+    private void SwitchAllToVersionBranch() =>
+        _shell.ShowSwitchBranchDialog(_allRows.Where(r => r.IsWrongBranch).Select(r => r.Mod).ToList());
+
+    [RelayCommand]
+    private void SwitchSelectedToVersionBranch()
+    {
+        if (SelectedRow is { IsWrongBranch: true } row)
+            _shell.ShowSwitchBranchDialog([row.Mod]);
+    }
+
     // ── Output dock ──────────────────────────────────────────────────────────
 
     public ObservableCollection<LogLine> VisibleLines { get; } = [];
@@ -394,7 +414,10 @@ public partial class InstalledModsViewModel : ObservableObject
     [RelayCommand]
     private void ProblemAction(Problem problem)
     {
-        if (problem.IsError)
+        if (problem.SwitchBranch is not null
+            && _shell.Mods.FirstOrDefault(m => m.Path == problem.Target) is { } mod)
+            _shell.ShowSwitchBranchDialog([mod]);
+        else if (problem.IsError)
             _shell.Platform.OpenFolder(problem.Target);
         else
             _shell.OpenVersions(problem.Target);

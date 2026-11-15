@@ -15,6 +15,7 @@ public class SettingsMenu(SettingsStore store, GitHubTokenProvider tokens, IGitH
     private const string RemoveToken = "Remove saved token";
     private const string CheckUpdates = "Check for updates on launch";
     private const string Prereleases = "Include pre-releases";
+    private const string Game = "RimWorld version";
     private const string Back = "Back";
 
     public async Task RunAsync(CancellationToken ct)
@@ -34,6 +35,7 @@ public class SettingsMenu(SettingsStore store, GitHubTokenProvider tokens, IGitH
                     .AddChoices(Folder, Token, TestToken, RemoveToken,
                         $"{CheckUpdates}: {OnOff(s.CheckForUpdatesOnLaunch)}",
                         $"{Prereleases}: {OnOff(s.EffectiveIncludePrereleases)}",
+                        $"{Game}: {s.GameVersionOverride ?? "detect"}",
                         Back), ct);
 
             if (choice == Back)
@@ -66,6 +68,13 @@ public class SettingsMenu(SettingsStore store, GitHubTokenProvider tokens, IGitH
             else if (choice == RemoveToken)
             {
                 Apply(SettingsEditor.GitHubToken, null);
+                Pause();
+            }
+            else if (choice.StartsWith(Game))
+            {
+                var version = await AnsiConsole.PromptAsync(
+                    new TextPrompt<string>("RimWorld version, e.g. 1.6 (empty to detect from the install):").AllowEmpty(), ct);
+                Apply(SettingsEditor.GameVersion, version);
                 Pause();
             }
             else if (choice.StartsWith(CheckUpdates))

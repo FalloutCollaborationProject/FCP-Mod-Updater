@@ -37,7 +37,8 @@ public class ScanCommand(
                 modDiscoveryService,
                 modsDirectory,
                 updateCheckTask,
-                new SettingsMenu(settingsStore, tokenProvider, gitHubApiService));
+                new SettingsMenu(settingsStore, tokenProvider, gitHubApiService),
+                settingsStore);
 
             await menu.RunAsync(cancellationToken);
 

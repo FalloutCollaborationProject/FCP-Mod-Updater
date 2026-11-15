@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using FCPModUpdater.Models;
+using FCPModUpdater.Settings;
 
 namespace FCPModUpdater.Services;
 
@@ -10,11 +11,13 @@ public class ModDiscoveryService : IModDiscoveryService
 
     private readonly IGitService _gitService;
     private readonly IGitHubApiService _gitHubApiService;
+    private readonly SettingsStore? _settings;
 
-    public ModDiscoveryService(IGitService gitService, IGitHubApiService gitHubApiService)
+    public ModDiscoveryService(IGitService gitService, IGitHubApiService gitHubApiService, SettingsStore? settings = null)
     {
         _gitService = gitService;
         _gitHubApiService = gitHubApiService;
+        _settings = settings;
     }
 
     public async Task<IReadOnlyList<InstalledMod>> DiscoverModsAsync(
@@ -33,6 +36,7 @@ public class ModDiscoveryService : IModDiscoveryService
             .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
+        GameVersion? gameVersion = GameVersionService.Resolve(modsDirectory, _settings?.Current).Version;
         var directories = Directory.GetDirectories(modsDirectory);
         var mods = new ConcurrentBag<InstalledMod>();
 
@@ -43,7 +47,7 @@ public class ModDiscoveryService : IModDiscoveryService
                 var folderName = Path.GetFileName(dir);
                 progress?.Report($"Scanning: {folderName}");
 
-                InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, token);
+                InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, gameVersion, token);
                 if (mod != null)
                 {
                     RemoteRepo? repo = FindRepo(mod, orgRepoNames, reposByName);
@@ -58,6 +62,7 @@ public class ModDiscoveryService : IModDiscoveryService
         string path,
         string folderName,
         HashSet<string> orgRepoNames,
+        GameVersion? gameVersion,
         CancellationToken ct)
     {
         var isGitRepo = await _gitService.IsGitRepositoryAsync(path, ct);
@@ -116,13 +121,14 @@ public class ModDiscoveryService : IModDiscoveryService
         }
 
         // It's an FCP mod - gather full status
-        return await BuildInstalledModAsync(path, folderName, remoteUrl, ct);
+        return await BuildInstalledModAsync(path, folderName, remoteUrl, gameVersion, ct);
     }
 
     private async Task<InstalledMod> BuildInstalledModAsync(
         string path,
         string folderName,
         string remoteUrl,
+        GameVersion? gameVersion,
         CancellationToken ct)
     {
         try
@@ -145,6 +151,10 @@ public class ModDiscoveryService : IModDiscoveryService
 
             ModStatus status = DetermineStatus(behind, ahead, hasLocalChanges, branch);
 
+            var (versionBranch, mismatch) = gameVersion is null
+                ? (null, VersionMismatch.None)
+                : await CheckVersionBranchAsync(path, RepoNameFromUrl(remoteUrl) ?? folderName, branch, gameVersion, ct);
+
             return new InstalledMod
             {
                 Name = folderName,
@@ -157,6 +167,8 @@ public class ModDiscoveryService : IModDiscoveryService
                 CommitsBehind = behind,
                 CommitsAhead = ahead,
                 HasLocalChanges = hasLocalChanges,
+                VersionBranch = versionBranch,
+                VersionMismatch = mismatch,
                 FetchError = fetchResult is { Success: false } ? fetchResult : null
             };
         }
@@ -172,6 +184,39 @@ public class ModDiscoveryService : IModDiscoveryService
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    /// <summary>
+    /// When the repo has a branch for the player's game version, flags a checkout that is on another branch
+    /// or has commits that branch doesn't contain. No such branch means main still targets this version.
+    /// </summary>
+    private async Task<(string? Branch, VersionMismatch Mismatch)> CheckVersionBranchAsync(
+        string path, string repoName, string? currentBranch, GameVersion gameVersion, CancellationToken ct)
+    {
+        var versionBranch = ModCatalog.GetVersionBranchName(repoName, gameVersion);
+        IReadOnlyList<string> remote = await _gitService.GetRemoteBranchesAsync(path, ct);
+        var hasVersionBranch = remote.Contains(versionBranch, StringComparer.OrdinalIgnoreCase);
+
+        // The game was updated past the branch this mod sits on: point at the newer build.
+        if (ModCatalog.ParseVersionBranch(currentBranch) is { } onVersion
+            && (onVersion.Major, onVersion.Minor).CompareTo((gameVersion.Major, gameVersion.Minor)) < 0)
+        {
+            var target = hasVersionBranch ? versionBranch
+                : remote.FirstOrDefault(b => b.Equals("main", StringComparison.OrdinalIgnoreCase))
+                  ?? remote.FirstOrDefault(b => b.Equals("master", StringComparison.OrdinalIgnoreCase));
+            return target is null ? (null, VersionMismatch.None) : (target, VersionMismatch.OnOlderVersionBranch);
+        }
+
+        if (!hasVersionBranch)
+            return (null, VersionMismatch.None);
+
+        if (currentBranch is not null && !string.Equals(currentBranch, versionBranch, StringComparison.OrdinalIgnoreCase))
+            return (versionBranch, VersionMismatch.OnMainline);
+
+        // On the version branch, or detached: anything HEAD has that the branch doesn't is newer than this game.
+        return await _gitService.IsAncestorAsync(path, "HEAD", $"origin/{versionBranch}", ct)
+            ? (versionBranch, VersionMismatch.None)
+            : (versionBranch, VersionMismatch.AheadOfVersionBranch);
     }
 
     private static RemoteRepo? FindRepo(InstalledMod mod, HashSet<string> orgRepoNames, Dictionary<string, RemoteRepo> reposByName)

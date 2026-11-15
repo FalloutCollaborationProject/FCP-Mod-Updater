@@ -12,7 +12,9 @@ public enum OperationKind
 {
     Update,
     Install,
-    Convert
+    Convert,
+    /// <summary>Put mods on the rimworld-X.Y branch for the player's game version.</summary>
+    SwitchBranch
 }
 
 public enum OperationStep
@@ -158,11 +160,17 @@ public partial class OperationDialogViewModel : ObservableObject
         {
             OperationKind.Update => "Updating",
             OperationKind.Install => "Installing",
+            OperationKind.SwitchBranch => "Switching",
             _ => "Migrating"
         };
 
         foreach (OperationItemViewModel item in Items)
-            item.RunningVerb = kind == OperationKind.Update ? "Pulling" : "Cloning";
+            item.RunningVerb = kind switch
+            {
+                OperationKind.Update => "Pulling",
+                OperationKind.SwitchBranch => "Checking out",
+                _ => "Cloning"
+            };
 
         Steps = kind == OperationKind.Update
             ? [new StepViewModel(1, "Review changes"), new StepViewModel(2, verb), new StepViewModel(3, "Results")]
@@ -183,6 +191,7 @@ public partial class OperationDialogViewModel : ObservableObject
     {
         OperationKind.Update => "Update Git mods",
         OperationKind.Install => "Install mods",
+        OperationKind.SwitchBranch => $"Switch to the RimWorld {_shell.GameVersion?.Short} build",
         _ => "Migrate local mods to Git"
     };
 
@@ -313,13 +322,18 @@ public partial class OperationDialogViewModel : ObservableObject
                 }
                 case OperationKind.Install:
                     (success, error) = await Task.Run(() =>
-                        ModOperations.InstallAsync(_git, item.Repo!, _shell.ModsDirectory!, progress));
+                        ModOperations.InstallAsync(_git, item.Repo!, _shell.ModsDirectory!, progress, _shell.GameVersion));
                     if (success) item.ResultText = "✓ Installed";
                     else item.CommandLine = $"$ git clone {item.Repo!.CloneUrl} · in Mods";
                     break;
+                case OperationKind.SwitchBranch:
+                    (success, error) = await Task.Run(() => ModOperations.SwitchToVersionBranchAsync(_git, item.Mod!));
+                    if (success) item.ResultText = $"✓ On {item.Mod!.VersionBranch}";
+                    else item.CommandLine = $"$ git checkout {item.Mod!.VersionBranch} · in {FolderOf(item)}";
+                    break;
                 default:
                     (success, error) = await Task.Run(() =>
-                        ModOperations.ConvertToGitAsync(_git, _gitHub, item.Mod!, progress));
+                        ModOperations.ConvertToGitAsync(_git, _gitHub, item.Mod!, progress, _shell.GameVersion));
                     if (success) item.ResultText = "✓ Migrated to Git";
                     break;
             }
@@ -386,6 +400,7 @@ public partial class OperationDialogViewModel : ObservableObject
         {
             OperationKind.Update => "Updated",
             OperationKind.Install => "Installed",
+            OperationKind.SwitchBranch => "Switched",
             _ => "Migrated"
         };
 

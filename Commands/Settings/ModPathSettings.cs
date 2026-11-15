@@ -27,3 +27,11 @@ public class ModPathSettings : CommandSettings
         return ValidationResult.Success();
     }
 }
+
+[UsedImplicitly]
+public class UpdateSettings : ModPathSettings
+{
+    [CommandOption("--allow-mainline")]
+    [Description("Also update mods that are on main although a branch for your RimWorld version exists.")]
+    public bool AllowMainline { get; init; }
+}

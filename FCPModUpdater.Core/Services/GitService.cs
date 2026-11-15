@@ -333,6 +333,12 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         return true;
     }
 
+    public async Task<bool> IsAncestorAsync(string path, string commit, string of, CancellationToken ct = default)
+    {
+        var (exitCode, _, _) = await RunGitCommandAsync(path, $"merge-base --is-ancestor \"{commit}\" \"{of}\"", ct);
+        return exitCode == 0;
+    }
+
     public async Task<bool> ResetToCommitAsync(string path, string commitHash, CancellationToken ct = default)
     {
         var (exitCode, _, _) = await RunGitCommandAsync(path, $"reset --hard \"{commitHash}\"", ct);

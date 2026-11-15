@@ -40,6 +40,7 @@
               <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}" TextWrapping="Wrap"
                          Text="{Binding ModsDirectory, FallbackValue=Not set, TargetNullValue=Not set}"
                          ToolTip.Tip="{Binding ModsDirectory}" />
+              <TextBlock Classes="meta" Text="{Binding GameVersionLabel}" ToolTip.Tip="{Binding GameVersion.Raw, FallbackValue={x:Null}}" />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Button Classes="secondary small" Padding="10,5" Command="{Binding OpenModsFolderCommand}"
                         IsEnabled="{Binding HasModsDirectory}">

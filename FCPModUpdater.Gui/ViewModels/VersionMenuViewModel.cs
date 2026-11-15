@@ -7,8 +7,10 @@ using FCPModUpdater.Services;
 
 namespace FCPModUpdater.Gui.ViewModels;
 
-public sealed class MenuBranchViewModel(GitBranchInfo branch, bool isCurrent, Action<string> pick)
+public sealed class MenuBranchViewModel(GitBranchInfo branch, bool isCurrent, Action<string> pick, bool isForGame = false)
 {
+    /// <summary>The rimworld-X.Y branch for the player's game version.</summary>
+    public bool IsForGame { get; } = isForGame;
     public string Name { get; } = branch.Name;
     public string Display => $"origin/{Name}";
     public bool IsCurrent { get; } = isCurrent;
@@ -106,6 +108,11 @@ public partial class VersionMenuViewModel : ObservableObject
 
     public bool IsOtherBranch => Branch != CurrentBranch;
 
+    /// <summary>Shown when the listed branch is not the one made for the player's game version.</summary>
+    public string? GameWarning => _mod.VersionBranch is { } vb && Branch != vb
+        ? $"{Branch} may need a newer RimWorld than {_page.Shell.GameVersion?.Short}. Use {vb} for your game."
+        : null;
+
     /// <summary>What applying the picked commit would do; null when it is already checked out.</summary>
     public VersionAction? Action
     {
@@ -149,8 +156,11 @@ public partial class VersionMenuViewModel : ObservableObject
             IReadOnlyList<GitBranchInfo> branches = await _git.GetRemoteBranchInfoAsync(_mod.Path, ct);
             if (ct.IsCancellationRequested)
                 return;
-            foreach (GitBranchInfo branch in branches.OrderByDescending(b => b.Name == _mod.Branch))
-                Branches.Add(new MenuBranchViewModel(branch, branch.Name == _mod.Branch, b => _ = ShowCommitsAsync(b, true)));
+            foreach (GitBranchInfo branch in branches
+                         .OrderByDescending(b => b.Name == _mod.VersionBranch)
+                         .ThenByDescending(b => b.Name == _mod.Branch))
+                Branches.Add(new MenuBranchViewModel(branch, branch.Name == _mod.Branch, b => _ = ShowCommitsAsync(b, true),
+                    branch.Name == _mod.VersionBranch));
             if (Branches.Count == 0)
                 EmptyText = "No remote branches found. Refresh to fetch them.";
         }
@@ -179,6 +189,7 @@ public partial class VersionMenuViewModel : ObservableObject
         Error = null;
         DirtyAcknowledged = false;
         OnPropertyChanged(nameof(IsOtherBranch));
+        OnPropertyChanged(nameof(GameWarning));
         CancellationToken ct = Restart();
 
         Commits.Clear();

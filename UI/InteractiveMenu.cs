@@ -1,5 +1,6 @@
 using FCPModUpdater.Models;
 using FCPModUpdater.Services;
+using FCPModUpdater.Settings;
 using Spectre.Console;
 
 namespace FCPModUpdater.UI;
@@ -12,6 +13,7 @@ public class InteractiveMenu
     private readonly string _modsDirectory;
     private readonly Task<UpdateCheckResult?> _updateCheckTask;
     private readonly SettingsMenu? _settingsMenu;
+    private readonly SettingsStore? _settingsStore;
 
     private IReadOnlyList<InstalledMod> _mods = [];
     private bool _updateNotificationShown;
@@ -22,8 +24,10 @@ public class InteractiveMenu
         IModDiscoveryService modDiscoveryService,
         string modsDirectory,
         Task<UpdateCheckResult?> updateCheckTask,
-        SettingsMenu? settingsMenu = null)
+        SettingsMenu? settingsMenu = null,
+        SettingsStore? settingsStore = null)
     {
+        _settingsStore = settingsStore;
         _settingsMenu = settingsMenu;
         _gitService = gitService;
         _gitHubApiService = gitHubApiService;
@@ -31,6 +35,8 @@ public class InteractiveMenu
         _modsDirectory = modsDirectory;
         _updateCheckTask = updateCheckTask;
     }
+
+    private GameVersion? GameVersion => GameVersionService.Resolve(_modsDirectory, _settingsStore?.Current).Version;
 
     public async Task RunAsync(CancellationToken ct = default)
     {
@@ -41,7 +47,7 @@ public class InteractiveMenu
         {
             AnsiConsole.Clear();
             ModTableRenderer.RenderModTable(_mods, _gitHubApiService.RemainingRateLimit,
-                _gitHubApiService.RateLimitReset);
+                _gitHubApiService.RateLimitReset, GameVersion);
 
             // Show update notification once, non-blocking
             if (!_updateNotificationShown && _updateCheckTask.IsCompleted)
@@ -56,11 +62,18 @@ public class InteractiveMenu
 
             AnsiConsole.WriteLine();
 
+            var mismatched = ModCatalog.GetVersionMismatchedMods(_mods);
+            var switchChoice = $"Switch {mismatched.Count} Mod(s) to the Branch for RimWorld {GameVersion?.Short}";
+            var choices = new List<string>();
+            if (mismatched.Count > 0)
+                choices.Add(switchChoice);
+
             var choice = await AnsiConsole.PromptAsync(
                 new SelectionPrompt<string>()
                     .Title("[bold]What would you like to do?[/]")
-                    .PageSize(10)
+                    .PageSize(11)
                     .AddCancelResult("Exit")
+                    .AddChoices(choices)
                     .AddChoices(
                         "Update Git Mods",
                         "Install New Mods",
@@ -74,6 +87,12 @@ public class InteractiveMenu
 
             try
             {
+                if (choice == switchChoice)
+                {
+                    await HandleSwitchToVersionBranchAsync(mismatched, ct);
+                    continue;
+                }
+
                 var shouldExit = choice switch
                 {
                     "Update Git Mods" => await HandleUpdateAsync(ct),
@@ -113,6 +132,9 @@ public class InteractiveMenu
     private async Task<bool> HandleUpdateAsync(CancellationToken ct)
     {
         var updateableMods = ModCatalog.GetUpdateableMods(_mods);
+        var skipped = ModCatalog.GetUpdateableMods(_mods, includeMismatched: true).Except(updateableMods).ToList();
+        if (skipped.Count > 0)
+            AnsiConsole.MarkupLine($"[yellow]⚠ Not offering {skipped.Count} mod(s) on the wrong branch for RimWorld {GameVersion?.Short}; use \"Switch ... Branch\" from the main menu.[/]");
 
         if (updateableMods.Count == 0)
         {
@@ -199,7 +221,7 @@ public class InteractiveMenu
             selectedRepos.ToList(),
             repo => repo.Name,
             async (repo, progress) =>
-                await ModOperations.InstallAsync(_gitService, repo, _modsDirectory, progress, ct));
+                await ModOperations.InstallAsync(_gitService, repo, _modsDirectory, progress, GameVersion, ct));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
@@ -310,7 +332,7 @@ public class InteractiveMenu
             items: selected.ToList(),
             nameSelector: mod => mod.Name,
             action: async (mod, progress) =>
-                await ModOperations.ConvertToGitAsync(_gitService, _gitHubApiService, mod, progress, ct));
+                await ModOperations.ConvertToGitAsync(_gitService, _gitHubApiService, mod, progress, GameVersion, ct));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
@@ -391,6 +413,39 @@ public class InteractiveMenu
 
         await RefreshModsAsync(ct);
         return false;
+    }
+
+    private async Task HandleSwitchToVersionBranchAsync(IReadOnlyList<InstalledMod> mismatched, CancellationToken ct)
+    {
+        AnsiConsole.MarkupLine($"[bold]These mods are not on the branch for RimWorld {Markup.Escape(GameVersion?.Short ?? "")}:[/]");
+
+        var prompt = new MultiSelectionPrompt<InstalledMod>()
+            .Title("[bold]Select mods to switch:[/]")
+            .PageSize(15)
+            .Required(false)
+            .AddCancelResult()
+            .UseConverter(m => $"{Markup.Escape(ModTableRenderer.DescribeVersionMismatch(m, GameVersion))}"
+                               + (m.HasLocalChanges ? " [yellow](local changes will be lost)[/]" : "")
+                               + (m.CommitsAhead > 0 ? $" [yellow]({m.CommitsAhead} local commit(s) will be dropped)[/]" : ""));
+        foreach (InstalledMod mod in mismatched)
+            prompt.AddChoice(mod).Select();
+
+        List<InstalledMod> selected = await AnsiConsole.PromptAsync(prompt, ct);
+        if (selected.Count == 0)
+            return;
+        if (selected.Any(m => m.HasLocalChanges || m.CommitsAhead > 0)
+            && !await AnsiConsole.ConfirmAsync("[yellow]Some mods have local changes or commits that will be lost. Continue?[/]", false, ct))
+            return;
+
+        var results = await ProgressReporter.WithBatchProgressAsync(
+            "Switching branches",
+            selected,
+            mod => mod.Name,
+            async (mod, _) => await ModOperations.SwitchToVersionBranchAsync(_gitService, mod, ct));
+
+        ModTableRenderer.RenderUpdateSummary(results);
+        WaitForKey();
+        await RefreshModsAsync(ct);
     }
 
     private async Task<bool> HandleSettingsAsync(CancellationToken ct)

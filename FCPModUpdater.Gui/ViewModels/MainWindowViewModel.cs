@@ -119,6 +119,25 @@ public partial class MainWindowViewModel : ObservableObject
     internal Task<(string? Version, string? ExecutablePath)> GetGitInfo() => _gitInfo();
 
     public IReadOnlyList<InstalledMod> Mods { get; private set; } = [];
+
+    // ── Game version ─────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GameVersionLabel))]
+    [NotifyPropertyChangedFor(nameof(HasGameVersion))]
+    private GameVersion? _gameVersion;
+
+    public GameVersionSource GameVersionSource { get; private set; }
+    public bool HasGameVersion => GameVersion is not null;
+    public string GameVersionLabel => GameVersion is null ? "RimWorld version unknown" : $"RimWorld {GameVersion.Short}";
+
+    /// <summary>Re-reads Version.txt and the saved override.</summary>
+    public void RefreshGameVersion()
+    {
+        var (version, source) = GameVersionService.Resolve(ModsDirectory, _settings.Current);
+        GameVersionSource = source;
+        GameVersion = version;
+    }
     public IReadOnlyList<RemoteRepo> OrgRepos { get; private set; } = [];
 
     [ObservableProperty] private object _currentPage;
@@ -275,6 +294,7 @@ public partial class MainWindowViewModel : ObservableObject
             if (clearCache)
                 _gitHub.ClearCache();
 
+            RefreshGameVersion();
             _log.BeginScan(directory);
             var watch = Stopwatch.StartNew();
 
@@ -283,7 +303,7 @@ public partial class MainWindowViewModel : ObservableObject
             OrgRepos = await _gitHub.GetOrganizationReposAsync();
 
             await _log.FlushAsync();
-            _log.EndScan(Mods, watch.Elapsed);
+            _log.EndScan(Mods, watch.Elapsed, GameVersion?.Short);
             LastScanned = DateTimeOffset.UtcNow;
         }
         catch (Exception ex)
@@ -309,6 +329,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         RefreshRateLimit();
         Settings.RefreshFolder();
+        Settings.RefreshGameVersion();
     }
 
     /// <summary>Re-renders "2 minutes ago" style text; driven by a timer in the window.</summary>
@@ -407,6 +428,18 @@ public partial class MainWindowViewModel : ObservableObject
             return;
 
         var dialog = new OperationDialogViewModel(this, _git, _gitHub, _log, OperationKind.Convert,
+            mods.Select(m => new OperationItemViewModel(m.Name, m.Path) { Mod = m }));
+        Dialog = dialog;
+        _ = dialog.StartAsync();
+    }
+
+    public void ShowSwitchBranchDialog(IReadOnlyList<InstalledMod> mods)
+    {
+        mods = mods.Where(m => m.VersionBranch is not null).ToList();
+        if (mods.Count == 0)
+            return;
+
+        var dialog = new OperationDialogViewModel(this, _git, _gitHub, _log, OperationKind.SwitchBranch,
             mods.Select(m => new OperationItemViewModel(m.Name, m.Path) { Mod = m }));
         Dialog = dialog;
         _ = dialog.StartAsync();

@@ -45,7 +45,7 @@
                        VerticalAlignment="Center" />
           </Grid>
           <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" LineHeight="20"
-                     Text="Without a token GitHub allows 60 requests an hour, which a large refresh can use up. A personal access token raises this to 5,000. For public repositories it needs no permissions. To see private FCP repositories, give it read access to the FalloutCollaborationProject organization's repositories (fine-grained token: resource owner FalloutCollaborationProject, Contents read-only; classic token: repo scope)." />
+                     Text="Without a token GitHub allows 60 requests an hour, which a large refresh can use up. A personal access token raises this to 5,000." />
           <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="Personal access token" />
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <TextBox Classes="mono field" FontSize="13" Text="{Binding Token}" PasswordChar="{Binding PasswordChar}"
@@ -95,6 +95,21 @@
               </TextBlock>
             </StackPanel>
           </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Game version -->
+      <Border Classes="section">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="RimWorld version" />
+          <TextBlock FontSize="13" Text="{Binding GameVersionStatus}" />
+          <Grid ColumnDefinitions="140,Auto" ColumnSpacing="10">
+            <TextBox Classes="mono field" FontSize="13" Watermark="e.g. 1.6" Text="{Binding GameVersionText}" />
+            <Button Grid.Column="1" Classes="secondary" Padding="12,7" Content="Use detected"
+                    Command="{Binding ClearGameVersionCommand}" />
+          </Grid>
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                     Text="Read from Version.txt in your RimWorld folder. When a mod has a rimworld-X.Y branch for your version, the app warns about main and newer commits and offers to switch. Set it here if your Mods folder is not inside the game folder." />
         </StackPanel>
       </Border>
 

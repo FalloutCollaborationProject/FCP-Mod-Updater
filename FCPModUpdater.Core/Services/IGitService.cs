@@ -24,5 +24,7 @@ public interface IGitService
     Task<IReadOnlyList<GitCommitInfo>> GetBranchCommitsAsync(string path, string branch, int limit = 20, CancellationToken ct = default);
 
     /// <summary>Moves the current branch forward to <paramref name="commit"/> (<c>git merge --ff-only</c>).</summary>
+    /// <summary><c>git merge-base --is-ancestor</c>: true when <paramref name="commit"/> is contained in <paramref name="of"/>.</summary>
+    Task<bool> IsAncestorAsync(string path, string commit, string of, CancellationToken ct = default);
     Task<bool> FastForwardToAsync(string path, string commit, CancellationToken ct = default);
 }

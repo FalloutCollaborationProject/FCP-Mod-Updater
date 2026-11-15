@@ -47,11 +47,13 @@ public sealed record StatusBadge(StatusKind Kind, string Icon, string Text, IBru
 
 public partial class ModRowViewModel : ObservableObject
 {
-    public ModRowViewModel(InstalledMod mod)
+    public ModRowViewModel(InstalledMod mod, string? gameVersion = null)
     {
         Mod = mod;
+        GameVersion = gameVersion;
         Badge = StatusBadge.For(mod);
-        CanUpdate = mod is { Source: ModSource.Git, Status: ModStatus.Behind };
+        // A mod on the wrong branch for the game is not fast-forwarded: that would pull a newer RimWorld's build.
+        CanUpdate = mod is { Source: ModSource.Git, Status: ModStatus.Behind } && !ModCatalog.BlocksUpdate(mod.VersionMismatch);
         _isChecked = CanUpdate;
     }
 
@@ -74,6 +76,25 @@ public partial class ModRowViewModel : ObservableObject
     public bool CanConvert => !IsGit && !string.IsNullOrEmpty(Mod.MatchedRepoName);
     public bool IsLocal => !IsGit;
     public bool IsNotRecommended => ModCatalog.IsNotRecommended(Mod.Topics);
+
+    /// <summary>The player's RimWorld version ("1.6"), when known.</summary>
+    public string? GameVersion { get; }
+
+    public bool IsWrongBranch => Mod.VersionMismatch != VersionMismatch.None && Mod.VersionBranch is not null;
+    public string WrongBranchLabel => Mod.VersionMismatch == VersionMismatch.OnOlderVersionBranch
+        ? $"Build for {GameVersion} available"
+        : $"Wrong branch for {GameVersion}";
+
+    public string WrongBranchTip => Mod.VersionMismatch switch
+    {
+        VersionMismatch.OnMainline =>
+            $"On {Branch}, which may need a newer RimWorld than {GameVersion}. Switch to {Mod.VersionBranch}.",
+        VersionMismatch.OnOlderVersionBranch =>
+            $"On {Branch}, made for an older RimWorld. Switch to {Mod.VersionBranch} for {GameVersion}.",
+        VersionMismatch.AheadOfVersionBranch =>
+            $"Has commits newer than {Mod.VersionBranch}, which may need a newer RimWorld than {GameVersion}.",
+        _ => ""
+    };
 
     /// <summary>Branch and commit popovers; set by the page for Git rows.</summary>
     public VersionMenuViewModel? Menu { get; init; }

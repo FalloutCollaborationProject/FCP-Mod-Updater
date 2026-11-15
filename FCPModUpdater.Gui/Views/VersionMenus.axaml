@@ -32,7 +32,12 @@
                     <StackPanel Grid.Column="1" Spacing="1">
                       <TextBlock Classes="mono" FontSize="12.5" Foreground="{StaticResource Text}" Text="{Binding Display}"
                                  TextTrimming="CharacterEllipsis" />
-                      <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding Age}" />
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding Age}" />
+                        <Border Classes="headTag" IsVisible="{Binding IsForGame}">
+                          <TextBlock Text="for your game" />
+                        </Border>
+                      </StackPanel>
                     </StackPanel>
                     <TextBlock Grid.Column="2" FontSize="11" Foreground="{StaticResource TextDim}" Text="Commits"
                                VerticalAlignment="Center" />
@@ -116,6 +121,11 @@
           </ItemsControl>
         </ScrollViewer>
       </Panel>
+
+      <Border Classes="note" Margin="12,0,12,10" Padding="10,8" CornerRadius="5"
+              IsVisible="{Binding GameWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+        <TextBlock FontSize="12" TextWrapping="Wrap" Text="{Binding GameWarning}" />
+      </Border>
 
       <!-- Local changes: same warning and acknowledgement as the version selector -->
       <Border Classes="note" Margin="12,0,12,10" Padding="10,8" CornerRadius="5" IsVisible="{Binding IsDirty}">

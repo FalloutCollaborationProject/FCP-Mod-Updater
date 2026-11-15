@@ -45,7 +45,7 @@
     </Border>
 
     <!-- Header -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="24,18,24,14">
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="24,18,24,14">
       <StackPanel Spacing="4">
         <TextBlock Classes="h1" Text="Installed mods" />
         <TextBlock Classes="sub" Text="{Binding Summary}" />
@@ -57,7 +57,11 @@
           <TextBlock Text="Clear cache &amp; refresh" />
         </StackPanel>
       </Button>
-      <Button Grid.Column="2" Classes="primary" VerticalAlignment="Center" Margin="12,0,0,0" Padding="16,9"
+      <Button Grid.Column="2" Classes="outline" VerticalAlignment="Center" Margin="12,0,0,0"
+              IsVisible="{Binding HasWrongBranch}" Command="{Binding SwitchAllToVersionBranchCommand}"
+              Content="{Binding SwitchAllLabel}"
+              ToolTip.Tip="These mods are not on the branch made for your RimWorld version." />
+      <Button Grid.Column="3" Classes="primary" VerticalAlignment="Center" Margin="12,0,0,0" Padding="16,9"
               Command="{Binding UpdateCheckedCommand}">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <c:Icon Data="{StaticResource IconDownload}" Size="16" Stroke="2.2" />
@@ -136,7 +140,7 @@
                               VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}" />
 
                     <!-- Name truncates; tags never do -->
-                    <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto,Auto" Margin="8,0" VerticalAlignment="Center"
+                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="8,0" VerticalAlignment="Center" ClipToBounds="True"
                           HorizontalAlignment="Left">
                       <TextBlock Classes="strong" FontSize="13" Text="{Binding Name}" ToolTip.Tip="{Binding Name}"
                                  TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
@@ -149,6 +153,10 @@
                       </Border>
                       <Border Grid.Column="3" Classes="localTag" Margin="8,0,0,0" IsVisible="{Binding IsLocal}">
                         <TextBlock Text="Local" />
+                      </Border>
+                      <Border Grid.Column="4" Classes="warnTag" Margin="8,0,0,0" IsVisible="{Binding IsWrongBranch}"
+                              ToolTip.Tip="{Binding WrongBranchTip}">
+                        <TextBlock Text="{Binding WrongBranchLabel}" />
                       </Border>
                     </Grid>
 
@@ -254,6 +262,15 @@
                     </Border>
                     <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}"
                                Text="{Binding SelectedRow.Folder}" TextWrapping="Wrap" />
+                    <Border Classes="note" Padding="10,8" CornerRadius="5"
+                            IsVisible="{Binding SelectedRow.IsWrongBranch, FallbackValue=False}">
+                      <StackPanel Spacing="8">
+                        <TextBlock FontSize="12" TextWrapping="Wrap" Text="{Binding SelectedRow.WrongBranchTip, FallbackValue={x:Null}}" />
+                        <Button Classes="outline small" Padding="10,5" HorizontalAlignment="Left"
+                                Content="{Binding SelectedRow.Mod.VersionBranch, StringFormat='Switch to {0}', FallbackValue={x:Null}}"
+                                Command="{Binding SwitchSelectedToVersionBranchCommand}" />
+                      </StackPanel>
+                    </Border>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                       <Button Classes="link" FontSize="12" Content="Open on GitHub"
                               IsVisible="{Binding SelectedRow.HasRepoUrl, FallbackValue=False}"

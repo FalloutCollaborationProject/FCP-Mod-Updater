@@ -16,6 +16,9 @@ public sealed record AppSettings
     /// <summary>Null means "not chosen yet": follow whether the running build is itself a pre-release.</summary>
     public bool? IncludePrereleases { get; init; }
 
+    /// <summary>RimWorld version such as "1.6", used instead of the one read from the install's Version.txt.</summary>
+    public string? GameVersionOverride { get; init; }
+
     public DateTimeOffset? LastUpdateCheck { get; init; }
 
     /// <summary>Latest version found by the last check, or null when the app was up to date.</summary>

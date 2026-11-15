@@ -45,6 +45,7 @@ public partial class SettingsViewModel : ObservableObject
         _token = s.GitHubToken ?? "";
         _checkOnLaunch = s.CheckForUpdatesOnLaunch;
         _includePrereleases = s.EffectiveIncludePrereleases;
+        _gameVersionText = s.GameVersionOverride ?? "";
         _loading = false;
     }
 
@@ -167,7 +168,7 @@ public partial class SettingsViewModel : ObservableObject
         HasPendingTokenChange = true;
     }
 
-    /// <summary>Set when the token changed since the last scan; the shell rescans when it is applied.</summary>
+    /// <summary>Set when the token or game version changed since the last scan; the shell rescans when it is applied.</summary>
     public bool HasPendingTokenChange { get; private set; }
 
     /// <summary>Rescans with the new token, at most once per change.</summary>
@@ -256,6 +257,38 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void CreateToken() => _shell.Platform.OpenUrl(CreateTokenUrl);
 
+    // ── Game version ─────────────────────────────────────────────────────────
+
+    [ObservableProperty] private string _gameVersionText;
+    [ObservableProperty] private string _gameVersionStatus = "";
+
+    public void RefreshGameVersion()
+    {
+        GameVersionStatus = _shell.GameVersion is { } v
+            ? $"RimWorld {v.Raw} · {(_shell.GameVersionSource == GameVersionSource.Settings ? "set here" : "detected")}"
+            : "Not detected: Version.txt wasn't found next to the Mods folder";
+    }
+
+    partial void OnGameVersionTextChanged(string value)
+    {
+        if (_loading)
+            return;
+        var parsed = GameVersion.Parse(value);
+        if (value.Trim().Length > 0 && parsed is null)
+        {
+            GameVersionStatus = "✗ Enter a version such as 1.6";
+            return;
+        }
+
+        Save(s => s with { GameVersionOverride = parsed?.Short });
+        _shell.RefreshGameVersion();
+        RefreshGameVersion();
+        HasPendingTokenChange = true; // reuse the rescan-on-leave path: the branch checks depend on it
+    }
+
+    [RelayCommand]
+    private void ClearGameVersion() => GameVersionText = "";
+
     // ── App updates ──────────────────────────────────────────────────────────
 
     [ObservableProperty] private bool _checkOnLaunch;
@@ -320,6 +353,7 @@ public partial class SettingsViewModel : ObservableObject
         RefreshFolder();
         RefreshTokenSource();
         RefreshLastCheck();
+        RefreshGameVersion();
 
         if (_gitLoaded)
             return;

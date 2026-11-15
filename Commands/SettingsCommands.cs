@@ -30,6 +30,7 @@ public class SettingsShowCommand(SettingsStore store, GitHubTokenProvider tokens
             s.IncludePrereleases is { } pre
                 ? pre.ToString().ToLowerInvariant()
                 : $"{s.EffectiveIncludePrereleases.ToString().ToLowerInvariant()} [grey](default)[/]");
+        table.AddRow(SettingsEditor.GameVersion, Markup.Escape(s.GameVersionOverride ?? "(detect from Version.txt)"));
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine($"[grey]Token in use:[/] {Markup.Escape(SettingsEditor.DescribeSource(tokens.ActiveSource))}");
         if (s.LastUpdateCheck is { } last)
@@ -45,7 +46,7 @@ public class SettingsSetCommand(SettingsStore store) : Command<SettingsSetComman
     public class Options : CommandSettings
     {
         [CommandArgument(0, "<KEY>")]
-        [Description("mods-directory, github-token, check-updates or include-prereleases")]
+        [Description("mods-directory, github-token, check-updates, include-prereleases or game-version")]
         public required string Key { get; init; }
 
         [CommandArgument(1, "<VALUE>")]

@@ -25,6 +25,11 @@ public record InstalledMod
     /// <summary>Topics of the matching org repository, empty when none matched.</summary>
     public IReadOnlyList<string> Topics { get; init; } = [];
 
+    /// <summary>The remote rimworld-X.Y branch for the player's game version, when the repo has one.</summary>
+    public string? VersionBranch { get; init; }
+
+    public VersionMismatch VersionMismatch { get; init; }
+
     /// <summary>Set when the fetch during the last scan failed, so the status shown may be stale.</summary>
     public GitOperationResult? FetchError { get; init; }
 }
