@@ -18,7 +18,7 @@ fi
 # The same script updates the GUI (FCPModManager) and the CLI (FCPModUpdater); the install folder says which.
 if [[ -f "./FCPModManager" ]]; then
     APP_NAME="FCPModManager"
-    ARCHIVE="FCPModManager-linux-x64.tar.gz"
+    ARCHIVE="FCPModManager-GUI-linux-x64.tar.gz"
     ARCHIVE_DIR="gui-linux-x64"
 elif [[ -f "./FCPModUpdater" ]]; then
     APP_NAME="FCPModUpdater"

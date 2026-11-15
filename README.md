@@ -65,13 +65,13 @@
 > Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
 
 > [!TIP]
-> **Not sure which file to download?** Grab the **self-contained** version for your platform — it includes everything you need and just works, no extra software required outside of Git.
+> **Not sure which file to download?** Grab the **GUI** archive for your platform (`FCPModManager-GUI-*`). It's the desktop app, and it needs nothing installed apart from Git.
 
-| Archive | What it means | Who it's for |
-|---------|---------------|--------------|
-| `*-selfcontained.zip` (Windows) | Everything bundled in one package | **Most users** — download this one |
-| `*-selfcontained.tar.gz` (Linux) | Everything bundled in one package | **Most users** — download this one |
-| `*-win-x64.zip` / `*-linux-x64.tar.gz` | Smaller download, but requires [.NET 10 Runtime](https://dotnet.microsoft.com/download) installed separately | Developers or users who already have .NET installed |
+| Archive | What it is | Who it's for |
+|---------|------------|--------------|
+| `FCPModManager-GUI-win-x64.zip` / `FCPModManager-GUI-linux-x64.tar.gz` | Desktop app, everything bundled | **Most users**: download this one |
+| `FCPModUpdater-*-selfcontained.zip` / `.tar.gz` | Command-line app, everything bundled | Terminal users |
+| `FCPModUpdater-win-x64.zip` / `FCPModUpdater-linux-x64.tar.gz` | Command-line app, smaller, requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download) | Users who already have .NET installed |
 
 Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
 

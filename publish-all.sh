@@ -48,8 +48,8 @@ zip -qr "${APP_NAME}-win-x64-selfcontained.zip" win-x64-sc
 tar -czf "${APP_NAME}-linux-x64-selfcontained.tar.gz" linux-x64-sc
 zip -qr "${APP_NAME}-win-x64.zip" win-x64-fd
 tar -czf "${APP_NAME}-linux-x64.tar.gz" linux-x64-fd
-zip -qr "${GUI_NAME}-win-x64.zip" gui-win-x64
-tar -czf "${GUI_NAME}-linux-x64.tar.gz" gui-linux-x64
+zip -qr "${GUI_NAME}-GUI-win-x64.zip" gui-win-x64
+tar -czf "${GUI_NAME}-GUI-linux-x64.tar.gz" gui-linux-x64
 rm -rf win-x64-sc linux-x64-sc win-x64-fd linux-x64-fd gui-win-x64 gui-linux-x64
 sha256sum "${APP_NAME}"-*.zip "${APP_NAME}"-*.tar.gz "${GUI_NAME}"-*.zip "${GUI_NAME}"-*.tar.gz > checksums.txt
 cd ..

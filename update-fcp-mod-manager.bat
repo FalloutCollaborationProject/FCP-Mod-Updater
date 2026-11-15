@@ -13,7 +13,7 @@ if /I not "%~1"=="--from-temp" (
 rem The same script updates the GUI (FCPModManager) and the CLI (FCPModUpdater); the install folder says which.
 if exist ".\FCPModManager.exe" (
     set "APP_NAME=FCPModManager.exe"
-    set "ARCHIVE=FCPModManager-win-x64.zip"
+    set "ARCHIVE=FCPModManager-GUI-win-x64.zip"
     set "ARCHIVE_DIR=gui-win-x64"
 ) else (
     set "APP_NAME=FCPModUpdater.exe"
