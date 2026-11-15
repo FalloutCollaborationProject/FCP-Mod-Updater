@@ -40,7 +40,7 @@
 </p>
 
 <p align="center">
-  <img src="./demo.gif" alt="FCP Mod Updater preview" />
+  <img src="./demo.png" alt="FCP Mod Updater preview" />
 </p>
 
 ## Features
@@ -106,83 +106,7 @@ cd FCPModUpdater
 dotnet build
 ```
 
-## Usage
-
-### Quick Start
-
-1. Download the **self-contained** zip/tar for your platform from [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases)
-2. Extract the archive anywhere on your computer
-3. **Windows:** Double-click `FCPModUpdater.exe` — the tool will automatically find your RimWorld installation
-4. **Linux/macOS:** Run `./FCPModUpdater` from a terminal, ensuring it has execution permission.
-
-The tool opens an interactive menu — use the **arrow keys** to navigate, **Enter** to select, and **Escape** to go back.
-
-### To install mods:
-1. Select **Install New Mods** from the main menu
-2. Use **arrow keys** to browse available mod, press **Space** to mark/unmark each one
-3. Press **Enter** to confirm and install the selected mods
-
-### To update mods:
-1. Select **Update Mods** from the main menu
-2. All mods with available updates are pre-selected, press **Space** to deselect any you want to skip
-3. Press **Enter** to confirm and apply updates
-
-### To uninstall mods:
-1. Select **Uninstall Mods** from the main menu
-2. Use **arrow keys** to browse installed mods, press **Space** to mark each one for removal
-3. Press **Enter**, confirm the warning prompt, then type `DELETE` to permanently remove the selected mods
-
-### To convert a local (ZIP) mod to a Git repository:
-1. Select **Convert to Git** from the main menu
-2. Press **Space** to select any local mods that match FCP repositories
-3. Press **Enter** and confirm, the folder will be replaced with a fresh git clone
-
-### To switch a mod's branch or version:
-1. Select **Switch Version** from the main menu
-2. Choose the mod you want to manage
-3. Select **Switch Branch** to pick a branch, or **Checkout Specific Commit** to pin to a specific version
-
-### To clear cached data and refresh mod status:
-1. Select **Clear Cache & Refresh** from the main menu
-2. The manager retrieves the FCP repository list again, rescans the Mods directory, and fetches the latest Git status for every installed Git mod
-
-This does not pull updates, switch versions, or overwrite local changes.
-
-### To Batch Update Mods
-
-```bash
-FCPModUpdater update
-```
-
-Non-interactive mode that updates all FCP mods with available changes. Returns exit code 0 on success, 1 if any updates fail.
-
-## Options
-
-### Choosing a Directory
-
-Both commands accept:
-- `-d, --directory <path>` — Path to RimWorld Mods folder (auto-discovers if omitted)
-
-```bash
-FCPModUpdater scan --directory "/path/to/RimWorld/Mods"
-FCPModUpdater update -d "C:\Games\RimWorld\Mods"
-```
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `GITHUB_TOKEN` | Optional. GitHub personal access token to increase API rate limit from 60 to 5000 requests/hour |
-
-## How Mods Are Identified
-
-FCP mods are identified by:
-1. Git remote URL containing `github.com/FalloutCollaborationProject/`
-2. Folder name matching an FCP repository (supports ZIP downloads with branch suffixes like `-main`)
-
-Only repositories tagged with the `rimworld-mod` topic are included.
-
-## Status Icons
+## Status Icons (CLI)
 
 | Icon | Status | Description |
 |------|--------|-------------|
