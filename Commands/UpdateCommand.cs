@@ -31,6 +31,7 @@ public class UpdateCommand(
             if (gameVersion is not null)
                 AnsiConsole.MarkupLine($"[grey]RimWorld {Markup.Escape(gameVersion.Raw)} ({(versionSource == GameVersionSource.Settings ? "from settings" : "detected")})[/]");
             AnsiConsole.WriteLine();
+            GuiNoticeRenderer.RenderOnce(settingsStore);
 
             Task<UpdateCheckResult?> updateCheckTask = settingsStore.Current.CheckForUpdatesOnLaunch
                 ? updateCheckService.CheckAndRecordAsync(settingsStore, ct)

@@ -60,6 +60,8 @@ public class InteractiveMenu
                 }
             }
 
+            GuiNoticeRenderer.RenderOnce(_settingsStore);
+
             AnsiConsole.WriteLine();
 
             var mismatched = ModCatalog.GetVersionMismatchedMods(_mods);

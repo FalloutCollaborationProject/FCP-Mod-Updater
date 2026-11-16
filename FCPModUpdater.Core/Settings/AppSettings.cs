@@ -24,6 +24,9 @@ public sealed record AppSettings
 
     public const int DefaultUpdateParallelism = 4;
 
+    /// <summary>True once the CLI has told the user that a GUI version exists.</summary>
+    public bool GuiNoticeShown { get; init; }
+
     public DateTimeOffset? LastUpdateCheck { get; init; }
 
     /// <summary>Latest version found by the last check, or null when the app was up to date.</summary>
