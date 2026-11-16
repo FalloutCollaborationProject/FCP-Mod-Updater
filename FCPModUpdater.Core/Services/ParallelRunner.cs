@@ -37,6 +37,9 @@ public static class ParallelRunner
             await gate.WaitAsync(ct);
             try
             {
+                // WaitAsync can still hand a freed slot to a waiter after ct is cancelled
+                // (its cancellation cleanup runs asynchronously), so check again once inside.
+                ct.ThrowIfCancellationRequested();
                 return await action(items[i], i, ct);
             }
             finally
