@@ -260,18 +260,25 @@ public partial class OperationDialogViewModel : ObservableObject
 
         try
         {
-            foreach (OperationItemViewModel item in Items)
+            // Only updates run side by side: installs and migrations reshape the Mods folder.
+            var parallelism = Kind == OperationKind.Update
+                ? ParallelRunner.ResolveParallelism(Items.Count, _shell.UpdateParallelism)
+                : 1;
+
+            // Continuations resume on the UI thread, so item state is only touched there.
+            await ParallelRunner.RunAsync(Items.ToList(), parallelism, async (item, _, _) =>
             {
                 if (_cancelRemaining)
                 {
                     item.State = ItemState.Skipped;
                     item.ResultText = "Skipped";
-                    continue;
+                    return true;
                 }
 
                 await RunItemAsync(item);
                 UpdateOverall();
-            }
+                return true;
+            });
         }
         finally
         {

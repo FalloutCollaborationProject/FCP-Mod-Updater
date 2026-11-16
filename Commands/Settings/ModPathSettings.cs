@@ -34,4 +34,16 @@ public class UpdateSettings : ModPathSettings
     [CommandOption("--allow-mainline")]
     [Description("Also update mods that are on main although a branch for your RimWorld version exists.")]
     public bool AllowMainline { get; init; }
+
+    [CommandOption("-j|--parallel <COUNT>")]
+    [Description("How many mods to update at once (1-8) when three or more need updating. Defaults to the saved setting.")]
+    public int? Parallel { get; init; }
+
+    public override ValidationResult Validate()
+    {
+        if (Parallel is < 1 or > Services.ParallelRunner.MaxParallelism)
+            return ValidationResult.Error($"--parallel must be between 1 and {Services.ParallelRunner.MaxParallelism}");
+
+        return base.Validate();
+    }
 }

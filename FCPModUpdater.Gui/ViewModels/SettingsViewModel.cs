@@ -46,6 +46,7 @@ public partial class SettingsViewModel : ObservableObject
         _checkOnLaunch = s.CheckForUpdatesOnLaunch;
         _includePrereleases = s.EffectiveIncludePrereleases;
         _gameVersionText = s.GameVersionOverride ?? "";
+        _updateParallelism = s.EffectiveUpdateParallelism;
         _loading = false;
     }
 
@@ -295,6 +296,18 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _includePrereleases;
     [ObservableProperty] private bool _isChecking;
     [ObservableProperty] private string _lastCheckText = "";
+
+    // ── Updates ──────────────────────────────────────────────────────────────
+
+    public static double MaxParallelism => ParallelRunner.MaxParallelism;
+
+    [ObservableProperty] private int _updateParallelism;
+
+    partial void OnUpdateParallelismChanged(int value)
+    {
+        if (!_loading)
+            Save(s => s with { UpdateParallelism = value });
+    }
 
     partial void OnCheckOnLaunchChanged(bool value)
     {

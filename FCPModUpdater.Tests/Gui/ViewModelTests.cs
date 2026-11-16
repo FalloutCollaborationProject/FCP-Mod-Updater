@@ -232,6 +232,53 @@ public sealed class ViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateDialog_ThreeOrMoreMods_RunInParallel_UpToTheSetting()
+    {
+        _f.Settings.Update(s => s with { UpdateParallelism = 2 });
+        InstalledMod[] mods = Enumerable.Range(1, 4)
+            .Select(i => ShellFixture.GitMod($"Mod{i}", ModStatus.Behind, _dir, behind: 1)).ToArray();
+        _f.Mods.AddRange(mods);
+        await _f.Shell.InitializeAsync();
+
+        var running = 0;
+        var peak = 0;
+        var release = new TaskCompletionSource();
+        var ok = new GitOperationResult(true, 0, null);
+        _f.Git.FetchAsync(Arg.Any<string>(), Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(async _ =>
+            {
+                var now = Interlocked.Increment(ref running);
+                InterlockedMax(ref peak, now);
+                await release.Task;
+                Interlocked.Decrement(ref running);
+                return ok;
+            });
+        _f.Git.PullAsync(Arg.Any<string>(), Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>()).Returns(ok);
+        _f.Git.GetCommitDifferenceAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((0, 0));
+
+        _f.Shell.ShowUpdateDialog(mods);
+        var dialog = (OperationDialogViewModel)_f.Shell.Dialog!;
+        Task run = dialog.StartAsync();
+
+        await WaitUntilAsync(() => Volatile.Read(ref running) == 2);
+        Assert.Equal(2, dialog.Items.Count(i => i.State == ItemState.Running));
+        release.SetResult();
+        await run;
+
+        Assert.Equal(2, peak);
+        Assert.All(dialog.Items, i => Assert.Equal(ItemState.Done, i.State));
+        Assert.Equal("Updated 4 mods.", dialog.Summary);
+    }
+
+    private static void InterlockedMax(ref int target, int value)
+    {
+        int seen;
+        while ((seen = Volatile.Read(ref target)) < value && Interlocked.CompareExchange(ref target, value, seen) != seen)
+        {
+        }
+    }
+
+    [Fact]
     public async Task Install_SelectAllRecommended_SkipsNotRecommended_AndClonesIntoModsFolder()
     {
         _f.Repos.AddRange([Repo("Chems"), Repo("Legacy", notRecommended: true), Repo("Vault")]);

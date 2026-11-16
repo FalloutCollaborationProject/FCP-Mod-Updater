@@ -67,7 +67,9 @@ public class UpdateCommand(
                 "Updating mods",
                 updateableMods,
                 installedMod => installedMod.Name,
-                async (mod, progress) => await GitModUpdater.UpdateAsync(gitService, mod, progress, ct));
+                async (mod, progress) => await GitModUpdater.UpdateAsync(gitService, mod, progress, ct),
+                ParallelRunner.ResolveParallelism(updateableMods.Count,
+                    settings.Parallel ?? settingsStore.Current.EffectiveUpdateParallelism));
 
             ModTableRenderer.RenderUpdateSummary(results);
 

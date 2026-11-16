@@ -10,8 +10,9 @@ public static class SettingsEditor
     public const string CheckForUpdates = "check-updates";
     public const string IncludePrereleases = "include-prereleases";
     public const string GameVersion = "game-version";
+    public const string UpdateParallelism = "update-parallelism";
 
-    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion];
+    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion, UpdateParallelism];
 
     /// <summary>Applies <paramref name="value"/> (null = reset to default) or returns an error message.</summary>
     public static (AppSettings? Result, string? Error) Apply(AppSettings settings, string key, string? value)
@@ -49,6 +50,13 @@ public static class SettingsEditor
                 return Services.GameVersion.Parse(value) is { } v
                     ? (settings with { GameVersionOverride = v.Short }, null)
                     : (null, $"Expected a RimWorld version such as 1.6, got '{value}'");
+
+            case UpdateParallelism:
+                if (string.IsNullOrWhiteSpace(value))
+                    return (settings with { UpdateParallelism = AppSettings.DefaultUpdateParallelism }, null);
+                return int.TryParse(value.Trim(), out var n) && n is >= 1 and <= Services.ParallelRunner.MaxParallelism
+                    ? (settings with { UpdateParallelism = n }, null)
+                    : (null, $"Expected a number from 1 to {Services.ParallelRunner.MaxParallelism}, got '{value}'");
 
             default:
                 return (null, $"Unknown setting '{key}'. Known settings: {string.Join(", ", Keys)}");

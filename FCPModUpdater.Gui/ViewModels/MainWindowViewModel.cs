@@ -105,6 +105,9 @@ public partial class MainWindowViewModel : ObservableObject
     public InstallViewModel Install { get; }
     public VersionsViewModel Versions { get; }
     public SettingsViewModel Settings { get; }
+
+    /// <summary>How many mods an update batch runs at once (see <see cref="ParallelRunner"/>).</summary>
+    public int UpdateParallelism => _settings.Current.EffectiveUpdateParallelism;
     public IReadOnlyList<NavItemViewModel> NavItems { get; }
     public NavItemViewModel SettingsNav { get; }
 

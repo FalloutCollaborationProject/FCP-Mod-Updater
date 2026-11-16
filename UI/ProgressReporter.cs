@@ -49,9 +49,10 @@ public static class ProgressReporter
         string description,
         IReadOnlyList<T> items,
         Func<T, string> nameSelector,
-        Func<T, IProgress<double>, Task<(bool Success, string? Error)>> action)
+        Func<T, IProgress<double>, Task<(bool Success, string? Error)>> action,
+        int maxParallelism = 1)
     {
-        var itemTasks = new List<ProgressTask>();
+        IReadOnlyList<BatchResult> results = [];
 
         await AnsiConsole.Progress()
             .Columns(
@@ -63,39 +64,44 @@ public static class ProgressReporter
             {
                 ProgressTask overallTask = ctx.AddTask($"[bold]{description}[/]", maxValue: items.Count);
 
-                foreach (T item in items)
-                {
-                    var name = nameSelector(item);
-                    ProgressTask itemTask = ctx.AddTask($"  {name}");
-                    itemTasks.Add(itemTask);
+                // Rows are created up front so their order stays stable while items finish out of order.
+                var rows = items
+                    .Select(item => (Name: nameSelector(item), Task: ctx.AddTask($"  {Markup.Escape(nameSelector(item))}")))
+                    .ToList();
 
-                    var progress = new Progress<double>(p => itemTask.Value = p);
-
-                    try
+                results = await FCPModUpdater.Services.ParallelRunner.RunAsync(items, maxParallelism,
+                    async (item, i, _) =>
                     {
-                        var (success, error) = await action(item, progress);
-                        itemTask.Tag(new BatchResult(name, success, error));
-                        itemTask.Value = 100;
+                        var (name, itemTask) = rows[i];
+                        var progress = new DirectProgress(p => itemTask.Value = Math.Max(itemTask.Value, p));
 
-                        itemTask.Description = success
-                            ? $"  [green]{name}[/]"
-                            : $"  [red]{name}[/]";
-                    }
-                    catch (Exception ex)
-                    {
-                        itemTask.Tag(new BatchResult(name, false, ex.Message));
-                        itemTask.Value = 100;
-                        itemTask.Description = $"  [red]{name}[/]";
-                    }
+                        BatchResult result;
+                        try
+                        {
+                            var (success, error) = await action(item, progress);
+                            result = new BatchResult(name, success, error);
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            result = new BatchResult(name, false, ex.Message);
+                        }
 
-                    overallTask.Increment(1);
-                }
+                        itemTask.Value = 100;
+                        itemTask.Description = result.Success
+                            ? $"  [green]{Markup.Escape(name)}[/]"
+                            : $"  [red]{Markup.Escape(name)}[/]";
+                        overallTask.Increment(1);
+                        return result;
+                    });
             });
 
-        return itemTasks
-            .Select(t => (BatchResult)t.Tag!)
-            .Select(r => (r.Name, r.Success, r.Error))
-            .ToList();
+        return results.Select(r => (r.Name, r.Success, r.Error)).ToList();
+    }
+
+    /// <summary>Applies values on the reporting thread; Progress&lt;T&gt; would post them after the item finished.</summary>
+    private sealed class DirectProgress(Action<double> apply) : IProgress<double>
+    {
+        public void Report(double value) => apply(value);
     }
 
     private record BatchResult(string Name, bool Success, string? Error);

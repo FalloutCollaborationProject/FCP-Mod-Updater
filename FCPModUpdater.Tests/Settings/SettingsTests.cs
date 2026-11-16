@@ -187,6 +187,37 @@ public class SettingsEditorTests
         Assert.Null(result!.IncludePrereleases);
     }
 
+    [Theory]
+    [InlineData("1", 1)]
+    [InlineData("8", 8)]
+    [InlineData(" 2 ", 2)]
+    public void UpdateParallelism_AcceptsOneToEight(string value, int expected)
+    {
+        var (result, error) = SettingsEditor.Apply(new AppSettings(), "update-parallelism", value);
+        Assert.Null(error);
+        Assert.Equal(expected, result!.UpdateParallelism);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("9")]
+    [InlineData("lots")]
+    public void UpdateParallelism_OutOfRange_IsAnError(string value)
+    {
+        var (result, error) = SettingsEditor.Apply(new AppSettings(), "update-parallelism", value);
+        Assert.Null(result);
+        Assert.Contains("1 to 8", error);
+    }
+
+    [Fact]
+    public void UpdateParallelism_Unset_RestoresDefault_AndOutOfRangeFileValuesAreClamped()
+    {
+        var (result, _) = SettingsEditor.Apply(new AppSettings { UpdateParallelism = 2 }, "update-parallelism", null);
+        Assert.Equal(AppSettings.DefaultUpdateParallelism, result!.UpdateParallelism);
+        Assert.Equal(8, new AppSettings { UpdateParallelism = 50 }.EffectiveUpdateParallelism);
+        Assert.Equal(1, new AppSettings { UpdateParallelism = 0 }.EffectiveUpdateParallelism);
+    }
+
     [Fact]
     public void BadBoolean_IsAnError()
     {

@@ -113,6 +113,26 @@
         </StackPanel>
       </Border>
 
+      <!-- Mod updates -->
+      <Border Classes="section">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="h2" Text="Parallel updates" />
+            <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                       Text="How many mods update at the same time when three or more are queued. Use 1 to update one at a time." />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Slider Width="180" VerticalAlignment="Center"
+                    Minimum="1" Maximum="{x:Static vm:SettingsViewModel.MaxParallelism}"
+                    TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                    Value="{Binding UpdateParallelism}"
+                    AutomationProperties.Name="Parallel updates" />
+            <TextBlock Classes="mono" FontSize="13" MinWidth="16" TextAlignment="Right" VerticalAlignment="Center"
+                       Text="{Binding UpdateParallelism}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
       <!-- App updates -->
       <Border Classes="section">
         <StackPanel Spacing="14">

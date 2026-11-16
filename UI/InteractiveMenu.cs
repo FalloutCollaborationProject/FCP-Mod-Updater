@@ -178,7 +178,9 @@ public class InteractiveMenu
             "Updating mods",
             selected.ToList(),
             mod => mod.Name,
-            async (mod, progress) => await GitModUpdater.UpdateAsync(_gitService, mod, progress, ct));
+            async (mod, progress) => await GitModUpdater.UpdateAsync(_gitService, mod, progress, ct),
+            ParallelRunner.ResolveParallelism(selected.Count(),
+                _settingsStore?.Current.EffectiveUpdateParallelism ?? AppSettings.DefaultUpdateParallelism));
 
         ModTableRenderer.RenderUpdateSummary(results);
         WaitForKey();
