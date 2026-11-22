@@ -19,6 +19,9 @@ public record InstalledMod
     public int CommitsBehind { get; init; }
     public int CommitsAhead { get; init; }
     public string? MatchedRepoName { get; init; }
+
+    /// <summary>Id of the <see cref="ModCategory"/> the mod belongs to, when known.</summary>
+    public string? CategoryId { get; init; }
     public string? ErrorMessage { get; init; }
     public bool HasLocalChanges { get; init; }
 

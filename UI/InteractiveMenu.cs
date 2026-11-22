@@ -47,7 +47,7 @@ public class InteractiveMenu
         {
             AnsiConsole.Clear();
             ModTableRenderer.RenderModTable(_mods, _gitHubApiService.RemainingRateLimit,
-                _gitHubApiService.RateLimitReset, GameVersion);
+                _gitHubApiService.RateLimitReset, GameVersion, _gitHubApiService.Categories);
 
             // Show update notification once, non-blocking
             if (!_updateNotificationShown && _updateCheckTask.IsCompleted)
@@ -197,11 +197,28 @@ public class InteractiveMenu
             "Fetching available mods...",
             async () => await _gitHubApiService.GetOrganizationReposAsync(ct));
 
-        List<RemoteRepo> availableRepos = ModCatalog.GetAvailableInstallRepos(orgRepos, _mods.Select(m => m.Name));
+        IReadOnlyList<ModCategory> categories = _gitHubApiService.Categories;
+        ModCategory? category = null;
+        if (categories.Count > 1)
+        {
+            var options = new List<ModCategory?> { null };
+            options.AddRange(categories);
+            category = await AnsiConsole.PromptAsync(
+                new SelectionPrompt<ModCategory?>()
+                    .Title("[bold]Which mods?[/]")
+                    .UseConverter(c => c is null ? "All categories" : Markup.Escape($"{c.DisplayName} — {c.Organization}"))
+                    .AddChoices(options), ct);
+        }
+
+        List<RemoteRepo> availableRepos = ModCatalog.GetAvailableInstallRepos(
+            orgRepos, _mods.Select(m => m.Name), category?.Id, categories);
+        var showCategory = category is null && categories.Count > 1;
 
         if (availableRepos.Count == 0)
         {
-            AnsiConsole.MarkupLine("[green]All FCP mods are already installed![/]");
+            AnsiConsole.MarkupLine(category is null
+                ? "[green]All mods are already installed![/]"
+                : $"[green]All {Markup.Escape(category.DisplayName)} mods are already installed![/]");
             WaitForKey();
             return false;
         }
@@ -214,7 +231,7 @@ public class InteractiveMenu
                 .NotRequired()
                 .WrapAround() // Pressing down on last item goes to first
                 .AddCancelResult()
-                .UseConverter(FormatInstallRepoChoice)
+                .UseConverter(repo => FormatInstallRepoChoice(repo, categories, showCategory))
                 .AddChoices(availableRepos), ct);
 
         if (selectedRepos.Count == 0)
@@ -240,7 +257,7 @@ public class InteractiveMenu
 
         if (installedMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No FCP mods installed.[/]");
+            AnsiConsole.MarkupLine("[yellow]No mods installed.[/]");
             WaitForKey();
             return false;
         }
@@ -304,7 +321,7 @@ public class InteractiveMenu
 
         if (nonGitMods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[grey]No local mods found that match FCP repositories.[/]");
+            AnsiConsole.MarkupLine("[grey]No local mods found that match a mod repository.[/]");
             WaitForKey();
             return false;
         }
@@ -596,13 +613,16 @@ public class InteractiveMenu
         Console.ReadKey(true);
     }
 
-    private static string FormatInstallRepoChoice(RemoteRepo repo)
+    private static string FormatInstallRepoChoice(RemoteRepo repo, IReadOnlyList<ModCategory> categories, bool showCategory)
     {
-        var warning = ModCatalog.IsNotRecommended(repo) ? " [yellow](not recommended for use)[/]" : string.Empty;
+        var warning = ModCatalog.IsNotRecommended(repo, categories) ? " [yellow](not recommended for use)[/]" : string.Empty;
+        var prefix = showCategory && ModCategories.Find(categories, repo.CategoryId) is { } c
+            ? $"[blue]{Markup.Escape($"[{c.DisplayName}]")}[/] "
+            : string.Empty;
 
         return string.IsNullOrEmpty(repo.Description)
-            ? $"{repo.Name}{warning}"
-            : $"{repo.Name}{warning} [grey]— {Truncate(repo.Description, 50)}[/]";
+            ? $"{prefix}{repo.Name}{warning}"
+            : $"{prefix}{repo.Name}{warning} [grey]— {Truncate(repo.Description, 50)}[/]";
     }
 
     private static string Truncate(string text, int maxLength)

@@ -29,16 +29,16 @@ public static class ModOperations
     {
         var targetPath = Path.Combine(modsDirectory, repo.Name);
         var result = await gitService.CloneAsync(repo.CloneUrl, targetPath, percentProgress: progress, ct: ct);
-        return result.Success ? await UseVersionBranchAsync(gitService, repo.Name, targetPath, gameVersion, ct) : result;
+        return result.Success ? await UseVersionBranchAsync(gitService, repo.Name, repo.CategoryId, targetPath, gameVersion, ct) : result;
     }
 
     /// <summary>After a clone: checks out the rimworld-X.Y branch for the game, when the repo has one.</summary>
     private static async Task<(bool Success, string? Error)> UseVersionBranchAsync(
-        IGitService gitService, string repoName, string path, GameVersion? gameVersion, CancellationToken ct)
+        IGitService gitService, string repoName, string? categoryId, string path, GameVersion? gameVersion, CancellationToken ct)
     {
         if (gameVersion is null)
             return (true, null);
-        var branch = ModCatalog.GetVersionBranchName(repoName, gameVersion);
+        var branch = ModCatalog.GetVersionBranchName(repoName, gameVersion, categoryId);
         IReadOnlyList<string> remote = await gitService.GetRemoteBranchesAsync(path, ct);
         if (!remote.Contains(branch, StringComparer.OrdinalIgnoreCase))
             return (true, null);
@@ -60,7 +60,7 @@ public static class ModOperations
             : (false, $"Switched to {branch}, but reset to origin/{branch} failed for {mod.Name}");
     }
 
-    /// <summary>Replaces a local folder with a fresh clone of its matching FCP repository.</summary>
+    /// <summary>Replaces a local folder with a fresh clone of its matching repository.</summary>
     public static async Task<(bool Success, string? Error)> ConvertToGitAsync(
         IGitService gitService,
         IGitHubApiService gitHubApiService,
@@ -72,7 +72,7 @@ public static class ModOperations
         if (string.IsNullOrEmpty(mod.MatchedRepoName))
             return (Success: false, Error: "Repository not found");
 
-        RemoteRepo? repo = await gitHubApiService.GetRepoByNameAsync(mod.MatchedRepoName, ct);
+        RemoteRepo? repo = await gitHubApiService.GetRepoByNameAsync(mod.MatchedRepoName, mod.CategoryId, ct);
         if (repo == null)
             return (Success: false, Error: "Repository not found");
 
@@ -80,7 +80,7 @@ public static class ModOperations
         {
             Directory.Delete(mod.Path, recursive: true);
             var result = await gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);
-            return result.Success ? await UseVersionBranchAsync(gitService, repo.Name, mod.Path, gameVersion, ct) : result;
+            return result.Success ? await UseVersionBranchAsync(gitService, repo.Name, repo.CategoryId, mod.Path, gameVersion, ct) : result;
         }
         catch (Exception ex)
         {

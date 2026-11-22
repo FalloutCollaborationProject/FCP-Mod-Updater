@@ -47,7 +47,24 @@ public partial class SettingsViewModel : ObservableObject
         _includePrereleases = s.EffectiveIncludePrereleases;
         _gameVersionText = s.GameVersionOverride ?? "";
         _updateParallelism = s.EffectiveUpdateParallelism;
+        CategoryToggles = ModCategories.Resolve(s)
+            .Select(c => new CategoryToggleViewModel(c, OnCategoryToggled))
+            .ToList();
         _loading = false;
+    }
+
+    // ── Mod categories ───────────────────────────────────────────────────────
+
+    /// <summary>One switch per category (GitHub org); categories can be added in the settings file.</summary>
+    public IReadOnlyList<CategoryToggleViewModel> CategoryToggles { get; }
+
+    private void OnCategoryToggled(ModCategory category, bool enabled)
+    {
+        if (_loading)
+            return;
+        Save(s => ModCategories.WithEnabled(s, category.Id, enabled));
+        _gitHub.ClearCache();
+        _ = _shell.RescanAsync(clearCache: true);
     }
 
     public string Version => _shell.VersionLabel;

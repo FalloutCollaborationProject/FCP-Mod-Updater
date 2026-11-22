@@ -63,9 +63,38 @@ public partial class InstalledModsViewModel : ObservableObject
     public IReadOnlyList<FilterChipViewModel> Chips { get; }
     public ObservableCollection<ModRowViewModel> Rows { get; } = [];
 
+    /// <summary>
+    /// What the table shows: a header per category (reverse alphabetical) followed by its rows while expanded.
+    /// Without several categories this is just <see cref="Rows"/>. Collapsed rows stay checked and updateable.
+    /// </summary>
+    public ObservableCollection<object> TableItems { get; } = [];
+
+    private readonly HashSet<string> _collapsedGroups = CategoryGroups.CollapsedSet();
+
+    /// <summary>The table's selected item; header rows are ignored.</summary>
+    public object? SelectedTableItem
+    {
+        get => SelectedRow;
+        set
+        {
+            if (value is ModRowViewModel row)
+                SelectedRow = row;
+            else
+                OnPropertyChanged();
+        }
+    }
+
+
     private FilterChipViewModel _activeChip;
 
     [ObservableProperty] private string _searchText = "";
+
+    [ObservableProperty] private IReadOnlyList<CategoryOption> _categories = [CategoryOption.All];
+    [ObservableProperty] private CategoryOption _selectedCategory = CategoryOption.All;
+
+    public bool HasCategories => Categories.Count > 2;
+
+    partial void OnSelectedCategoryChanged(CategoryOption value) => ApplyFilter();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection))]
@@ -101,8 +130,16 @@ public partial class InstalledModsViewModel : ObservableObject
         foreach (ModRowViewModel row in _allRows)
             row.PropertyChanged -= OnRowChanged;
 
+        IReadOnlyList<ModCategory> categories = _shell.Categories;
+        (Categories, SelectedCategory) = CategoryOption.Build(categories, SelectedCategory);
+        OnPropertyChanged(nameof(HasCategories));
+
         _allRows = _shell.Mods
-            .Select(m => new ModRowViewModel(m, _shell.GameVersion?.Short) { Menu = m.Source == ModSource.Git ? new VersionMenuViewModel(this, _git, m) : null })
+            .Select(m => new ModRowViewModel(m, _shell.GameVersion?.Short)
+            {
+                Menu = m.Source == ModSource.Git ? new VersionMenuViewModel(this, _git, m) : null,
+                Category = ModCategories.Find(categories, m.CategoryId),
+            })
             .ToList();
 
         foreach (ModRowViewModel row in _allRows)
@@ -196,10 +233,41 @@ public partial class InstalledModsViewModel : ObservableObject
         var search = SearchText.Trim();
 
         Rows.Clear();
-        foreach (ModRowViewModel row in _allRows.Where(r => _activeChip.Test(r) && r.Matches(search)))
+        foreach (ModRowViewModel row in _allRows.Where(r => _activeChip.Test(r) && r.Matches(search)
+                     && (SelectedCategory.Id is not { } id || string.Equals(r.Mod.CategoryId, id, StringComparison.OrdinalIgnoreCase))))
             Rows.Add(row);
 
+        RebuildTable();
         SelectedRow = selected is not null && Rows.Contains(selected) ? selected : Rows.FirstOrDefault();
+    }
+
+    private void RebuildTable()
+    {
+        TableItems.Clear();
+        if (!HasCategories)
+        {
+            foreach (ModRowViewModel row in Rows)
+                TableItems.Add(row);
+            return;
+        }
+
+        foreach (var (category, rows) in CategoryGroups.Group(Rows, r => r.Mod.CategoryId, _shell.Categories))
+        {
+            var group = new ModGroupViewModel(category, rows, _collapsedGroups, OnGroupToggled);
+            TableItems.Add(group);
+            if (group.IsExpanded)
+                foreach (ModRowViewModel row in rows)
+                    TableItems.Add(row);
+        }
+    }
+
+    private void OnGroupToggled()
+    {
+        ModRowViewModel? selected = SelectedRow;
+        RebuildTable();
+        // Keep the detail pane on the selected mod even when its group was collapsed.
+        SelectedRow = selected;
+        OnPropertyChanged(nameof(SelectedTableItem));
     }
 
     // ── Detail pane ──────────────────────────────────────────────────────────
@@ -210,6 +278,7 @@ public partial class InstalledModsViewModel : ObservableObject
 
     partial void OnSelectedRowChanged(ModRowViewModel? value)
     {
+        OnPropertyChanged(nameof(SelectedTableItem));
         UpdateSelectedCommand.NotifyCanExecuteChanged();
         SwitchVersionCommand.NotifyCanExecuteChanged();
         UninstallCommand.NotifyCanExecuteChanged();

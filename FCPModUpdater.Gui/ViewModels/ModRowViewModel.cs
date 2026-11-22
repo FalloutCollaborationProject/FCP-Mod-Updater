@@ -75,7 +75,7 @@ public partial class ModRowViewModel : ObservableObject
     public string Folder => $"Mods/{System.IO.Path.GetFileName(Mod.Path)}";
     public bool CanConvert => !IsGit && !string.IsNullOrEmpty(Mod.MatchedRepoName);
     public bool IsLocal => !IsGit;
-    public bool IsNotRecommended => ModCatalog.IsNotRecommended(Mod.Topics);
+    public bool IsNotRecommended => ModCatalog.IsNotRecommended(Mod.Topics, Mod.CategoryId, Category is { } c ? [c] : null);
 
     /// <summary>The player's RimWorld version ("1.6"), when known.</summary>
     public string? GameVersion { get; }
@@ -99,9 +99,22 @@ public partial class ModRowViewModel : ObservableObject
     /// <summary>Branch and commit popovers; set by the page for Git rows.</summary>
     public VersionMenuViewModel? Menu { get; init; }
 
+    /// <summary>The mod's category; set by the page, otherwise looked up among the built-in ones.</summary>
+    public ModCategory? Category
+    {
+        get => _category ?? ModCategories.Find(ModCategories.BuiltIn, Mod.CategoryId);
+        init => _category = value;
+    }
+
+    private readonly ModCategory? _category;
+
+    public string CategoryLabel => Category?.DisplayName ?? "";
+
     /// <summary>The mod's GitHub page: from its remote, or the matched org repo for local copies.</summary>
     public string? RepoUrl => ToWebUrl(Mod.RemoteUrl)
-        ?? (Mod.MatchedRepoName is { } repo ? $"https://github.com/FalloutCollaborationProject/{repo}" : null);
+        ?? (Mod.MatchedRepoName is { } repo ? $"{(Category ?? ModCategories.Fcp).OrgUrl}/{repo}" : null);
+
+    public string NotRecommendedTip => $"Tagged {Category?.NotRecommendedTopic ?? ModCatalog.NotRecommendedTopic} on GitHub";
 
     public bool HasRepoUrl => RepoUrl is not null;
 

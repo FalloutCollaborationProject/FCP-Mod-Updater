@@ -15,4 +15,11 @@ public record RemoteRepo(
 
     /// <summary>Repository size as reported by GitHub, in kilobytes.</summary>
     [JsonPropertyName("size")] public long? SizeKb { get; init; }
+
+    [JsonPropertyName("archived")] public bool Archived { get; init; }
+
+    [JsonPropertyName("fork")] public bool Fork { get; init; }
+
+    /// <summary>Id of the <see cref="ModCategory"/> this repository was listed under.</summary>
+    [JsonIgnore] public string CategoryId { get; init; } = "";
 }

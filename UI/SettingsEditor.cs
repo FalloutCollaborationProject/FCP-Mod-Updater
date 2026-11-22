@@ -12,11 +12,30 @@ public static class SettingsEditor
     public const string GameVersion = "game-version";
     public const string UpdateParallelism = "update-parallelism";
 
-    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion, UpdateParallelism];
+    /// <summary>Prefix of the per-category key <c>category.&lt;id&gt;.enabled</c>.</summary>
+    public const string CategoryPrefix = "category.";
+    public const string CategoryEnabledSuffix = ".enabled";
+
+    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion, UpdateParallelism, "category.<id>.enabled"];
+
+    public static string CategoryKey(string id) => $"{CategoryPrefix}{id}{CategoryEnabledSuffix}";
 
     /// <summary>Applies <paramref name="value"/> (null = reset to default) or returns an error message.</summary>
     public static (AppSettings? Result, string? Error) Apply(AppSettings settings, string key, string? value)
     {
+        var lower = key.ToLowerInvariant();
+        if (lower.StartsWith(CategoryPrefix) && lower.EndsWith(CategoryEnabledSuffix))
+        {
+            var id = key[CategoryPrefix.Length..^CategoryEnabledSuffix.Length];
+            if (Models.ModCategories.Find(Models.ModCategories.Resolve(settings), id) is null)
+                return (null, $"Unknown category '{id}'. Known categories: {string.Join(", ", Models.ModCategories.Resolve(settings).Select(c => c.Id))}");
+            if (value is null)
+                return (Models.ModCategories.WithEnabled(settings, id, true), null);
+            return ParseBool(value) is { } enabled
+                ? (Models.ModCategories.WithEnabled(settings, id, enabled), null)
+                : (null, $"Expected true or false, got '{value}'");
+        }
+
         switch (key.ToLowerInvariant())
         {
             case ModsDirectory:

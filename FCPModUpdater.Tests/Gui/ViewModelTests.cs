@@ -25,6 +25,7 @@ internal sealed class ShellFixture
         Discovery.DiscoverModsAsync(Arg.Any<string>(), Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>())
             .Returns(_ => Mods.ToList());
         GitHub.GetOrganizationReposAsync(Arg.Any<CancellationToken>()).Returns(_ => Repos.ToList());
+        GitHub.Categories.Returns(ModCategories.BuiltIn);
         Git.GetIncomingCommitsAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
@@ -287,7 +288,7 @@ public sealed class ViewModelTests : IDisposable
             Arg.Any<IProgress<double>?>(), Arg.Any<CancellationToken>()).Returns((true, null));
 
         InstallViewModel page = _f.Shell.Install;
-        Assert.Equal("3 repositories tagged rimworld-mod · 3 not installed", page.Subheading);
+        Assert.Equal("3 mod repositories · 3 not installed", page.Subheading);
         Assert.False(page.ConfirmCommand.CanExecute(null));
 
         page.SelectAllRecommendedCommand.Execute(null);

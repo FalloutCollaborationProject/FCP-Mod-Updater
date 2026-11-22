@@ -133,6 +133,36 @@
         </Grid>
       </Border>
 
+      <!-- Mod categories -->
+      <Border Classes="section">
+        <StackPanel Spacing="14">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="h2" Text="Mod categories" />
+            <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                       Text="GitHub organizations to list mods from. More can be added under Categories in the settings file." />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding CategoryToggles}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="12" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CategoryToggleViewModel">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                  <StackPanel Spacing="2">
+                    <TextBlock FontSize="13" Text="{Binding Label}" />
+                    <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding Detail}" />
+                  </StackPanel>
+                  <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding IsEnabled}"
+                                VerticalAlignment="Center" AutomationProperties.Name="{Binding Label}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
       <!-- App updates -->
       <Border Classes="section">
         <StackPanel Spacing="14">

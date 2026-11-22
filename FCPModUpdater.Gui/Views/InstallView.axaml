@@ -47,11 +47,30 @@
                       Margin="10,0,0,0" VerticalAlignment="Center" />
             </TextBox.InnerLeftContent>
           </TextBox>
+          <ComboBox Grid.Column="1" Classes="category" Margin="12,0,0,0" MinWidth="170" HorizontalAlignment="Left"
+                    ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                    IsVisible="{Binding HasCategories}" AutomationProperties.Name="Mod category" />
           <Button Grid.Column="2" Classes="outline" Padding="12,8" Content="Select all recommended"
                   Command="{Binding SelectAllRecommendedCommand}" />
         </Grid>
         <ScrollViewer>
-          <ItemsControl ItemsSource="{Binding Repos}" Margin="24,0,24,24">
+          <ItemsControl ItemsSource="{Binding RepoGroups}" Margin="24,0,24,24">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RepoGroupViewModel">
+              <StackPanel Spacing="10" Margin="0,0,0,14">
+                <Button Classes="groupHeader" Command="{Binding ToggleCommand}"
+                        IsVisible="{Binding $parent[UserControl].((vm:InstallViewModel)DataContext).HasCategories}"
+                        AutomationProperties.Name="{Binding Label}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <c:Icon Classes="chevron" Classes.collapsed="{Binding !IsExpanded}"
+                            Data="{StaticResource IconChevronDown}" Size="14" />
+                    <TextBlock Classes="strong" Text="{Binding Label}" VerticalAlignment="Center" />
+                    <TextBlock Foreground="{StaticResource TextDim}" Text="{Binding Count}" VerticalAlignment="Center" />
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextFaint}"
+                               Text="{Binding Organization}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+          <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <c:AutoGrid MinColumnWidth="320" Gap="12" />
@@ -60,9 +79,16 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:RepoCardViewModel">
                 <ToggleButton Classes="card" IsChecked="{Binding IsChecked}" Opacity="{Binding CardOpacity}">
-                  <Grid ColumnDefinitions="Auto,*">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
                     <CheckBox IsChecked="{Binding IsChecked}" VerticalAlignment="Top" Margin="0,2,14,0"
                               IsHitTestVisible="False" Focusable="False" />
+                    <Button Grid.Column="2" Classes="ghost icon" Width="28" Height="28" Padding="0" Margin="8,-4,-6,0"
+                            VerticalAlignment="Top" Foreground="{StaticResource TextDim}"
+                            ToolTip.Tip="Open on GitHub" AutomationProperties.Name="Open on GitHub"
+                            Command="{Binding $parent[UserControl].((vm:InstallViewModel)DataContext).OpenRepoCommand}"
+                            CommandParameter="{Binding}">
+                      <c:Icon Data="{StaticResource IconExternal}" Size="15" />
+                    </Button>
                     <StackPanel Grid.Column="1" Spacing="6">
                       <WrapPanel>
                         <TextBlock Classes="strong" Text="{Binding Name}" Margin="0,0,8,0"
@@ -84,12 +110,19 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+              </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </ScrollViewer>
       </DockPanel>
 
       <!-- Convert local folders -->
       <ScrollViewer IsVisible="{Binding IsConvert}">
         <StackPanel Spacing="12" Margin="24,0,24,24">
+          <ComboBox Classes="category" MinWidth="170" HorizontalAlignment="Left"
+                    ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                    IsVisible="{Binding HasCategories}" AutomationProperties.Name="Mod category" />
           <Border Classes="note">
             <Grid ColumnDefinitions="Auto,*">
               <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}" Margin="0,1,10,0"
@@ -99,7 +132,23 @@
               </TextBlock>
             </Grid>
           </Border>
-          <ItemsControl ItemsSource="{Binding Locals}">
+          <ItemsControl ItemsSource="{Binding LocalGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LocalGroupViewModel">
+              <StackPanel Spacing="10" Margin="0,0,0,14">
+                <Button Classes="groupHeader" Command="{Binding ToggleCommand}"
+                        IsVisible="{Binding $parent[UserControl].((vm:InstallViewModel)DataContext).HasCategories}"
+                        AutomationProperties.Name="{Binding Label}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <c:Icon Classes="chevron" Classes.collapsed="{Binding !IsExpanded}"
+                            Data="{StaticResource IconChevronDown}" Size="14" />
+                    <TextBlock Classes="strong" Text="{Binding Label}" VerticalAlignment="Center" />
+                    <TextBlock Foreground="{StaticResource TextDim}" Text="{Binding Count}" VerticalAlignment="Center" />
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextFaint}"
+                               Text="{Binding Organization}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+          <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Spacing="12" />
@@ -122,6 +171,10 @@
                     </StackPanel>
                   </Grid>
                 </ToggleButton>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+              </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

@@ -6,22 +6,31 @@ namespace FCPModUpdater.UI;
 public static class ModTableRenderer
 {
     public static void RenderModTable(IReadOnlyList<InstalledMod> mods, int? rateLimit = null,
-        DateTimeOffset? rateLimitReset = null, Services.GameVersion? gameVersion = null)
+        DateTimeOffset? rateLimitReset = null, Services.GameVersion? gameVersion = null,
+        IReadOnlyList<ModCategory>? categories = null)
     {
+        categories ??= ModCategories.BuiltIn;
         if (gameVersion is not null)
             AnsiConsole.MarkupLine($"[grey]RimWorld {Markup.Escape(gameVersion.Raw)}[/]");
 
         if (mods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No FCP mods found in the specified directory.[/]");
+            AnsiConsole.MarkupLine("[yellow]No mods found in the specified directory.[/]");
             return;
         }
 
         var table = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(Color.Grey)
-            .Title("[bold blue]FCP Mod Status[/]")
-            .AddColumn(new TableColumn("[bold]Mod Name[/]").NoWrap())
+            .Title("[bold blue]Mod Status[/]")
+            .AddColumn(new TableColumn("[bold]Mod Name[/]").NoWrap());
+
+        // Only worth a column when mods come from more than one category.
+        var showCategory = mods.Select(m => m.CategoryId).Where(id => id is not null).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1;
+        if (showCategory)
+            table.AddColumn(new TableColumn("[bold]Category[/]").Centered());
+
+        table
             .AddColumn(new TableColumn("[bold]Source[/]").Centered())
             .AddColumn(new TableColumn("[bold]Branch[/]").Centered())
             .AddColumn(new TableColumn("[bold]Commit[/]").Centered())
@@ -29,13 +38,14 @@ public static class ModTableRenderer
 
         foreach (InstalledMod mod in mods)
         {
-            table.AddRow(
-                FormatModName(mod),
-                FormatSource(mod.Source),
-                FormatBranch(mod.Branch),
-                FormatCommit(mod.CurrentCommit),
-                FormatStatus(mod) + FormatVersionMismatch(mod, gameVersion)
-            );
+            var cells = new List<string> { FormatModName(mod) };
+            if (showCategory)
+                cells.Add(Markup.Escape(CategoryLabel(categories, mod.CategoryId)));
+            cells.Add(FormatSource(mod.Source));
+            cells.Add(FormatBranch(mod.Branch));
+            cells.Add(FormatCommit(mod.CurrentCommit));
+            cells.Add(FormatStatus(mod) + FormatVersionMismatch(mod, gameVersion));
+            table.AddRow(cells.ToArray());
         }
 
         AnsiConsole.Write(table);
@@ -60,6 +70,9 @@ public static class ModTableRenderer
         var color = rateLimit.Value < 10 ? "yellow" : "grey";
         AnsiConsole.MarkupLine($"[{color}]GitHub API: {rateLimit.Value} requests remaining{resetTime}[/]");
     }
+
+    private static string CategoryLabel(IReadOnlyList<ModCategory> categories, string? id)
+        => ModCategories.Find(categories, id)?.DisplayName ?? id ?? "";
 
     private static string FormatModName(InstalledMod mod)
     {

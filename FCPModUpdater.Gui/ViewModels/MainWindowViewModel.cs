@@ -143,6 +143,9 @@ public partial class MainWindowViewModel : ObservableObject
     }
     public IReadOnlyList<RemoteRepo> OrgRepos { get; private set; } = [];
 
+    /// <summary>The enabled mod categories (GitHub orgs) the repo list is built from.</summary>
+    public IReadOnlyList<ModCategory> Categories => _gitHub.Categories is { Count: > 0 } c ? c : ModCategories.BuiltIn;
+
     [ObservableProperty] private object _currentPage;
 
     [ObservableProperty]

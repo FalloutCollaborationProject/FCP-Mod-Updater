@@ -21,7 +21,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(sp => new GitHubTokenProvider(sp.GetRequiredService<SettingsStore>(), githubToken));
         services.AddTransient<GitHubAuthHandler>();
 
-        services.AddHttpClient<IGitHubApiService, GitHubApiService>(ConfigureGitHubClient)
+        services.AddHttpClient<IGitHubApiService, GitHubApiService>((client, sp) =>
+            {
+                ConfigureGitHubClient(client);
+                return new GitHubApiService(client, sp.GetRequiredService<SettingsStore>());
+            })
             .AddHttpMessageHandler<GitHubAuthHandler>();
         services.AddHttpClient<UpdateCheckService>(ConfigureGitHubClient)
             .AddHttpMessageHandler<GitHubAuthHandler>();

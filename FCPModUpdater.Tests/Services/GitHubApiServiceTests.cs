@@ -10,8 +10,10 @@ public class GitHubApiServiceTests : IDisposable
     {
         _handler = new MockHttpMessageHandler();
         _httpClient = new HttpClient(_handler) { BaseAddress = new Uri("https://api.github.com") };
-        _service = new GitHubApiService(_httpClient);
+        _service = new GitHubApiService(_httpClient, FcpOnly);
     }
+
+    private static IReadOnlyList<ModCategory> FcpOnly() => [ModCategories.Fcp];
 
     public void Dispose()
     {
@@ -172,7 +174,7 @@ public class GitHubApiServiceTests : IDisposable
         // Expire cache by creating new service with same handler but we'll test via fresh service
         // Instead, test that rate-limited response with existing cache returns cached
         // The cache is still valid so this won't hit - test the 403 path with a new service
-        var service2 = new GitHubApiService(_httpClient);
+        var service2 = new GitHubApiService(_httpClient, FcpOnly);
         var rateLimitedResponse = new HttpResponseMessage(HttpStatusCode.Forbidden);
         rateLimitedResponse.Headers.Add("X-RateLimit-Remaining", "0");
         _handler.ResponseQueue.Enqueue(rateLimitedResponse);
@@ -201,7 +203,7 @@ public class GitHubApiServiceTests : IDisposable
         // Let's just verify network error on fresh service
         var handler2 = new MockHttpMessageHandler { ThrowOnSend = true };
         var client2 = new HttpClient(handler2) { BaseAddress = new Uri("https://api.github.com") };
-        var service2 = new GitHubApiService(client2);
+        var service2 = new GitHubApiService(client2, FcpOnly);
 
         IReadOnlyList<RemoteRepo> result = await service2.GetOrganizationReposAsync(token);
         Assert.Empty(result);
@@ -215,7 +217,7 @@ public class GitHubApiServiceTests : IDisposable
         
         var handler = new MockHttpMessageHandler { ThrowOnSend = true };
         var client = new HttpClient(handler) { BaseAddress = new Uri("https://api.github.com") };
-        var service = new GitHubApiService(client);
+        var service = new GitHubApiService(client, FcpOnly);
 
         IReadOnlyList<RemoteRepo> result = await service.GetOrganizationReposAsync(token);
         Assert.Empty(result);

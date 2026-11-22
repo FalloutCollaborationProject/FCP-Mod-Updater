@@ -24,6 +24,12 @@ public sealed record AppSettings
 
     public const int DefaultUpdateParallelism = 4;
 
+    /// <summary>
+    /// Category overrides and additions, merged with the built-ins by <c>ModCategories.Resolve</c>.
+    /// Null keeps the built-in categories.
+    /// </summary>
+    public IReadOnlyList<Models.ModCategory>? Categories { get; init; }
+
     /// <summary>True once the CLI has told the user that a GUI version exists.</summary>
     public bool GuiNoticeShown { get; init; }
 

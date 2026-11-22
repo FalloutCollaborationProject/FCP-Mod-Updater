@@ -14,6 +14,15 @@ public partial class InstalledModsView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => Attach(DataContext as InstalledModsViewModel);
+        Table.ContainerPrepared += OnTableContainerPrepared;
+    }
+
+    /// <summary>Category header rows can't take focus or show the selected/hover look of a mod row.</summary>
+    private void OnTableContainerPrepared(object? sender, ContainerPreparedEventArgs e)
+    {
+        var isHeader = Table.ItemsView.Count > e.Index && Table.ItemsView[e.Index] is ModGroupViewModel;
+        e.Container.Focusable = !isHeader;
+        e.Container.Classes.Set("groupRow", isHeader);
     }
 
     private void Attach(InstalledModsViewModel? viewModel)
@@ -67,6 +76,10 @@ public partial class InstalledModsView : UserControl
 
     private void OnTableSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        // Category headers are not mods: drop them from the selection (e.g. Ctrl+A or keyboard navigation).
+        foreach (ModGroupViewModel header in e.AddedItems.OfType<ModGroupViewModel>().ToList())
+            Table.SelectedItems?.Remove(header);
+
         if (Table.SelectedItems is { } selected)
             _viewModel?.SetSelection(selected.OfType<ModRowViewModel>().ToList());
     }

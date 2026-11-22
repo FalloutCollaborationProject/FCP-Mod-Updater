@@ -6,7 +6,6 @@ namespace FCPModUpdater.Services;
 
 public class ModDiscoveryService : IModDiscoveryService
 {
-    private const string FcpOrgUrl = "github.com/FalloutCollaborationProject/";
     private static readonly string[] BranchSuffixes = ["-main", "-master", "-develop"];
 
     private readonly IGitService _gitService;
@@ -31,6 +30,9 @@ public class ModDiscoveryService : IModDiscoveryService
         }
 
         var orgRepos = await _gitHubApiService.GetOrganizationReposAsync(ct);
+        IReadOnlyList<ModCategory> categories = _gitHubApiService.Categories ?? [];
+        if (categories.Count == 0)
+            categories = ModCategories.Effective(_settings?.Current);
         var orgRepoNames = orgRepos.Select(r => r.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var reposByName = orgRepos
             .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
@@ -47,11 +49,16 @@ public class ModDiscoveryService : IModDiscoveryService
                 var folderName = Path.GetFileName(dir);
                 progress?.Report($"Scanning: {folderName}");
 
-                InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, gameVersion, token);
+                InstalledMod? mod = await AnalyzeModDirectoryAsync(dir, folderName, orgRepoNames, categories, gameVersion, token);
                 if (mod != null)
                 {
-                    RemoteRepo? repo = FindRepo(mod, orgRepoNames, reposByName);
-                    mods.Add(repo is null ? mod : mod with { Topics = repo.Topics });
+                    var urlCategory = ModCategories.FindByRemoteUrl(categories, mod.RemoteUrl)?.Id;
+                    RemoteRepo? repo = FindRepo(mod, orgRepos, urlCategory, orgRepoNames, reposByName);
+                    mods.Add(mod with
+                    {
+                        Topics = repo?.Topics ?? mod.Topics,
+                        CategoryId = urlCategory ?? repo?.CategoryId ?? mod.CategoryId,
+                    });
                 }
             });
 
@@ -62,6 +69,7 @@ public class ModDiscoveryService : IModDiscoveryService
         string path,
         string folderName,
         HashSet<string> orgRepoNames,
+        IReadOnlyList<ModCategory> categories,
         GameVersion? gameVersion,
         CancellationToken ct)
     {
@@ -86,7 +94,7 @@ public class ModDiscoveryService : IModDiscoveryService
             return null;
         }
 
-        // It's a git repo - check if it's an FCP mod
+        // It's a git repo - check if it belongs to one of the category orgs
         var remoteUrl = await _gitService.GetRemoteUrlAsync(path, ct);
 
         if (string.IsNullOrEmpty(remoteUrl))
@@ -109,9 +117,9 @@ public class ModDiscoveryService : IModDiscoveryService
             return null;
         }
 
-        var isFcpMod = remoteUrl.Contains(FcpOrgUrl, StringComparison.OrdinalIgnoreCase);
+        ModCategory? urlCategory = ModCategories.FindByRemoteUrl(categories, remoteUrl);
 
-        if (!isFcpMod)
+        if (urlCategory is null)
         {
             // Check if folder name matches org repo (might be cloned from fork)
             if (MatchRepoName(folderName, orgRepoNames) == null)
@@ -120,14 +128,15 @@ public class ModDiscoveryService : IModDiscoveryService
             }
         }
 
-        // It's an FCP mod - gather full status
-        return await BuildInstalledModAsync(path, folderName, remoteUrl, gameVersion, ct);
+        // It's a known mod - gather full status
+        return await BuildInstalledModAsync(path, folderName, remoteUrl, urlCategory?.Id, gameVersion, ct);
     }
 
     private async Task<InstalledMod> BuildInstalledModAsync(
         string path,
         string folderName,
         string remoteUrl,
+        string? categoryId,
         GameVersion? gameVersion,
         CancellationToken ct)
     {
@@ -156,7 +165,7 @@ public class ModDiscoveryService : IModDiscoveryService
 
             var (versionBranch, mismatch) = gameVersion is null
                 ? (null, VersionMismatch.None)
-                : await CheckVersionBranchAsync(path, RepoNameFromUrl(remoteUrl) ?? folderName, branch, gameVersion, ct);
+                : await CheckVersionBranchAsync(path, RepoNameFromUrl(remoteUrl) ?? folderName, categoryId, branch, gameVersion, ct);
 
             return new InstalledMod
             {
@@ -194,9 +203,9 @@ public class ModDiscoveryService : IModDiscoveryService
     /// or has commits that branch doesn't contain. No such branch means main still targets this version.
     /// </summary>
     private async Task<(string? Branch, VersionMismatch Mismatch)> CheckVersionBranchAsync(
-        string path, string repoName, string? currentBranch, GameVersion gameVersion, CancellationToken ct)
+        string path, string repoName, string? categoryId, string? currentBranch, GameVersion gameVersion, CancellationToken ct)
     {
-        var versionBranch = ModCatalog.GetVersionBranchName(repoName, gameVersion);
+        var versionBranch = ModCatalog.GetVersionBranchName(repoName, gameVersion, categoryId);
         IReadOnlyList<string> remote = await _gitService.GetRemoteBranchesAsync(path, ct);
         var hasVersionBranch = remote.Contains(versionBranch, StringComparer.OrdinalIgnoreCase);
 
@@ -222,11 +231,20 @@ public class ModDiscoveryService : IModDiscoveryService
             : (versionBranch, VersionMismatch.AheadOfVersionBranch);
     }
 
-    private static RemoteRepo? FindRepo(InstalledMod mod, HashSet<string> orgRepoNames, Dictionary<string, RemoteRepo> reposByName)
+    /// <summary>
+    /// The org repo a mod belongs to. Repos with the same name in several orgs are told apart by the remote URL's
+    /// category; otherwise the first category in order wins.
+    /// </summary>
+    private static RemoteRepo? FindRepo(InstalledMod mod, IReadOnlyList<RemoteRepo> orgRepos, string? urlCategory,
+        HashSet<string> orgRepoNames, Dictionary<string, RemoteRepo> reposByName)
     {
         var name = mod.MatchedRepoName
                    ?? RepoNameFromUrl(mod.RemoteUrl)
                    ?? MatchRepoName(System.IO.Path.GetFileName(mod.Path), orgRepoNames);
+        if (name is not null && urlCategory is not null
+            && orgRepos.FirstOrDefault(r => r.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                                            && r.CategoryId.Equals(urlCategory, StringComparison.OrdinalIgnoreCase)) is { } exact)
+            return exact;
         if (name is not null && reposByName.TryGetValue(name, out RemoteRepo? repo))
             return repo;
         var folderMatch = MatchRepoName(System.IO.Path.GetFileName(mod.Path), orgRepoNames);

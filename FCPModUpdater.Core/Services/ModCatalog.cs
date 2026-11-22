@@ -7,23 +7,46 @@ namespace FCPModUpdater.Services;
 /// </summary>
 public static class ModCatalog
 {
+    /// <summary>The FCP not-recommended topic.</summary>
     public const string NotRecommendedTopic = "fcp-not-recommended";
 
-    public static bool IsNotRecommended(RemoteRepo repo) => IsNotRecommended(repo.Topics);
+    /// <summary>
+    /// Whether the repo carries its category's not-recommended topic. Pass <paramref name="categories"/> to
+    /// honour configured categories; otherwise the built-in ones are used.
+    /// </summary>
+    public static bool IsNotRecommended(RemoteRepo repo, IEnumerable<ModCategory>? categories = null)
+        => IsNotRecommended(repo.Topics, repo.CategoryId, categories);
 
-    public static bool IsNotRecommended(IReadOnlyList<string> topics) =>
-        topics.Contains(NotRecommendedTopic, StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// Whether <paramref name="topics"/> contain the not-recommended topic of <paramref name="categoryId"/>.
+    /// An unknown or missing category falls back to the FCP topic.
+    /// </summary>
+    public static bool IsNotRecommended(IReadOnlyList<string>? topics, string? categoryId = null,
+        IEnumerable<ModCategory>? categories = null)
+    {
+        if (topics is null || topics.Count == 0)
+            return false;
+        ModCategory? category = ModCategories.Find(categories ?? ModCategories.BuiltIn, categoryId);
+        var topic = category is null ? NotRecommendedTopic : category.NotRecommendedTopic;
+        return topic is not null && topics.Contains(topic, StringComparer.OrdinalIgnoreCase);
+    }
 
-    /// <summary>Org repos that are not installed yet; recommended ones first, then by name.</summary>
+    /// <summary>
+    /// Org repos that are not installed yet, optionally only those of <paramref name="categoryId"/>;
+    /// recommended ones first, then by name.
+    /// </summary>
     public static List<RemoteRepo> GetAvailableInstallRepos(
         IReadOnlyList<RemoteRepo> orgRepos,
-        IEnumerable<string> installedNames)
+        IEnumerable<string> installedNames,
+        string? categoryId = null,
+        IEnumerable<ModCategory>? categories = null)
     {
         var installedNameSet = new HashSet<string>(installedNames, StringComparer.OrdinalIgnoreCase);
 
         return orgRepos
             .Where(repo => !installedNameSet.Contains(repo.Name))
-            .OrderBy(IsNotRecommended)
+            .Where(repo => categoryId is null || repo.CategoryId.Equals(categoryId, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(repo => IsNotRecommended(repo, categories))
             .ThenBy(repo => repo.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -54,14 +77,21 @@ public static class ModCatalog
 
     /// <summary>
     /// Branch holding the last build for an older game version: "rimworld-1.6", except FCP-Tools,
-    /// whose 1.6 branch is "rimworld-1.6-snapshot".
+    /// whose 1.6 branch is "rimworld-1.6-snapshot" (FCP only; a null category is treated as FCP).
     /// </summary>
-    public static string GetVersionBranchName(string? repoName, GameVersion gameVersion)
-        => string.Equals(repoName, ToolsRepoName, StringComparison.OrdinalIgnoreCase) && gameVersion.Short == "1.6"
+    public static string GetVersionBranchName(string? repoName, GameVersion gameVersion, string? categoryId = null)
+        => (categoryId is null or "" || categoryId.Equals(ModCategories.FcpId, StringComparison.OrdinalIgnoreCase))
+           && string.Equals(repoName, ToolsRepoName, StringComparison.OrdinalIgnoreCase) && gameVersion.Short == "1.6"
             ? "rimworld-1.6-snapshot"
             : $"rimworld-{gameVersion.Short}";
 
-    /// <summary>Local (non-git) folders that match an FCP repository and can be replaced by a clone.</summary>
+    /// <summary>Mods of one category, or all of them when <paramref name="categoryId"/> is null.</summary>
+    public static IReadOnlyList<InstalledMod> InCategory(IReadOnlyList<InstalledMod> mods, string? categoryId)
+        => categoryId is null
+            ? mods
+            : mods.Where(m => string.Equals(m.CategoryId, categoryId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>Local (non-git) folders that match an org repository and can be replaced by a clone.</summary>
     public static IReadOnlyList<InstalledMod> GetConvertibleMods(IReadOnlyList<InstalledMod> mods)
         => mods.Where(m => m.Source != ModSource.Git && !string.IsNullOrEmpty(m.MatchedRepoName)).ToList();
 }
