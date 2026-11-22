@@ -11,6 +11,19 @@
         <ResourceInclude Source="/Views/VersionMenus.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
+              <DataTemplate x:Key="GroupHeaderTemplate" x:DataType="vm:ModGroupViewModel">
+                <Button Classes="groupHeader row" Command="{Binding ToggleCommand}"
+                        AutomationProperties.Name="{Binding Label}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <c:Icon Classes="chevron" Classes.collapsed="{Binding !IsExpanded}"
+                            Data="{StaticResource IconChevronDown}" Size="14" />
+                    <TextBlock Classes="strong" Text="{Binding Label}" VerticalAlignment="Center" />
+                    <TextBlock Foreground="{StaticResource TextDim}" Text="{Binding Count}" VerticalAlignment="Center" />
+                    <TextBlock FontSize="12" Foreground="{StaticResource Warn}" Text="{Binding UpdateText}"
+                               IsVisible="{Binding HasUpdates}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
   </UserControl.Resources>
   <Grid RowDefinitions="Auto,Auto,*,Auto">
 
@@ -140,17 +153,7 @@
                    SelectionChanged="OnTableSelectionChanged">
             <ListBox.DataTemplates>
               <DataTemplate x:DataType="vm:ModGroupViewModel">
-                <Button Classes="groupHeader row" Command="{Binding ToggleCommand}"
-                        AutomationProperties.Name="{Binding Label}">
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <c:Icon Classes="chevron" Classes.collapsed="{Binding !IsExpanded}"
-                            Data="{StaticResource IconChevronDown}" Size="14" />
-                    <TextBlock Classes="strong" Text="{Binding Label}" VerticalAlignment="Center" />
-                    <TextBlock Foreground="{StaticResource TextDim}" Text="{Binding Count}" VerticalAlignment="Center" />
-                    <TextBlock FontSize="12" Foreground="{StaticResource Warn}" Text="{Binding UpdateText}"
-                               IsVisible="{Binding HasUpdates}" VerticalAlignment="Center" />
-                  </StackPanel>
-                </Button>
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource GroupHeaderTemplate}" />
               </DataTemplate>
               <DataTemplate x:DataType="vm:ModRowViewModel">
                 <Border BorderBrush="{StaticResource RowLine}" BorderThickness="0,1,0,0">
@@ -251,6 +254,9 @@
               </DataTemplate>
             </ListBox.DataTemplates>
           </ListBox>
+          <!-- Sticky copy of the header for the group at the top of the scrolled table -->
+          <ContentControl Name="StickyHeader" VerticalAlignment="Top" IsVisible="False" ZIndex="1"
+                          ContentTemplate="{StaticResource GroupHeaderTemplate}" />
           <TextBlock Classes="sub" Text="No mods match this filter." HorizontalAlignment="Center"
                      Margin="0,48,0,0" IsVisible="{Binding !Rows.Count}" />
         </Panel>
