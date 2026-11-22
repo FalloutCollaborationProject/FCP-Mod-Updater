@@ -8,7 +8,7 @@ public class UpdaterCommandTests
     [InlineData(null, false)]
     [InlineData("", false)]
     [InlineData("  ", false)]
-    [InlineData("/home/user/Apps/FCPModManager-GUI-x86_64.AppImage", true)]
+    [InlineData("/home/user/Apps/CollabProjectUpdater-x86_64.AppImage", true)]
     public void IsAppImagePath_IsTrueOnlyWhenTheRuntimeSetAPath(string? value, bool expected)
     {
         Assert.Equal(expected, UpdateCheckService.IsAppImagePath(value));
@@ -26,9 +26,9 @@ public class UpdaterCommandTests
         var command = UpdateCheckService.GetUpdaterCommand(isAppImage: false);
 
         if (OperatingSystem.IsWindows())
-            Assert.Equal("update-fcp-mod-manager.bat", command);
+            Assert.Equal("update-collab-project-updater.bat", command);
         else if (OperatingSystem.IsLinux())
-            Assert.Equal("./update-fcp-mod-manager.sh", command);
+            Assert.Equal("./update-collab-project-updater.sh", command);
         else
             Assert.Null(command);
     }

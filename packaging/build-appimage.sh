@@ -14,10 +14,10 @@ publish_dir="$(cd "$1" && pwd)"
 mkdir -p "$2"
 out_dir="$(cd "$2" && pwd)"
 
-BIN_NAME="FCPModManager"
-APP_ID="fcp-mod-manager"
-APPIMAGE_NAME="FCPModManager-GUI-x86_64.AppImage"
-UPDATE_INFO="gh-releases-zsync|FalloutCollaborationProject|FCP-Mod-Updater|latest|FCPModManager-GUI-*x86_64.AppImage.zsync"
+BIN_NAME="CollabProjectUpdater"
+APP_ID="collab-project-updater"
+APPIMAGE_NAME="CollabProjectUpdater-x86_64.AppImage"
+UPDATE_INFO="gh-releases-zsync|FalloutCollaborationProject|FCP-Mod-Updater|latest|CollabProjectUpdater-*x86_64.AppImage.zsync"
 TOOL_URL="https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
 
 if [[ ! -f "${publish_dir}/${BIN_NAME}" ]]; then
@@ -25,7 +25,7 @@ if [[ ! -f "${publish_dir}/${BIN_NAME}" ]]; then
     exit 1
 fi
 
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/fcp-mod-manager-build"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/collab-project-updater-build"
 tool="${cache}/appimagetool-x86_64.AppImage"
 if [[ ! -x "${tool}" ]]; then
     echo "Downloading appimagetool..."
@@ -44,7 +44,7 @@ mkdir -p "${appdir}/usr/bin" "${icon_dir}"
 cp "${publish_dir}/${BIN_NAME}" "${appdir}/usr/bin/${BIN_NAME}"
 chmod +x "${appdir}/usr/bin/${BIN_NAME}"
 
-logo="${repo}/FCPModUpdater.Gui/Assets/fcp_logo.png"
+logo="${repo}/FCPModUpdater.Gui/Assets/collab_logo.png"
 cp "${logo}" "${appdir}/${APP_ID}.png"
 cp "${logo}" "${appdir}/.DirIcon"
 cp "${logo}" "${icon_dir}/${APP_ID}.png"
@@ -52,8 +52,8 @@ cp "${logo}" "${icon_dir}/${APP_ID}.png"
 cat > "${appdir}/${APP_ID}.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=FCP Mod Manager
-Comment=Manage RimWorld mods from the Fallout Collaboration Project
+Name=Collaboration Project Updater
+Comment=Manage RimWorld mods from the Fallout and Elder Scrolls Collaboration Projects
 Exec=${BIN_NAME}
 Icon=${APP_ID}
 Terminal=false
@@ -63,7 +63,7 @@ DESKTOP
 cat > "${appdir}/AppRun" <<'APPRUN'
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "$0")")"
-exec "${HERE}/usr/bin/FCPModManager" "$@"
+exec "${HERE}/usr/bin/CollabProjectUpdater" "$@"
 APPRUN
 chmod +x "${appdir}/AppRun"
 

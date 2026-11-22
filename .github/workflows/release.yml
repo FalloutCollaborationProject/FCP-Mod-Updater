@@ -6,8 +6,8 @@ on:
       - 'v*'
 
 env:
-  APP_NAME: FCPModUpdater
-  GUI_NAME: FCPModManager
+  APP_NAME: CollabProjectUpdater-CLI
+  GUI_NAME: CollabProjectUpdater
 
 jobs:
   release:
@@ -30,13 +30,13 @@ jobs:
       - name: Build Windows x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
-          cp ./update-fcp-mod-manager.bat ./publish/win-x64-sc/
+          cp ./update-collab-project-updater.bat ./publish/win-x64-sc/
 
       - name: Build Linux x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
-          cp ./update-fcp-mod-manager.sh ./publish/linux-x64-sc/
-          cp ./fcp-mod-manager.desktop ./publish/linux-x64-sc/
+          cp ./update-collab-project-updater.sh ./publish/linux-x64-sc/
+          cp ./collab-project-updater.desktop ./publish/linux-x64-sc/
 
       - name: Build Windows x64 (framework-dependent)
         run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd
@@ -44,17 +44,17 @@ jobs:
       - name: Build Linux x64 (framework-dependent)
         run: |
           dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
-          cp ./fcp-mod-manager.desktop ./publish/linux-x64-fd/
+          cp ./collab-project-updater.desktop ./publish/linux-x64-fd/
 
       - name: Build GUI Windows x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64
-          cp ./update-fcp-mod-manager.bat ./publish/gui-win-x64/
+          cp ./update-collab-project-updater.bat ./publish/gui-win-x64/
 
       - name: Build GUI Linux x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
-          cp ./update-fcp-mod-manager.sh ./fcp-mod-manager-gui.desktop ./FCPModUpdater.Gui/Assets/fcp_logo.png ./publish/gui-linux-x64/
+          cp ./update-collab-project-updater.sh ./collab-project-updater-gui.desktop ./FCPModUpdater.Gui/Assets/collab_logo.png ./publish/gui-linux-x64/
 
       - name: Build GUI AppImage
         run: |
@@ -64,17 +64,17 @@ jobs:
 
       - name: Create archives
         run: |
-          cp ./update-fcp-mod-manager.bat ./publish/
-          cp ./update-fcp-mod-manager.sh ./publish/
+          cp ./update-collab-project-updater.bat ./publish/
+          cp ./update-collab-project-updater.sh ./publish/
           cd ./publish
-          chmod +x linux-x64-sc/${{ env.APP_NAME }} linux-x64-sc/update-fcp-mod-manager.sh gui-linux-x64/${{ env.GUI_NAME }} gui-linux-x64/update-fcp-mod-manager.sh
+          chmod +x linux-x64-sc/${{ env.APP_NAME }} linux-x64-sc/update-collab-project-updater.sh gui-linux-x64/${{ env.GUI_NAME }} gui-linux-x64/update-collab-project-updater.sh
           zip -r "${{ env.APP_NAME }}-win-x64-selfcontained.zip" win-x64-sc
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
           zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
           tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
-          zip -r "${{ env.GUI_NAME }}-GUI-win-x64.zip" gui-win-x64
-          tar -czvf "${{ env.GUI_NAME }}-GUI-linux-x64.tar.gz" gui-linux-x64
-          sha256sum "${{ env.APP_NAME }}"-*.zip "${{ env.APP_NAME }}"-*.tar.gz "${{ env.GUI_NAME }}"-*.zip "${{ env.GUI_NAME }}"-*.tar.gz "${{ env.GUI_NAME }}"-*.AppImage > checksums.txt
+          zip -r "${{ env.GUI_NAME }}-win-x64.zip" gui-win-x64
+          tar -czvf "${{ env.GUI_NAME }}-linux-x64.tar.gz" gui-linux-x64
+          sha256sum *.zip *.tar.gz *.AppImage > checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -87,10 +87,10 @@ jobs:
             ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
             ./publish/${{ env.APP_NAME }}-win-x64.zip
             ./publish/${{ env.APP_NAME }}-linux-x64.tar.gz
-            ./publish/${{ env.GUI_NAME }}-GUI-win-x64.zip
-            ./publish/${{ env.GUI_NAME }}-GUI-linux-x64.tar.gz
-            ./publish/${{ env.GUI_NAME }}-GUI-x86_64.AppImage
-            ./publish/${{ env.GUI_NAME }}-GUI-x86_64.AppImage.zsync
+            ./publish/${{ env.GUI_NAME }}-win-x64.zip
+            ./publish/${{ env.GUI_NAME }}-linux-x64.tar.gz
+            ./publish/${{ env.GUI_NAME }}-x86_64.AppImage
+            ./publish/${{ env.GUI_NAME }}-x86_64.AppImage.zsync
             ./publish/checksums.txt
-            ./publish/update-fcp-mod-manager.bat
-            ./publish/update-fcp-mod-manager.sh
+            ./publish/update-collab-project-updater.bat
+            ./publish/update-collab-project-updater.sh

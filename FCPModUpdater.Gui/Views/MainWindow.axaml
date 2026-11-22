@@ -4,8 +4,8 @@
         xmlns:c="using:FCPModUpdater.Gui.Controls"
         x:Class="FCPModUpdater.Gui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="FCP Mod Manager"
-        Icon="/Assets/fcp_logo.png"
+        Title="Collaboration Project Updater"
+        Icon="/Assets/collab_logo.png"
         Width="1280" Height="800" MinWidth="980" MinHeight="640"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource Window}"
@@ -19,10 +19,12 @@
       <Border Background="{StaticResource Sidebar}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,1,0"
               Padding="14,20">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="6,0,6,24">
-            <Image Source="/Assets/fcp_logo.png" Width="36" Height="36" />
-            <StackPanel Spacing="3" VerticalAlignment="Center">
-              <TextBlock Text="FCP Mod Manager" FontWeight="Bold" FontSize="15" LetterSpacing="0.2" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="6,0,6,24">
+            <Image Source="/Assets/collab_logo.png" Width="36" Height="36" VerticalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+              <TextBlock Text="Collaboration Project Updater" FontWeight="Bold" FontSize="15" LetterSpacing="0.2"
+                         TextWrapping="Wrap" />
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding VersionLabel}"
                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="120"
@@ -32,7 +34,7 @@
                 </Border>
               </StackPanel>
             </StackPanel>
-          </StackPanel>
+          </Grid>
 
           <StackPanel DockPanel.Dock="Bottom" Spacing="14" Margin="6,0">
             <StackPanel Spacing="6">
@@ -140,7 +142,7 @@
                       HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Classes="h1" Text="Git is required" />
             <TextBlock Classes="sub" TextWrapping="Wrap" LineHeight="20"
-                       Text="This application uses Git to manage mods, and it wasn't found on your PATH. Install Git, then restart FCP Mod Manager." />
+                       Text="This application uses Git to manage mods, and it wasn't found on your PATH. Install Git, then restart Collaboration Project Updater." />
             <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0"
                     Content="Get Git" Click="OnGetGitClick" />
           </StackPanel>

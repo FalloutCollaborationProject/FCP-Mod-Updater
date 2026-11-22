@@ -14,7 +14,7 @@ var app = new CommandApp(new TypeRegistrar(services));
 
 app.Configure(config =>
 {
-    config.SetApplicationName("fcp-mod-manager");
+    config.SetApplicationName("collab-project-updater");
     config.SetApplicationVersion(AppVersion.InformationalVersion);
     config.SetInterceptor(new GitRequiredInterceptor());
 

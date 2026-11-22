@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>FCPModManager</AssemblyName>
+    <AssemblyName>CollabProjectUpdater</AssemblyName>
     <RootNamespace>FCPModUpdater.Gui</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

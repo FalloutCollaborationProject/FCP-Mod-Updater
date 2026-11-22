@@ -15,8 +15,8 @@ public static class GuiNoticeRenderer
             return;
 
         var content = new Rows(
-            new Markup("[cyan bold]New: FCP Mod Manager now has a GUI version[/]"),
-            new Markup("[Grey66]Download the[/] [underline]FCPModManager-GUI[/] [Grey66]archive (or the Linux AppImage) from:[/]"),
+            new Markup("[cyan bold]New: Collaboration Project Updater now has a GUI version[/]"),
+            new Markup("[Grey66]Download the[/] [underline]CollabProjectUpdater[/] [Grey66]archive (or the Linux AppImage) from:[/]"),
             new Markup($"[link]{ReleasesUrl}[/]"),
             new Markup("[Grey66 dim]It shares this app's settings. This notice is only shown once.[/]"));
 

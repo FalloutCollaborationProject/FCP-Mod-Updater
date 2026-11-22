@@ -15,22 +15,34 @@ if [[ "${1:-}" != "--from-temp" ]]; then
     exit "${exit_code}"
 fi
 
-# The same script updates the GUI (FCPModManager) and the CLI (FCPModUpdater); the install folder says which.
-if [[ -f "./FCPModManager" ]]; then
-    APP_NAME="FCPModManager"
-    ARCHIVE="FCPModManager-GUI-linux-x64.tar.gz"
+# The same script updates the GUI (CollabProjectUpdater) and the CLI (CollabProjectUpdater-CLI); the install folder says which.
+# Installs from before the rename (FCPModManager / FCPModUpdater) are migrated: the old files are removed after updating.
+OLD_FILES=()
+if [[ -f "./CollabProjectUpdater" ]]; then
+    APP_NAME="CollabProjectUpdater"
+    ARCHIVE="CollabProjectUpdater-linux-x64.tar.gz"
     ARCHIVE_DIR="gui-linux-x64"
+elif [[ -f "./CollabProjectUpdater-CLI" ]]; then
+    APP_NAME="CollabProjectUpdater-CLI"
+    ARCHIVE="CollabProjectUpdater-CLI-linux-x64-selfcontained.tar.gz"
+    ARCHIVE_DIR="linux-x64-sc"
+elif [[ -f "./FCPModManager" ]]; then
+    APP_NAME="FCPModManager"
+    ARCHIVE="CollabProjectUpdater-linux-x64.tar.gz"
+    ARCHIVE_DIR="gui-linux-x64"
+    OLD_FILES=("./FCPModManager" "./fcp_logo.png" "./fcp-mod-manager-gui.desktop" "./update-fcp-mod-manager.sh")
 elif [[ -f "./FCPModUpdater" ]]; then
     APP_NAME="FCPModUpdater"
-    ARCHIVE="FCPModUpdater-linux-x64-selfcontained.tar.gz"
+    ARCHIVE="CollabProjectUpdater-CLI-linux-x64-selfcontained.tar.gz"
     ARCHIVE_DIR="linux-x64-sc"
+    OLD_FILES=("./FCPModUpdater" "./fcp-mod-manager.desktop" "./update-fcp-mod-manager.sh")
 else
-    echo "Run this script from the existing FCP Mod Manager install folder."
+    echo "Run this script from the existing Collaboration Project Updater install folder."
     exit 1
 fi
 
 if pgrep -x "${APP_NAME}" >/dev/null 2>&1; then
-    echo "FCP Mod Manager is still running. Close it before updating."
+    echo "Collaboration Project Updater is still running. Close it before updating."
     exit 1
 fi
 
@@ -59,7 +71,7 @@ read -r -p "Choice [1]: " channel_choice
 
 case "${channel_choice:-1}" in
     1)
-        echo "Downloading latest stable FCP Mod Manager release..."
+        echo "Downloading latest stable Collaboration Project Updater release..."
         curl -fsSL "${BASE_URL}/${ARCHIVE}" -o "${staging}/${ARCHIVE}"
         curl -fsSL "${BASE_URL}/checksums.txt" -o "${staging}/checksums.txt"
         ;;
@@ -69,7 +81,7 @@ case "${channel_choice:-1}" in
             exit 1
         fi
 
-        echo "Finding latest FCP Mod Manager pre-release..."
+        echo "Finding latest Collaboration Project Updater pre-release..."
         curl -fsSL "${RELEASES_API}" -o "${staging}/releases.json"
         mapfile -t asset_urls < <(python3 - "${ARCHIVE}" "${staging}/releases.json" <<'PY'
 import json
@@ -104,7 +116,7 @@ PY
             exit 1
         fi
 
-        echo "Downloading latest pre-release FCP Mod Manager release..."
+        echo "Downloading latest pre-release Collaboration Project Updater release..."
         curl -fsSL "${asset_urls[0]}" -o "${staging}/${ARCHIVE}"
         curl -fsSL "${asset_urls[1]}" -o "${staging}/checksums.txt"
         ;;
@@ -132,6 +144,12 @@ cd - >/dev/null
 
 echo "Installing update..."
 cp -R "${source_dir}/." .
-chmod +x "./${APP_NAME}" "./update-fcp-mod-manager.sh"
+if [[ ${#OLD_FILES[@]} -gt 0 ]]; then
+    APP_NAME="${APP_NAME/FCPModManager/CollabProjectUpdater}"
+    APP_NAME="${APP_NAME/FCPModUpdater/CollabProjectUpdater-CLI}"
+    rm -f "${OLD_FILES[@]}"
+    echo "Renamed: start ./${APP_NAME} from now on."
+fi
+chmod +x "./${APP_NAME}" "./update-collab-project-updater.sh"
 
-echo "Update complete. Start FCP Mod Manager normally."
+echo "Update complete. Start Collaboration Project Updater normally."

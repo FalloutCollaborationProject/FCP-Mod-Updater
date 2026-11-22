@@ -3,8 +3,8 @@
 
   <!-- Design tokens from the "FCP Mod Manager — Avalonia GUI" canvas. Keep in step with Services/Palette.cs. -->
 
-  <FontFamily x:Key="Sans">avares://FCPModManager/Assets/Fonts#Noto Sans</FontFamily>
-  <FontFamily x:Key="Mono">avares://FCPModManager/Assets/Fonts#JetBrains Mono</FontFamily>
+  <FontFamily x:Key="Sans">avares://CollabProjectUpdater/Assets/Fonts#Noto Sans</FontFamily>
+  <FontFamily x:Key="Mono">avares://CollabProjectUpdater/Assets/Fonts#JetBrains Mono</FontFamily>
 
   <!-- Surfaces -->
   <SolidColorBrush x:Key="Sunken" Color="#141618" />

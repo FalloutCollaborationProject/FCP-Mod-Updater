@@ -105,8 +105,8 @@ public class UpdateCheckService(HttpClient httpClient)
     // An AppImage is one read-only file with no script beside it; it is updated by replacing the file.
     internal static string? GetUpdaterCommand(bool isAppImage) =>
         isAppImage ? null
-        : OperatingSystem.IsWindows() ? "update-fcp-mod-manager.bat"
-        : OperatingSystem.IsLinux() ? "./update-fcp-mod-manager.sh"
+        : OperatingSystem.IsWindows() ? "update-collab-project-updater.bat"
+        : OperatingSystem.IsLinux() ? "./update-collab-project-updater.sh"
         : null;
 
     private static string GetBaseVersion(string version)

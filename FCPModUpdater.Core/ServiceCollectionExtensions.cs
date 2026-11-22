@@ -40,7 +40,7 @@ public static class ServiceCollectionExtensions
     private static void ConfigureGitHubClient(HttpClient client)
     {
         client.BaseAddress = new Uri("https://api.github.com");
-        client.DefaultRequestHeaders.UserAgent.ParseAdd($"FCPModUpdater/{AppVersion.SemanticVersion}");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"CollabProjectUpdater/{AppVersion.SemanticVersion}");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
     }
 }
