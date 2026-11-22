@@ -384,3 +384,49 @@ public sealed class InstallCategoryFilterTests : IDisposable
         Assert.Equal(["Zeta", "FCP", "ESCP", "Other"], groups);
     }
 }
+
+public sealed class InstallSelectRecommendedPerCategoryTests : IDisposable
+{
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), $"fcp_cat_sel_{Guid.NewGuid():N}");
+    private readonly ShellFixture _f;
+
+    public InstallSelectRecommendedPerCategoryTests()
+    {
+        Directory.CreateDirectory(_dir);
+        _f = new ShellFixture(_dir);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_dir))
+            Directory.Delete(_dir, true);
+    }
+
+    [Fact]
+    public async Task SelectRecommended_OnlyTouchesItsOwnCategory()
+    {
+        _f.Repos.AddRange(
+        [
+            new RemoteRepo("FCP-A", "u", "main", null, "", ["rimworld-mod"]) { CategoryId = "fcp" },
+            new RemoteRepo("FCP-Old", "u", "main", null, "", ["rimworld-mod", ModCatalog.NotRecommendedTopic]) { CategoryId = "fcp" },
+            new RemoteRepo("ESCP-A", "u", "main", null, "", []) { CategoryId = "escp" },
+        ]);
+        await _f.Shell.InitializeAsync();
+        InstallViewModel page = _f.Shell.Install;
+
+        page.RepoGroups.Single(g => g.Label == "FCP").SelectRecommendedCommand.Execute(null);
+
+        Assert.Equal(["FCP-A"], page.Repos.Where(r => r.IsChecked).Select(r => r.Name));
+        Assert.Equal("Install 1 mod", page.Cta);
+
+        page.RepoGroups.Single(g => g.Label == "ESCP").SelectRecommendedCommand.Execute(null);
+        Assert.Equal(["ESCP-A", "FCP-A"], page.Repos.Where(r => r.IsChecked).Select(r => r.Name).Order());
+
+        // Pressing it again deselects that category only.
+        RepoGroupViewModel fcp = page.RepoGroups.Single(g => g.Label == "FCP");
+        Assert.Equal("Deselect all", fcp.SelectButtonText);
+        fcp.SelectRecommendedCommand.Execute(null);
+        Assert.Equal(["ESCP-A"], page.Repos.Where(r => r.IsChecked).Select(r => r.Name));
+        Assert.Equal("Select all recommended", fcp.SelectButtonText);
+    }
+}

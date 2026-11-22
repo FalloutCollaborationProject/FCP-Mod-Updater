@@ -41,11 +41,40 @@ public abstract partial class CategoryGroupViewModel : ObservableObject
     private void Toggle() => IsExpanded = !IsExpanded;
 }
 
-public sealed class RepoGroupViewModel(ModCategory? category, IEnumerable<RepoCardViewModel> items, ISet<string> collapsed)
-    : CategoryGroupViewModel(category, collapsed, null)
+public sealed partial class RepoGroupViewModel : CategoryGroupViewModel
 {
-    public ObservableCollection<RepoCardViewModel> Items { get; } = new(items);
+    public RepoGroupViewModel(ModCategory? category, IEnumerable<RepoCardViewModel> items, ISet<string> collapsed)
+        : base(category, collapsed, null)
+    {
+        Items = new(items);
+        foreach (RepoCardViewModel card in Items)
+            card.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(RepoCardViewModel.IsChecked))
+                    OnPropertyChanged(nameof(SelectButtonText));
+            };
+    }
+
+    public ObservableCollection<RepoCardViewModel> Items { get; }
     public override int Count => Items.Count;
+
+    /// <summary>True when every recommended card is ticked and no not-recommended one is: the button then deselects.</summary>
+    public bool IsRecommendedSelected
+        => Items.Any(c => !c.NotRecommended) && Items.All(c => c.IsChecked == !c.NotRecommended);
+
+    public string SelectButtonText => IsRecommendedSelected ? "Deselect all" : "Select all recommended";
+
+    /// <summary>
+    /// Ticks this category's recommended cards and unticks its not-recommended ones; pressed again, unticks the
+    /// whole category. Other categories are untouched.
+    /// </summary>
+    [RelayCommand]
+    private void SelectRecommended()
+    {
+        var deselect = IsRecommendedSelected;
+        foreach (RepoCardViewModel card in Items)
+            card.IsChecked = !deselect && !card.NotRecommended;
+    }
 }
 
 public sealed class LocalGroupViewModel(ModCategory? category, IEnumerable<LocalFolderViewModel> items, ISet<string> collapsed)
