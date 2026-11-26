@@ -10,24 +10,28 @@
       <Output TaskParameter="ExitCode" PropertyName="GitDescribeExitCode" />
     </Exec>
 
-    <!-- Parse "v0.1.1-4-g2d7e0c6" into components -->
+    <!-- Parse "v1.0.0-alpha.3-4-g2d7e0c6" into tag (with its pre-release label), commits since tag and hash -->
     <PropertyGroup Condition="'$(GitDescribeExitCode)' == '0' and '$(GitDescribe)' != ''">
       <GitDescribeClean>$([System.Text.RegularExpressions.Regex]::Replace('$(GitDescribe)', '^v', ''))</GitDescribeClean>
-      <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '^\d+\.\d+\.\d+').Value)</VersionPrefix>
-      <GitCommitsSinceTag>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '(?&lt;=\d-)\d+(?=-)').Value)</GitCommitsSinceTag>
+      <GitTagVersion>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+?)?(?=-\d+-g[0-9a-f]+$)').Value)</GitTagVersion>
+      <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(GitTagVersion)', '^\d+\.\d+\.\d+').Value)</VersionPrefix>
+      <GitCommitsSinceTag>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', '\d+(?=-g[0-9a-f]+$)').Value)</GitCommitsSinceTag>
       <GitShortHash>$([System.Text.RegularExpressions.Regex]::Match('$(GitDescribeClean)', 'g[0-9a-f]+$').Value)</GitShortHash>
+      <!-- Dev builds of a pre-release tag extend its label (1.0.0-alpha.3.dev.4), of a stable tag start one (1.0.0-dev.4) -->
+      <GitDevSeparator Condition="$(GitTagVersion.Contains('-'))">.</GitDevSeparator>
+      <GitDevSeparator Condition="!$(GitTagVersion.Contains('-'))">-</GitDevSeparator>
     </PropertyGroup>
 
     <!-- On a tag exactly (0 commits since tag) -->
     <PropertyGroup Condition="'$(VersionPrefix)' != '' and '$(GitCommitsSinceTag)' == '0'">
       <Version>$(VersionPrefix)</Version>
-      <InformationalVersion>$(VersionPrefix)</InformationalVersion>
+      <InformationalVersion>$(GitTagVersion)</InformationalVersion>
     </PropertyGroup>
 
     <!-- Commits ahead of tag = dev build -->
     <PropertyGroup Condition="'$(VersionPrefix)' != '' and '$(GitCommitsSinceTag)' != '' and '$(GitCommitsSinceTag)' != '0'">
       <Version>$(VersionPrefix)</Version>
-      <InformationalVersion>$(VersionPrefix)-dev.$(GitCommitsSinceTag)+$(GitShortHash)</InformationalVersion>
+      <InformationalVersion>$(GitTagVersion)$(GitDevSeparator)dev.$(GitCommitsSinceTag)+$(GitShortHash)</InformationalVersion>
     </PropertyGroup>
 
     <!-- Fallback if git describe failed or no tags -->

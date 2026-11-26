@@ -38,9 +38,9 @@
                 VerticalAlignment="Center" />
         <WrapPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
           <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource AccentHover}"
-                     Text="{Binding BannerTitle}" VerticalAlignment="Center" />
+                     Text="{Binding BannerTitle}" VerticalAlignment="Center" TextWrapping="Wrap" />
           <TextBlock FontSize="13" Foreground="{StaticResource BannerMuted}" Margin="6,0,0,0"
-                     Text="{Binding BannerCurrent}" VerticalAlignment="Center" />
+                     Text="{Binding BannerCurrent}" VerticalAlignment="Center" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" IsVisible="{Binding HasBannerCommand}">
             <TextBlock FontSize="13" Foreground="{StaticResource BannerText}" Margin="6,0"
                        Text="— close the app and run" VerticalAlignment="Center" />

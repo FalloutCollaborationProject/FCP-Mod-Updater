@@ -25,14 +25,13 @@
             <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
               <TextBlock Text="Collaboration Project Updater" FontWeight="Bold" FontSize="15" LetterSpacing="0.2"
                          TextWrapping="Wrap" />
-              <StackPanel Orientation="Horizontal" Spacing="6">
+              <WrapPanel ItemSpacing="6" LineSpacing="3">
                 <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource TextDim}" Text="{Binding VersionLabel}"
-                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="120"
-                           ToolTip.Tip="{Binding VersionLabel}" />
+                           VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding VersionLabel}" />
                 <Border Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
                   <TextBlock Text="BETA" />
                 </Border>
-              </StackPanel>
+              </WrapPanel>
             </StackPanel>
           </Grid>
 

@@ -16,17 +16,17 @@
         <StackPanel Spacing="14">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
             <StackPanel Spacing="4">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Classes="h2" Text="{Binding StatusTitle}" VerticalAlignment="Center" />
+              <WrapPanel ItemSpacing="10" LineSpacing="4">
+                <TextBlock Classes="h2" Text="{Binding StatusTitle}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 <Border Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
                   <TextBlock Text="BETA" />
                 </Border>
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="6">
+              </WrapPanel>
+              <WrapPanel ItemSpacing="6">
                 <TextBlock FontSize="12" Foreground="{StaticResource TextSoft}" Text="Current version" />
                 <SelectableTextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}"
-                                     Text="{Binding CurrentVersion}" />
-              </StackPanel>
+                                     Text="{Binding CurrentVersion}" TextWrapping="Wrap" />
+              </WrapPanel>
               <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
                          Text="{Binding InstallKind}" />
             </StackPanel>

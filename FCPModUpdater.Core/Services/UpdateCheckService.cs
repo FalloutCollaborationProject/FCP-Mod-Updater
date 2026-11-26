@@ -32,18 +32,18 @@ public class UpdateCheckService(HttpClient httpClient)
 
             // Find the release with the highest semver (stable or prerelease)
             ReleaseInfo? newest = null;
-            Version? newestVersion = null;
+            string? newestVersion = null;
 
             foreach (ReleaseInfo release in releases)
             {
                 if (release.Draft || (release.Prerelease && !includePrereleases))
                     continue;
 
-                var tagBase = GetBaseVersion(release.TagName.TrimStart('v'));
-                if (!Version.TryParse(tagBase, out Version? ver))
+                var ver = release.TagName.TrimStart('v');
+                if (!IsValidVersion(ver))
                     continue;
 
-                if (newestVersion is null || ver > newestVersion)
+                if (newestVersion is null || CompareVersions(ver, newestVersion) > 0)
                 {
                     newestVersion = ver;
                     newest = release;
@@ -53,11 +53,11 @@ public class UpdateCheckService(HttpClient httpClient)
             if (newest is null || newestVersion is null)
                 return null;
 
-            var currentBase = GetBaseVersion(AppVersion.SemanticVersion);
-            if (!Version.TryParse(currentBase, out Version? currentVer))
+            var current = BuiltFromTag(AppVersion.SemanticVersion);
+            if (!IsValidVersion(current))
                 return null;
 
-            if (newestVersion > currentVer)
+            if (CompareVersions(newestVersion, current) > 0)
             {
                 var latestTag = newest.TagName.TrimStart('v');
                 return new UpdateCheckResult(
@@ -117,10 +117,48 @@ public class UpdateCheckService(HttpClient httpClient)
         : OperatingSystem.IsLinux() ? "./update-collab-project-updater.sh"
         : null;
 
-    private static string GetBaseVersion(string version)
+    /// <summary>The tag a dev build came from: "1.0.0-dev.4" → "1.0.0", "1.0.0-alpha.3.dev.4" → "1.0.0-alpha.3".</summary>
+    internal static string BuiltFromTag(string version) =>
+        System.Text.RegularExpressions.Regex.Replace(version, @"[-.]dev\.\d+$", "");
+
+    private static bool IsValidVersion(string version) =>
+        Version.TryParse(SplitVersion(version).Core, out _);
+
+    private static (string Core, string? Label) SplitVersion(string version)
     {
-        var dashIndex = version.IndexOf('-');
-        return dashIndex >= 0 ? version[..dashIndex] : version;
+        var plus = version.IndexOf('+');
+        if (plus >= 0)
+            version = version[..plus];
+        var dash = version.IndexOf('-');
+        return dash >= 0 ? (version[..dash], version[(dash + 1)..]) : (version, null);
+    }
+
+    /// <summary>SemVer order: core version, then a release beats any pre-release, then the labels by dot part.</summary>
+    internal static int CompareVersions(string a, string b)
+    {
+        var (coreA, labelA) = SplitVersion(a);
+        var (coreB, labelB) = SplitVersion(b);
+        var core = Version.Parse(coreA).CompareTo(Version.Parse(coreB));
+        if (core != 0)
+            return core;
+        if (labelA is null || labelB is null)
+            return labelA is null ? (labelB is null ? 0 : 1) : -1;
+
+        var partsA = labelA.Split('.');
+        var partsB = labelB.Split('.');
+        for (var i = 0; i < Math.Min(partsA.Length, partsB.Length); i++)
+        {
+            var numA = long.TryParse(partsA[i], out var na);
+            var numB = long.TryParse(partsB[i], out var nb);
+            var c = numA && numB ? na.CompareTo(nb)
+                : numA ? -1
+                : numB ? 1
+                : string.CompareOrdinal(partsA[i], partsB[i]);
+            if (c != 0)
+                return Math.Sign(c);
+        }
+
+        return partsA.Length.CompareTo(partsB.Length);
     }
 }
 
