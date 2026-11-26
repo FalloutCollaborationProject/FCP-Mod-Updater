@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Velopack - pack Linux (local)" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="export PATH=&quot;$PATH:$HOME/.dotnet/tools&quot; &amp;&amp; rm -rf publish/vp/linux-x64 publish/velopack-local &amp;&amp; dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -o publish/vp/linux-x64 &amp;&amp; vpk pack -u CollabProjectUpdater -v 0.0.1-local -c linux-x64 -p publish/vp/linux-x64 -e CollabProjectUpdater -i FCPModUpdater.Gui/Assets/collab_logo.png --packTitle &quot;Collaboration Project Updater&quot; --packAuthors &quot;Fallout Collaboration Project&quot; --categories Utility -o publish/velopack-local &amp;&amp; ls -la publish/velopack-local" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+    <option name="INTERPRETER_PATH" value="/bin/bash" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <envs />
+    <method v="2" />
+  </configuration>
+</component>
