@@ -101,6 +101,16 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <Border Height="1" Background="{StaticResource Line}" Margin="4,4" />
+          <Button Classes="nav" Classes.active="{Binding UpdatesNav.IsActive}" Command="{Binding UpdatesNav.GoCommand}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <c:Icon Classes="navicon" VerticalAlignment="Center" Data="{StaticResource IconRefresh}" />
+              <TextBlock Grid.Column="1" Text="Updates" Margin="10,0,0,0" VerticalAlignment="Center" />
+              <Border Grid.Column="2" Background="{StaticResource Accent}" CornerRadius="8" Padding="6,1"
+                      VerticalAlignment="Center" IsVisible="{Binding Updates.HasUpdate}" ToolTip.Tip="An app update is available">
+                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="White" Text="New" />
+              </Border>
+            </Grid>
+          </Button>
           <Button Classes="nav" Classes.active="{Binding SettingsNav.IsActive}" Command="{Binding SettingsNav.GoCommand}">
             <Grid ColumnDefinitions="Auto,*">
               <c:Icon Classes="navicon" VerticalAlignment="Center" Data="{StaticResource IconSettings}" />

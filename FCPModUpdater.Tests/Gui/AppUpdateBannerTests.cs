@@ -1,4 +1,5 @@
 using FCPModUpdater.Gui.Services;
+using FCPModUpdater.Gui.ViewModels;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -21,7 +22,7 @@ public sealed class AppUpdateBannerTests
     public async Task InstalledApp_WithUpdate_OffersUpdateNow_AndNoScript()
     {
         var f = new ShellFixture(null, appUpdater: Installed());
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(false);
 
@@ -34,7 +35,7 @@ public sealed class AppUpdateBannerTests
     public async Task InstalledApp_VelopackFindsNothing_FallsBackToReleasePage()
     {
         var f = new ShellFixture(null, appUpdater: Installed(available: null));
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(false);
 
@@ -46,7 +47,7 @@ public sealed class AppUpdateBannerTests
     {
         var updater = Substitute.For<IAppUpdater>();
         var f = new ShellFixture(null, appUpdater: updater);
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(true);
 
@@ -63,7 +64,7 @@ public sealed class AppUpdateBannerTests
         updater.DownloadAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(ci => { ci.Arg<Action<int>>()(55); return Task.CompletedTask; });
         var f = new ShellFixture(null, appUpdater: updater);
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(false);
 
@@ -81,7 +82,7 @@ public sealed class AppUpdateBannerTests
         updater.DownloadAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("offline"));
         var f = new ShellFixture(null, appUpdater: updater);
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(false);
 
@@ -98,7 +99,7 @@ public sealed class AppUpdateBannerTests
     {
         IAppUpdater updater = Installed();
         var f = new ShellFixture(null, appUpdater: updater);
-        var banner = f.Shell.Installed;
+        var banner = f.Shell.Updates;
         banner.AppUpdate = Release;
         await banner.PrepareInAppUpdateAsync(false);
         f.Shell.ShowUninstallDialog([ShellFixture.LocalMod("A", "A", Path.GetTempPath())]);
@@ -107,5 +108,58 @@ public sealed class AppUpdateBannerTests
 
         Assert.NotNull(banner.UpdateError);
         await updater.DidNotReceiveWithAnyArgs().DownloadAsync(null!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public void NavBadge_FollowsAvailableUpdate_AndReleaseNotesShow()
+    {
+        var f = new ShellFixture(null);
+        UpdatesViewModel updates = f.Shell.Updates;
+
+        updates.AppUpdate = Release with { ReleaseNotes = "  Fixed things.\n" };
+        Assert.Equal("1", f.Shell.UpdatesNav.Count);
+        Assert.True(updates.HasUpdate);
+        Assert.Equal("Fixed things.", updates.ReleaseNotes);
+        Assert.Equal("Update available: v1.1.0", updates.StatusTitle);
+
+        updates.AppUpdate = null;
+        Assert.Equal("", f.Shell.UpdatesNav.Count);
+        Assert.False(updates.HasReleaseNotes);
+    }
+
+    [Fact]
+    public async Task UpdatesPage_ReachableWithoutAModsFolder()
+    {
+        var f = new ShellFixture(null);
+        await f.Shell.InitializeAsync();
+
+        f.Shell.Navigate(Page.Updates);
+
+        Assert.Same(f.Shell.Updates, f.Shell.CurrentPage);
+        Assert.True(f.Shell.ShowPage);
+        Assert.False(f.Shell.ShowChooseFolder);
+        Assert.True(f.Shell.UpdatesNav.IsActive);
+        Assert.False(f.Shell.SettingsNav.IsActive);
+    }
+
+    [Fact]
+    public void UpdateSettings_SaveImmediately()
+    {
+        var f = new ShellFixture(null);
+        UpdatesViewModel updates = f.Shell.Updates;
+
+        updates.CheckOnLaunch = false;
+        updates.IncludePrereleases = !updates.IncludePrereleases;
+
+        Assert.False(f.Settings.Current.CheckForUpdatesOnLaunch);
+        Assert.Equal(updates.IncludePrereleases, f.Settings.Current.IncludePrereleases);
+    }
+
+    [Fact]
+    public void BannerDetails_OpensUpdatesPage()
+    {
+        var f = new ShellFixture(null);
+        f.Shell.Updates.ShowDetailsCommand.Execute(null);
+        Assert.Same(f.Shell.Updates, f.Shell.CurrentPage);
     }
 }

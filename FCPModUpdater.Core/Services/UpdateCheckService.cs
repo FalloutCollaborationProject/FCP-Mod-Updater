@@ -66,7 +66,8 @@ public class UpdateCheckService(HttpClient httpClient)
                     ReleaseUrl: newest.HtmlUrl,
                     ReleaseName: newest.Name,
                     PublishedAt: newest.PublishedAt,
-                    IsPrerelease: newest.Prerelease
+                    IsPrerelease: newest.Prerelease,
+                    ReleaseNotes: newest.Body
                 );
             }
 
@@ -129,5 +130,6 @@ public record UpdateCheckResult(
     string ReleaseUrl,
     string ReleaseName,
     DateTimeOffset PublishedAt,
-    bool IsPrerelease
+    bool IsPrerelease,
+    string? ReleaseNotes = null
 );

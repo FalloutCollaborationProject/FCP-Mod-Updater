@@ -163,40 +163,6 @@
         </StackPanel>
       </Border>
 
-      <!-- App updates -->
-      <Border Classes="section">
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
-            <TextBlock Classes="h2" Text="App updates" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}"
-                       Text="{Binding Version}" VerticalAlignment="Center" />
-            <Border Grid.Column="2" Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
-              <TextBlock Text="BETA" />
-            </Border>
-            <Button Grid.Column="3" Classes="secondary" Padding="12,7" Content="Check now"
-                    Command="{Binding CheckNowCommand}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-            <StackPanel Spacing="2">
-              <TextBlock FontSize="13" Text="Check for updates on launch" />
-              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="Asks GitHub for the latest release once per run." />
-            </StackPanel>
-            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding CheckOnLaunch}"
-                          VerticalAlignment="Center" AutomationProperties.Name="Check for updates on launch" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-            <StackPanel Spacing="2">
-              <TextBlock FontSize="13" Text="Include pre-releases" />
-              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
-                         Text="Show beta builds as well as stable releases." />
-            </StackPanel>
-            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding IncludePrereleases}"
-                          VerticalAlignment="Center" AutomationProperties.Name="Include pre-releases" />
-          </Grid>
-          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding LastCheckText}" />
-        </StackPanel>
-      </Border>
-
       <!-- Git -->
       <Border Classes="section">
         <StackPanel Spacing="10">

@@ -29,7 +29,10 @@
 
     <!-- App update banner -->
     <Border Grid.Row="0" Background="{StaticResource AccentSurface}" BorderBrush="{StaticResource BannerBorder}"
-            BorderThickness="0,0,0,1" Padding="24,8" IsVisible="{Binding ShowBanner}">
+            BorderThickness="0,0,0,1" Padding="24,8" IsVisible="{Binding Updates.ShowBanner}">
+      <ContentControl Content="{Binding Updates}">
+       <ContentControl.ContentTemplate>
+        <DataTemplate x:DataType="vm:UpdatesViewModel">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <c:Icon Data="{StaticResource IconDownload}" Size="16" Foreground="{StaticResource Accent}"
                 VerticalAlignment="Center" />
@@ -64,8 +67,8 @@
           <Button Classes="link" FontSize="13" FontWeight="SemiBold" Content="Get the installer"
                   ToolTip.Tip="Switch to the installed version, which updates itself"
                   Command="{Binding GetInstallerCommand}" IsVisible="{Binding ShowGetInstaller}" />
-          <Button Classes="link" FontSize="13" FontWeight="SemiBold" Content="Release page"
-                  Command="{Binding OpenReleasePageCommand}" />
+          <Button Classes="link" FontSize="13" FontWeight="SemiBold" Content="Details"
+                  ToolTip.Tip="Release notes and update options" Command="{Binding ShowDetailsCommand}" />
         </StackPanel>
         <Button Grid.Column="3" Classes="ghost icon" Padding="4" Margin="8,0,0,0"
                 Foreground="{StaticResource BannerMuted}" Command="{Binding DismissBannerCommand}"
@@ -73,6 +76,9 @@
           <c:Icon Data="{StaticResource IconClose}" Size="16" />
         </Button>
       </Grid>
+        </DataTemplate>
+       </ContentControl.ContentTemplate>
+      </ContentControl>
     </Border>
 
     <!-- Header -->

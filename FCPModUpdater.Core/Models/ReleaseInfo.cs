@@ -8,5 +8,6 @@ public record ReleaseInfo(
     [property: JsonPropertyName("html_url")] string HtmlUrl,
     [property: JsonPropertyName("published_at")] DateTimeOffset PublishedAt,
     [property: JsonPropertyName("prerelease")] bool Prerelease,
-    [property: JsonPropertyName("draft")] bool Draft
+    [property: JsonPropertyName("draft")] bool Draft,
+    [property: JsonPropertyName("body")] string? Body = null
 );

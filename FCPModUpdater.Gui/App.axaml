@@ -23,6 +23,7 @@
     <DataTemplate DataType="vm:InstallViewModel"><views:InstallView /></DataTemplate>
     <DataTemplate DataType="vm:VersionsViewModel"><views:VersionsView /></DataTemplate>
     <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
+    <DataTemplate DataType="vm:UpdatesViewModel"><views:UpdatesView /></DataTemplate>
     <DataTemplate DataType="vm:OperationDialogViewModel"><views:OperationDialogView /></DataTemplate>
     <DataTemplate DataType="vm:UninstallDialogViewModel"><views:UninstallDialogView /></DataTemplate>
     <DataTemplate DataType="vm:GitMissingDialogViewModel"><views:GitMissingDialogView /></DataTemplate>

@@ -26,25 +26,21 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SettingsStore _store;
     private readonly GitHubTokenProvider _tokens;
     private readonly IGitHubApiService _gitHub;
-    private readonly UpdateCheckService _updateCheck;
     private readonly Func<IReadOnlyList<string>> _discoverPaths;
     private bool _loading;
 
     public SettingsViewModel(MainWindowViewModel shell, SettingsStore store, GitHubTokenProvider tokens,
-        IGitHubApiService gitHub, UpdateCheckService updateCheck, Func<IReadOnlyList<string>> discoverPaths)
+        IGitHubApiService gitHub, Func<IReadOnlyList<string>> discoverPaths)
     {
         _shell = shell;
         _store = store;
         _tokens = tokens;
         _gitHub = gitHub;
-        _updateCheck = updateCheck;
         _discoverPaths = discoverPaths;
 
         _loading = true;
         AppSettings s = store.Current;
         _token = s.GitHubToken ?? "";
-        _checkOnLaunch = s.CheckForUpdatesOnLaunch;
-        _includePrereleases = s.EffectiveIncludePrereleases;
         _gameVersionText = s.GameVersionOverride ?? "";
         _updateParallelism = s.EffectiveUpdateParallelism;
         CategoryToggles = ModCategories.Resolve(s)
@@ -67,8 +63,6 @@ public partial class SettingsViewModel : ObservableObject
         _ = _shell.RescanAsync(clearCache: true);
     }
 
-    public string Version => _shell.VersionLabel;
-    public bool IsBeta => _shell.IsBeta;
     public string FilePath => _store.FilePath;
 
     // ── Mods folder ──────────────────────────────────────────────────────────
@@ -307,14 +301,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ClearGameVersion() => GameVersionText = "";
 
-    // ── App updates ──────────────────────────────────────────────────────────
-
-    [ObservableProperty] private bool _checkOnLaunch;
-    [ObservableProperty] private bool _includePrereleases;
-    [ObservableProperty] private bool _isChecking;
-    [ObservableProperty] private string _lastCheckText = "";
-
-    // ── Updates ──────────────────────────────────────────────────────────────
+    // ── Mod updates ──────────────────────────────────────────────────────────────
 
     public static double MaxParallelism => ParallelRunner.MaxParallelism;
 
@@ -324,51 +311,6 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (!_loading)
             Save(s => s with { UpdateParallelism = value });
-    }
-
-    partial void OnCheckOnLaunchChanged(bool value)
-    {
-        if (!_loading)
-            Save(s => s with { CheckForUpdatesOnLaunch = value });
-    }
-
-    partial void OnIncludePrereleasesChanged(bool value)
-    {
-        if (!_loading)
-            Save(s => s with { IncludePrereleases = value });
-    }
-
-    public void RefreshLastCheck()
-    {
-        AppSettings s = _store.Current;
-        if (s.LastUpdateCheck is not { } when)
-        {
-            LastCheckText = "Not checked yet";
-            return;
-        }
-
-        var result = s.LastUpdateCheckResult is { } v ? $"v{v} is available" : "You have the latest version";
-        LastCheckText = $"Last checked {FormatAgo(when)} · {result}";
-    }
-
-    private static string FormatAgo(DateTimeOffset when) => Services.Humanize.Ago(when);
-
-    [RelayCommand]
-    private async Task CheckNowAsync()
-    {
-        IsChecking = true;
-        try
-        {
-            UpdateCheckResult? result = await _updateCheck.CheckAndRecordAsync(_store);
-            _shell.Installed.AppUpdate = result;
-            _shell.Installed.BannerDismissed = false;
-            await _shell.Installed.PrepareInAppUpdateAsync(_store.Current.EffectiveIncludePrereleases);
-            RefreshLastCheck();
-        }
-        finally
-        {
-            IsChecking = false;
-        }
     }
 
     // ── Git ──────────────────────────────────────────────────────────────────
@@ -392,7 +334,6 @@ public partial class SettingsViewModel : ObservableObject
     {
         RefreshFolder();
         RefreshTokenSource();
-        RefreshLastCheck();
         RefreshGameVersion();
 
         if (_gitLoaded)

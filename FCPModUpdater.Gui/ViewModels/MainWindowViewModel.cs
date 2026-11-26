@@ -15,6 +15,7 @@ public enum Page
     Install,
     Convert,
     Versions,
+    Updates,
     Settings
 }
 
@@ -43,7 +44,6 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IGitService _git;
     private readonly IGitHubApiService _gitHub;
     private readonly IModDiscoveryService _discovery;
-    private readonly UpdateCheckService _updateCheck;
     private readonly PathDiscoveryService _paths;
     private readonly GitOutputLog _log;
     private readonly StartupOptions _options;
@@ -77,7 +77,6 @@ public partial class MainWindowViewModel : ObservableObject
         _git = git;
         _gitHub = gitHub;
         _discovery = discovery;
-        _updateCheck = updateCheck;
         _paths = paths;
         _log = log;
         _options = options;
@@ -87,7 +86,7 @@ public partial class MainWindowViewModel : ObservableObject
         Installed = new InstalledModsViewModel(this, git, log);
         Install = new InstallViewModel(this);
         Versions = new VersionsViewModel(this, git);
-        Settings = new SettingsViewModel(this, _settings, _tokens, gitHub, updateCheck, paths.DiscoverModPaths);
+        Settings = new SettingsViewModel(this, _settings, _tokens, gitHub, paths.DiscoverModPaths);
 
         NavItems =
         [
@@ -96,7 +95,9 @@ public partial class MainWindowViewModel : ObservableObject
             new NavItemViewModel(Page.Convert, "Migrate local mods", "IconConvert", Navigate),
             new NavItemViewModel(Page.Versions, "Version selector", "IconBranch", Navigate)
         ];
+        UpdatesNav = new NavItemViewModel(Page.Updates, "Updates", "IconRefresh", Navigate);
         SettingsNav = new NavItemViewModel(Page.Settings, "Settings", "IconSettings", Navigate);
+        Updates = new UpdatesViewModel(this, _settings, updateCheck);
 
         _currentPage = Installed;
     }
@@ -116,10 +117,12 @@ public partial class MainWindowViewModel : ObservableObject
     public InstallViewModel Install { get; }
     public VersionsViewModel Versions { get; }
     public SettingsViewModel Settings { get; }
+    public UpdatesViewModel Updates { get; }
 
     /// <summary>How many mods an update batch runs at once (see <see cref="ParallelRunner"/>).</summary>
     public int UpdateParallelism => _settings.Current.EffectiveUpdateParallelism;
     public IReadOnlyList<NavItemViewModel> NavItems { get; }
+    public NavItemViewModel UpdatesNav { get; }
     public NavItemViewModel SettingsNav { get; }
 
     public string VersionLabel => $"v{AppVersion.SemanticVersion}";
@@ -181,8 +184,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool HasModsDirectory => ModsDirectory is not null;
     public bool IsOnSettings => CurrentPage == Settings;
-    public bool ShowPage => !GitMissing && (HasModsDirectory || IsOnSettings);
-    public bool ShowChooseFolder => !GitMissing && ModsDirectory is null && !IsOnSettings;
+    /// <summary>Settings and Updates work without a Mods folder.</summary>
+    private bool IsOnStandalonePage => IsOnSettings || CurrentPage == Updates;
+    public bool ShowPage => !GitMissing && (HasModsDirectory || IsOnStandalonePage);
+    public bool ShowChooseFolder => !GitMissing && ModsDirectory is null && !IsOnStandalonePage;
 
     partial void OnCurrentPageChanged(object value)
     {
@@ -350,11 +355,7 @@ public partial class MainWindowViewModel : ObservableObject
         await RescanAsync();
     }
 
-    private async Task CheckForAppUpdateAsync()
-    {
-        Installed.AppUpdate = await _updateCheck.CheckAndRecordAsync(_settings);
-        await Installed.PrepareInAppUpdateAsync(_settings.Current.EffectiveIncludePrereleases);
-    }
+    private Task CheckForAppUpdateAsync() => Updates.CheckAsync();
 
     public async Task RescanAsync(bool clearCache = false)
     {
@@ -447,6 +448,10 @@ public partial class MainWindowViewModel : ObservableObject
             case Page.Versions:
                 CurrentPage = Versions;
                 break;
+            case Page.Updates:
+                CurrentPage = Updates;
+                Updates.RefreshLastCheck();
+                break;
             case Page.Settings:
                 CurrentPage = Settings;
                 _ = Settings.OnShownAsync();
@@ -465,11 +470,13 @@ public partial class MainWindowViewModel : ObservableObject
         Page active = CurrentPage == Installed ? Page.Installed
             : CurrentPage == Versions ? Page.Versions
             : CurrentPage == Settings ? Page.Settings
+            : CurrentPage == Updates ? Page.Updates
             : Install.IsConvert ? Page.Convert
             : Page.Install;
 
         foreach (NavItemViewModel item in NavItems)
             item.IsActive = item.Page == active;
+        UpdatesNav.IsActive = active == Page.Updates;
         SettingsNav.IsActive = active == Page.Settings;
     }
 

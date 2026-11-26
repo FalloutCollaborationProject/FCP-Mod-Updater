@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.UpdatesView"
+             x:DataType="vm:UpdatesViewModel">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="820" HorizontalAlignment="Left" Margin="32,24,32,40" Spacing="20">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="h1" Text="Updates" />
+        <TextBlock Classes="sub" Text="Keep Collaboration Project Updater itself up to date." />
+      </StackPanel>
+
+      <!-- Version and status -->
+      <Border Classes="section">
+        <StackPanel Spacing="14">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Classes="h2" Text="{Binding StatusTitle}" VerticalAlignment="Center" />
+                <Border Classes="warnTag beta" IsVisible="{Binding IsBeta}" ToolTip.Tip="Pre-release build">
+                  <TextBlock Text="BETA" />
+                </Border>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock FontSize="12" Foreground="{StaticResource TextSoft}" Text="Current version" />
+                <SelectableTextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextSoft}"
+                                     Text="{Binding CurrentVersion}" />
+              </StackPanel>
+              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                         Text="{Binding InstallKind}" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="secondary" Padding="12,7" Content="Check now" VerticalAlignment="Top"
+                    Command="{Binding CheckNowCommand}" IsEnabled="{Binding !IsChecking}" />
+          </Grid>
+
+          <WrapPanel ItemSpacing="10" LineSpacing="8" IsVisible="{Binding HasUpdate}">
+            <Button Classes="primary" Padding="14,7" Content="Update now"
+                    Command="{Binding UpdateNowCommand}" IsVisible="{Binding ShowUpdateNow}" />
+            <Button Classes="primary" Padding="14,7" Content="Get the installer"
+                    ToolTip.Tip="Switch to the installed version, which updates itself"
+                    Command="{Binding GetInstallerCommand}" IsVisible="{Binding ShowGetInstaller}" />
+            <Button Classes="outline" Padding="14,7" Content="Release page" Command="{Binding OpenReleasePageCommand}" />
+          </WrapPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsUpdating}">
+            <c:Meter Width="240" Height="6" Value="{Binding UpdateProgress}" Track="{StaticResource Line}"
+                     Fill="{StaticResource Accent}" VerticalAlignment="Center" />
+            <TextBlock FontSize="12" Text="{Binding UpdateProgressLabel}" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasBannerCommand}">
+            <TextBlock FontSize="12" Foreground="{StaticResource TextSoft}" Text="Or close the app and run"
+                       VerticalAlignment="Center" />
+            <Border Background="{StaticResource Sunken}" CornerRadius="4" Padding="6,1">
+              <SelectableTextBlock Classes="mono" FontSize="12" Text="{Binding BannerCommand}" />
+            </Border>
+          </StackPanel>
+
+          <TextBlock FontSize="12" Foreground="{StaticResource Danger}" TextWrapping="Wrap"
+                     Text="{Binding UpdateError}" IsVisible="{Binding HasUpdateError}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Release notes -->
+      <Border Classes="section" IsVisible="{Binding HasReleaseNotes}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="What's new" />
+          <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock FontSize="13" TextWrapping="Wrap" Text="{Binding ReleaseNotes}" />
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
+
+      <!-- Settings -->
+      <Border Classes="section">
+        <StackPanel Spacing="14">
+          <TextBlock Classes="h2" Text="Update settings" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+            <StackPanel Spacing="2">
+              <TextBlock FontSize="13" Text="Check for updates on launch" />
+              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="Asks GitHub for the latest release once per run." />
+            </StackPanel>
+            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding CheckOnLaunch}"
+                          VerticalAlignment="Center" AutomationProperties.Name="Check for updates on launch" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+            <StackPanel Spacing="2">
+              <TextBlock FontSize="13" Text="Include pre-releases" />
+              <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                         Text="Offer beta builds as well as stable releases." />
+            </StackPanel>
+            <ToggleButton Grid.Column="1" Classes="switch" IsChecked="{Binding IncludePrereleases}"
+                          VerticalAlignment="Center" AutomationProperties.Name="Include pre-releases" />
+          </Grid>
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding LastCheckText}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

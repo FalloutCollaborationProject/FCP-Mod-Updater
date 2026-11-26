@@ -273,7 +273,7 @@ public class UpdateCheckFilterTests
     private const string Releases = """
         [
           {"tag_name":"v99.1.0-beta.1","name":"beta","html_url":"https://x/beta","published_at":"2026-11-10T00:00:00Z","prerelease":true,"draft":false},
-          {"tag_name":"v99.0.0","name":"stable","html_url":"https://x/stable","published_at":"2026-11-01T00:00:00Z","prerelease":false,"draft":false},
+          {"tag_name":"v99.0.0","name":"stable","html_url":"https://x/stable","published_at":"2026-11-01T00:00:00Z","prerelease":false,"draft":false,"body":"Stable notes"},
           {"tag_name":"v100.0.0","name":"draft","html_url":"https://x/draft","published_at":"2026-11-12T00:00:00Z","prerelease":false,"draft":true}
         ]
         """;
@@ -294,6 +294,7 @@ public class UpdateCheckFilterTests
     {
         UpdateCheckResult? result = await Service().CheckForUpdateAsync(false, TestContext.Current.CancellationToken);
         Assert.Equal("99.0.0", result?.LatestVersion);
+        Assert.Equal("Stable notes", result?.ReleaseNotes);
     }
 
     [Fact]

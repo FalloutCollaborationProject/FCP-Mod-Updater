@@ -291,11 +291,6 @@ public sealed class V2ViewModelTests : IDisposable
         f.Shell.Navigate(Page.Settings);
         SettingsViewModel settings = f.Shell.Settings;
 
-        settings.CheckOnLaunch = false;
-        settings.IncludePrereleases = !settings.IncludePrereleases;
-
-        Assert.False(f.Settings.Current.CheckForUpdatesOnLaunch);
-        Assert.Equal(settings.IncludePrereleases, f.Settings.Current.IncludePrereleases);
         Assert.True(f.Shell.SettingsNav.IsActive);
         Assert.Equal("✓ git version 2.47.1", settings.GitVersion);
         Assert.Equal("/usr/bin/git", settings.GitPath);
