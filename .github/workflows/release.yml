@@ -8,6 +8,7 @@ on:
 env:
   APP_NAME: CollabProjectUpdater-CLI
   GUI_NAME: CollabProjectUpdater
+  VPK_VERSION: 1.2.161   # keep equal to the Velopack package version in FCPModUpdater.Gui.csproj
 
 jobs:
   release:
@@ -56,11 +57,34 @@ jobs:
           dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
           cp ./update-collab-project-updater.sh ./collab-project-updater-gui.desktop ./FCPModUpdater.Gui/Assets/collab_logo.png ./publish/gui-linux-x64/
 
-      - name: Build GUI AppImage
+      # Velopack: Windows Setup.exe/Portable.zip (cross-packed here) and the self-updating Linux AppImage.
+      # Channels must match VelopackAppUpdater.Channel; explicit names keep the two -full.nupkg files apart.
+      - name: Build GUI installers (Velopack)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRE: ${{ contains(github.ref_name, '-') && '--pre' || '' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y zsync desktop-file-utils
-          ./packaging/build-appimage.sh ./publish/gui-linux-x64 ./publish
+          sudo apt-get install -y squashfs-tools
+          dotnet tool install -g vpk --version ${{ env.VPK_VERSION }}
+          VERSION="${GITHUB_REF_NAME#v}"
+          REPO="https://github.com/${{ github.repository }}"
+          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -o ./vp/win-x64
+          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -o ./vp/linux-x64
+          # The previous release's package lets vpk build delta updates; there is none before the first Velopack release.
+          vpk download github --repoUrl "$REPO" --token "$GH_TOKEN" $PRE --channel win-x64 -o ./vp/Releases || true
+          vpk download github --repoUrl "$REPO" --token "$GH_TOKEN" $PRE --channel linux-x64 -o ./vp/Releases || true
+          vpk "[win]" pack -u ${{ env.GUI_NAME }} -v "$VERSION" -c win-x64 -p ./vp/win-x64 -e ${{ env.GUI_NAME }}.exe \
+            -i ./FCPModUpdater.Gui/Assets/app.ico --packTitle "Collaboration Project Updater" \
+            --packAuthors "Fallout Collaboration Project" --shortcuts Desktop,StartMenuRoot -o ./vp/Releases
+          vpk pack -u ${{ env.GUI_NAME }} -v "$VERSION" -c linux-x64 -p ./vp/linux-x64 -e ${{ env.GUI_NAME }} \
+            -i ./FCPModUpdater.Gui/Assets/collab_logo.png --packTitle "Collaboration Project Updater" \
+            --packAuthors "Fallout Collaboration Project" --categories Utility -o ./vp/Releases
+          mkdir -p ./publish/velopack
+          mv ./vp/Releases/*.AppImage ./publish/${{ env.GUI_NAME }}-x86_64.AppImage
+          # Only this version's packages; older ones (downloaded for deltas) are already on their releases.
+          cp ./vp/Releases/*-"$VERSION"-*.nupkg ./vp/Releases/releases.*.json ./vp/Releases/assets.*.json \
+            ./vp/Releases/*-Setup.exe ./vp/Releases/*-Portable.zip ./publish/velopack/
 
       - name: Create archives
         run: |
@@ -74,7 +98,7 @@ jobs:
           tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
           zip -r "${{ env.GUI_NAME }}-win-x64.zip" gui-win-x64
           tar -czvf "${{ env.GUI_NAME }}-linux-x64.tar.gz" gui-linux-x64
-          sha256sum *.zip *.tar.gz *.AppImage > checksums.txt
+          sha256sum *.zip *.tar.gz *.AppImage velopack/*-Setup.exe velopack/*-Portable.zip | sed 's| velopack/| |' > checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -90,7 +114,7 @@ jobs:
             ./publish/${{ env.GUI_NAME }}-win-x64.zip
             ./publish/${{ env.GUI_NAME }}-linux-x64.tar.gz
             ./publish/${{ env.GUI_NAME }}-x86_64.AppImage
-            ./publish/${{ env.GUI_NAME }}-x86_64.AppImage.zsync
+            ./publish/velopack/*
             ./publish/checksums.txt
             ./publish/update-collab-project-updater.bat
             ./publish/update-collab-project-updater.sh

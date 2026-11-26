@@ -66,8 +66,10 @@ public partial class MainWindowViewModel : ObservableObject
         SettingsStore? settings = null,
         GitHubTokenProvider? tokens = null,
         Func<Task<(string? Version, string? ExecutablePath)>>? gitInfo = null,
-        Func<string, Task<string?>>? probeGit = null)
+        Func<string, Task<string?>>? probeGit = null,
+        IAppUpdater? appUpdater = null)
     {
+        AppUpdater = appUpdater ?? new NullAppUpdater();
         _probeGit = probeGit ?? GitService.ProbeAsync;
         _settings = settings ?? SettingsStore.InMemory();
         _tokens = tokens ?? new GitHubTokenProvider(_settings, environment: () => null);
@@ -103,6 +105,12 @@ public partial class MainWindowViewModel : ObservableObject
     public Action<Action> Post { get; }
 
     public IPlatformServices Platform { get; set; } = new NullPlatformServices();
+
+    /// <summary>Updates the app itself (Velopack); a portable copy is not installed and only gets the notice.</summary>
+    public IAppUpdater AppUpdater { get; }
+
+    /// <summary>True while a scan or an operation dialog is running, when the app must not restart.</summary>
+    public bool IsBusy => IsScanning || HasDialog;
 
     public InstalledModsViewModel Installed { get; }
     public InstallViewModel Install { get; }
@@ -345,6 +353,7 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task CheckForAppUpdateAsync()
     {
         Installed.AppUpdate = await _updateCheck.CheckAndRecordAsync(_settings);
+        await Installed.PrepareInAppUpdateAsync(_settings.Current.EffectiveIncludePrereleases);
     }
 
     public async Task RescanAsync(bool clearCache = false)

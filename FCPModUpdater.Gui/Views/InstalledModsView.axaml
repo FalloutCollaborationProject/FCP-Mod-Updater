@@ -47,11 +47,26 @@
             </Border>
           </StackPanel>
           <TextBlock FontSize="13" Foreground="{StaticResource BannerText}" Margin="6,0"
-                     Text="— download the new AppImage from the release page" VerticalAlignment="Center"
+                     Text="— download the new AppImage once; it then updates itself" VerticalAlignment="Center"
                      IsVisible="{Binding ShowAppImageHint}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" IsVisible="{Binding IsUpdating}">
+            <c:Meter Width="120" Height="6" Value="{Binding UpdateProgress}" Track="{StaticResource Line}"
+                     Fill="{StaticResource Accent}" VerticalAlignment="Center" />
+            <TextBlock FontSize="13" Foreground="{StaticResource BannerText}" Text="{Binding UpdateProgressLabel}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock FontSize="13" Foreground="{StaticResource Danger}" Margin="12,0,0,0" TextWrapping="Wrap"
+                     Text="{Binding UpdateError}" IsVisible="{Binding HasUpdateError}" VerticalAlignment="Center" />
         </WrapPanel>
-        <Button Grid.Column="2" Classes="link" FontSize="13" FontWeight="SemiBold" Content="Release page"
-                Command="{Binding OpenReleasePageCommand}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Button Classes="primary" FontSize="13" Padding="12,4" Content="Update now"
+                  Command="{Binding UpdateNowCommand}" IsVisible="{Binding ShowUpdateNow}" />
+          <Button Classes="link" FontSize="13" FontWeight="SemiBold" Content="Get the installer"
+                  ToolTip.Tip="Switch to the installed version, which updates itself"
+                  Command="{Binding GetInstallerCommand}" IsVisible="{Binding ShowGetInstaller}" />
+          <Button Classes="link" FontSize="13" FontWeight="SemiBold" Content="Release page"
+                  Command="{Binding OpenReleasePageCommand}" />
+        </StackPanel>
         <Button Grid.Column="3" Classes="ghost icon" Padding="4" Margin="8,0,0,0"
                 Foreground="{StaticResource BannerMuted}" Command="{Binding DismissBannerCommand}"
                 ToolTip.Tip="Dismiss" AutomationProperties.Name="Dismiss update notice">

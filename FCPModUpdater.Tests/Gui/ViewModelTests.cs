@@ -19,7 +19,8 @@ internal sealed class ShellFixture
 
     public FCPModUpdater.Settings.SettingsStore Settings { get; }
 
-    public ShellFixture(string? modsDirectory, FCPModUpdater.Settings.SettingsStore? settings = null)
+    public ShellFixture(string? modsDirectory, FCPModUpdater.Settings.SettingsStore? settings = null,
+        IAppUpdater? appUpdater = null)
     {
         Settings = settings ?? FCPModUpdater.Settings.SettingsStore.InMemory();
         Discovery.DiscoverModsAsync(Arg.Any<string>(), Arg.Any<IProgress<string>?>(), Arg.Any<CancellationToken>())
@@ -34,7 +35,8 @@ internal sealed class ShellFixture
 
         Shell = new MainWindowViewModel(Git, GitHub, Discovery, updateCheck, new PathDiscoveryService(), Log,
             new StartupOptions(modsDirectory), action => action(), () => Task.FromResult(true),
-            settings: Settings, gitInfo: () => Task.FromResult<(string?, string?)>(("git version 2.47.1", "/usr/bin/git")));
+            settings: Settings, gitInfo: () => Task.FromResult<(string?, string?)>(("git version 2.47.1", "/usr/bin/git")),
+            appUpdater: appUpdater);
     }
 
     public static InstalledMod GitMod(string name, ModStatus status, string directory, int behind = 0,

@@ -362,6 +362,7 @@ public partial class SettingsViewModel : ObservableObject
             UpdateCheckResult? result = await _updateCheck.CheckAndRecordAsync(_store);
             _shell.Installed.AppUpdate = result;
             _shell.Installed.BannerDismissed = false;
+            await _shell.Installed.PrepareInAppUpdateAsync(_store.Current.EffectiveIncludePrereleases);
             RefreshLastCheck();
         }
         finally

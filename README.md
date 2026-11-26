@@ -65,12 +65,14 @@
 > Your anti-virus may flag the download as suspicious/malicious, this is due to the code being unsigned. To remedy this would cost us real money and not a small amount either, you may check on [VirusTotal](https://www.virustotal.com/gui/) or [build from source.](#build-from-source)
 
 > [!TIP]
-> **Not sure which file to download?** Grab the **GUI** archive for your platform (`CollabProjectUpdater-win-x64.zip` / `CollabProjectUpdater-linux-x64.tar.gz`). It's the desktop app, and it needs nothing installed apart from Git.
+> **Not sure which file to download?** On Windows, run **`CollabProjectUpdater-win-x64-Setup.exe`**; on Linux, grab **`CollabProjectUpdater-x86_64.AppImage`**. Both are the desktop app, update themselves from inside the app, and need nothing installed apart from Git.
 
 | Archive | What it is | Who it's for |
 |---------|------------|--------------|
-| `CollabProjectUpdater-win-x64.zip` / `CollabProjectUpdater-linux-x64.tar.gz` | Desktop app, everything bundled | **Most users**: download this one |
-| `CollabProjectUpdater-x86_64.AppImage` | Desktop app for Linux as one file: `chmod +x` it and run | Linux users who prefer an AppImage |
+| `CollabProjectUpdater-win-x64-Setup.exe` | Desktop app installer for Windows (per-user, no admin; Start Menu and Desktop shortcuts) | **Most Windows users** |
+| `CollabProjectUpdater-x86_64.AppImage` | Desktop app for Linux as one file: `chmod +x` it and run | **Most Linux users** |
+| `CollabProjectUpdater-win-x64-Portable.zip` | Windows desktop app without installing; still updates itself | Windows users who want a portable folder |
+| `CollabProjectUpdater-win-x64.zip` / `CollabProjectUpdater-linux-x64.tar.gz` | Desktop app as a plain folder, updated with the updater script | Existing installs of these archives |
 | `CollabProjectUpdater-CLI-*-selfcontained.zip` / `.tar.gz` | Command-line app, everything bundled | Terminal users |
 | `CollabProjectUpdater-CLI-win-x64.zip` / `CollabProjectUpdater-CLI-linux-x64.tar.gz` | Command-line app, smaller, requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download) | Users who already have .NET installed |
 
@@ -78,9 +80,9 @@ Downloads are available on the [Releases](https://github.com/FalloutCollaboratio
 
 ### Updating the App
 
-Collaboration Project Updater checks for newer app releases and prints update instructions when one is available. The recommended update path is still to download the latest self-contained archive from the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page and replace your existing app folder.
+The desktop app checks for newer releases on launch. If you installed it with `Setup.exe`, the AppImage or the Velopack portable zip, click **Update now** in the banner: it downloads the update and restarts into the new version (pre-releases only when "include pre-releases" is on in Settings).
 
-For convenience, self-contained releases also include manual updater scripts:
+If you use a plain GUI zip/tar.gz or the old AppImage, the banner offers **Get the installer** to switch once (your settings are kept). The CLI and the plain archives keep using the updater scripts:
 
 | Platform | Script |
 |----------|--------|

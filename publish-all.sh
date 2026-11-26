@@ -39,8 +39,25 @@ publish "$GUI_PROJECT" linux-x64 true gui-linux-x64
 cp ./update-collab-project-updater.bat "$OUT/gui-win-x64/"
 cp ./update-collab-project-updater.sh ./collab-project-updater-gui.desktop ./FCPModUpdater.Gui/Assets/collab_logo.png "$OUT/gui-linux-x64/"
 
-# GUI AppImage (single-file Linux download)
-./packaging/build-appimage.sh "$OUT/gui-linux-x64" "$OUT"
+# GUI installers (Velopack): Windows Setup.exe/Portable.zip and the self-updating Linux AppImage.
+# Channels and flags mirror release.yml; needs vpk (dotnet tool install -g vpk) and mksquashfs (squashfs-tools).
+VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')"
+VERSION="${VERSION:-0.0.1}"
+if command -v vpk >/dev/null && command -v mksquashfs >/dev/null; then
+    rm -rf "$OUT/vp"
+    dotnet publish "$GUI_PROJECT" -c Release -r win-x64 --self-contained true -o "$OUT/vp/win-x64"
+    dotnet publish "$GUI_PROJECT" -c Release -r linux-x64 --self-contained true -o "$OUT/vp/linux-x64"
+    vpk "[win]" pack -u "$GUI_NAME" -v "$VERSION" -c win-x64 -p "$OUT/vp/win-x64" -e "$GUI_NAME.exe" \
+        -i ./FCPModUpdater.Gui/Assets/app.ico --packTitle "Collaboration Project Updater" \
+        --packAuthors "Fallout Collaboration Project" --shortcuts Desktop,StartMenuRoot -o "$OUT/velopack"
+    vpk pack -u "$GUI_NAME" -v "$VERSION" -c linux-x64 -p "$OUT/vp/linux-x64" -e "$GUI_NAME" \
+        -i ./FCPModUpdater.Gui/Assets/collab_logo.png --packTitle "Collaboration Project Updater" \
+        --packAuthors "Fallout Collaboration Project" --categories Utility -o "$OUT/velopack"
+    mv "$OUT"/velopack/*.AppImage "$OUT/${GUI_NAME}-x86_64.AppImage"
+    rm -rf "$OUT/vp"
+else
+    echo "Skipping Velopack installers: needs vpk and mksquashfs on PATH."
+fi
 
 # Standalone updater scripts are release assets too
 cp ./update-collab-project-updater.bat ./update-collab-project-updater.sh "$OUT/"
@@ -54,7 +71,7 @@ tar -czf "${APP_NAME}-linux-x64.tar.gz" linux-x64-fd
 zip -qr "${GUI_NAME}-win-x64.zip" gui-win-x64
 tar -czf "${GUI_NAME}-linux-x64.tar.gz" gui-linux-x64
 rm -rf win-x64-sc linux-x64-sc win-x64-fd linux-x64-fd gui-win-x64 gui-linux-x64
-sha256sum *.zip *.tar.gz *.AppImage > checksums.txt
+sha256sum *.zip *.tar.gz $(ls *.AppImage velopack/*-Setup.exe velopack/*-Portable.zip 2>/dev/null) | sed 's| velopack/| |' > checksums.txt
 cd ..
 
 # Single-file publish adds Microsoft.NET.ILLink.Tasks to the lock files; don't leave that behind.

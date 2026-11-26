@@ -9,6 +9,13 @@ public class UpdateCheckService(HttpClient httpClient)
     private const string RepoOwner = "FalloutCollaborationProject";
     private const string RepoName = "FCP-Mod-Updater";
 
+    /// <summary>The app's GitHub repository, whose releases carry the downloads.</summary>
+    public const string RepoUrl = $"https://github.com/{RepoOwner}/{RepoName}";
+
+    /// <summary>Direct download link of one asset of release <paramref name="tag"/> (with or without the leading v).</summary>
+    public static string ReleaseAssetUrl(string tag, string asset) =>
+        $"{RepoUrl}/releases/download/v{tag.TrimStart('v')}/{asset}";
+
     /// <summary>
     /// Check if a newer version is available. Returns null if check fails or no update needed.
     /// Pre-releases are considered only when <paramref name="includePrereleases"/> is true.

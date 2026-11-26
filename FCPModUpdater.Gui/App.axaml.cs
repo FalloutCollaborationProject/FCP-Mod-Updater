@@ -40,6 +40,8 @@ public class App : Application
         services.AddSingleton<IGitOutputSink>(sp => sp.GetRequiredService<GitOutputLog>());
         services.AddFcpCore(CommandLine.FindOption(args, "--github-token"));
         services.AddSingleton(ParseArgs(args));
+        services.AddHttpClient<IAppUpdater, VelopackAppUpdater>(client =>
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"CollabProjectUpdater/{AppVersion.SemanticVersion}"));
         services.AddSingleton(sp => new MainWindowViewModel(
             sp.GetRequiredService<IGitService>(),
             sp.GetRequiredService<IGitHubApiService>(),
@@ -50,7 +52,8 @@ public class App : Application
             sp.GetRequiredService<StartupOptions>(),
             post,
             settings: sp.GetRequiredService<SettingsStore>(),
-            tokens: sp.GetRequiredService<GitHubTokenProvider>()));
+            tokens: sp.GetRequiredService<GitHubTokenProvider>(),
+            appUpdater: sp.GetRequiredService<IAppUpdater>()));
 
         return services.BuildServiceProvider();
     }
