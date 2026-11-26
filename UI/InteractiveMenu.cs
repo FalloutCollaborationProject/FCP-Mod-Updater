@@ -201,13 +201,21 @@ public class InteractiveMenu
         ModCategory? category = null;
         if (categories.Count > 1)
         {
-            var options = new List<ModCategory?> { null };
-            options.AddRange(categories);
-            category = await AnsiConsole.PromptAsync(
-                new SelectionPrompt<ModCategory?>()
+            List<string> options =
+            [
+                "",
+                .. categories.Select(c => c.Id)
+            ];
+            
+            var pickedId = await AnsiConsole.PromptAsync(
+                new SelectionPrompt<string>()
                     .Title("[bold]Which mods?[/]")
-                    .UseConverter(c => c is null ? "All categories" : Markup.Escape($"{c.DisplayName} — {c.Organization}"))
+                    .UseConverter(id => categories.FirstOrDefault(c => c.Id == id) is { } c
+                        ? Markup.Escape($"{c.DisplayName} — {c.Organization}")
+                        : "All categories")
                     .AddChoices(options), ct);
+            
+            category = categories.FirstOrDefault(c => c.Id == pickedId);
         }
 
         List<RemoteRepo> availableRepos = ModCatalog.GetAvailableInstallRepos(
