@@ -118,10 +118,13 @@
                      IsVisible="{Binding IsScanning}" />
         <Border DockPanel.Dock="Top" Classes="note" Margin="24,16,24,0" CornerRadius="5"
                 IsVisible="{Binding ScanError, Converter={x:Static ObjectConverters.IsNotNull}}">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}" />
-            <TextBlock Text="{Binding ScanError}" TextWrapping="Wrap" VerticalAlignment="Center" />
-          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*">
+            <c:Icon Data="{StaticResource IconWarning}" Foreground="{StaticResource Warn}" VerticalAlignment="Top" />
+            <ScrollViewer Grid.Column="1" Margin="10,0,0,0" MaxHeight="120"
+                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <SelectableTextBlock Text="{Binding ScanError}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </ScrollViewer>
+          </Grid>
         </Border>
 
         <Panel>
