@@ -376,6 +376,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string? _gitPath;
     [ObservableProperty] private bool _gitOk;
 
+    /// <summary>The saved git location as typed in the box; empty means git from PATH.</summary>
+    [ObservableProperty] private string _gitPathText = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGitPathError))]
+    private string? _gitPathError;
+
+    public bool HasGitPathError => GitPathError is not null;
+
     private bool _gitLoaded;
 
     public async Task OnShownAsync()
@@ -388,11 +397,47 @@ public partial class SettingsViewModel : ObservableObject
         if (_gitLoaded)
             return;
         _gitLoaded = true;
+        await RefreshGitAsync();
+    }
 
+    public async Task RefreshGitAsync()
+    {
+        GitPathText = _store.Current.GitPath ?? "";
         var (version, path) = await _shell.GetGitInfo();
         GitOk = version is not null;
-        GitVersion = version is null ? "✗ Git was not found on your PATH" : $"✓ {version}";
+        GitVersion = version is not null ? $"✓ {version}"
+            : _store.Current.GitPath is not null ? "✗ The saved git location doesn't work"
+            : "✗ Git was not found on your PATH";
         GitPath = path;
+    }
+
+    /// <summary>Applies the git location box (Enter or leaving the box).</summary>
+    public async Task CommitGitPathAsync()
+    {
+        var typed = GitPathText.Trim();
+        if (typed == (_store.Current.GitPath ?? ""))
+        {
+            GitPathError = null;
+            return;
+        }
+        GitPathError = await _shell.SetGitPathAsync(typed);
+    }
+
+    [RelayCommand]
+    private async Task BrowseGitAsync()
+    {
+        var picked = await _shell.Platform.PickGitAsync();
+        if (picked is null)
+            return;
+        GitPathText = picked;
+        await CommitGitPathAsync();
+    }
+
+    [RelayCommand]
+    private async Task UsePathGitAsync()
+    {
+        GitPathText = "";
+        await CommitGitPathAsync();
     }
 
     private void Save(Func<AppSettings, AppSettings> change)

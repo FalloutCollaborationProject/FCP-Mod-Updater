@@ -48,6 +48,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly GitOutputLog _log;
     private readonly StartupOptions _options;
     private readonly Func<Task<bool>> _isGitInstalled;
+    private readonly Func<string, Task<string?>> _probeGit;
     private readonly SettingsStore _settings;
     private readonly GitHubTokenProvider _tokens;
     private readonly Func<Task<(string? Version, string? ExecutablePath)>> _gitInfo;
@@ -64,8 +65,10 @@ public partial class MainWindowViewModel : ObservableObject
         Func<Task<bool>>? isGitInstalled = null,
         SettingsStore? settings = null,
         GitHubTokenProvider? tokens = null,
-        Func<Task<(string? Version, string? ExecutablePath)>>? gitInfo = null)
+        Func<Task<(string? Version, string? ExecutablePath)>>? gitInfo = null,
+        Func<string, Task<string?>>? probeGit = null)
     {
+        _probeGit = probeGit ?? GitService.ProbeAsync;
         _settings = settings ?? SettingsStore.InMemory();
         _tokens = tokens ?? new GitHubTokenProvider(_settings, environment: () => null);
         _gitInfo = gitInfo ?? GitService.GetGitInfoAsync;
@@ -162,6 +165,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowChooseFolder))]
+    [NotifyPropertyChangedFor(nameof(ShowPage))]
     private bool _gitMissing;
 
     [ObservableProperty] private bool _isScanning;
@@ -169,7 +173,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool HasModsDirectory => ModsDirectory is not null;
     public bool IsOnSettings => CurrentPage == Settings;
-    public bool ShowPage => HasModsDirectory || IsOnSettings;
+    public bool ShowPage => !GitMissing && (HasModsDirectory || IsOnSettings);
     public bool ShowChooseFolder => !GitMissing && ModsDirectory is null && !IsOnSettings;
 
     partial void OnCurrentPageChanged(object value)
@@ -222,10 +226,68 @@ public partial class MainWindowViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
-        GitMissing = !await _isGitInstalled();
-        if (GitMissing)
+        if (!await CheckGitAsync())
+        {
+            GitMissing = true;
+            Dialog = new GitMissingDialogViewModel(this);
             return;
+        }
 
+        await ContinueStartupAsync();
+    }
+
+    // ── Git location ─────────────────────────────────────────────────────────
+
+    /// <summary>The git path saved in settings, or null when git comes from PATH.</summary>
+    public string? SavedGitPath => _settings.Current.GitPath;
+
+    /// <summary>Applies the saved git location, then checks that git runs.</summary>
+    internal Task<bool> CheckGitAsync()
+    {
+        GitService.UseExecutable(_settings.Current.GitPath);
+        return _isGitInstalled();
+    }
+
+    /// <summary>
+    /// Saves <paramref name="input"/> (a git executable or its install folder; empty = git from PATH) once it
+    /// checks out, and switches to it. Returns an error message, or null on success.
+    /// </summary>
+    internal async Task<string?> SetGitPathAsync(string? input)
+    {
+        string? path = null;
+        if (!string.IsNullOrWhiteSpace(input))
+        {
+            path = GitService.NormalizeGitPath(input);
+            if (path is null)
+                return $"No git executable found at {input.Trim()}";
+            if (await _probeGit(path) is null)
+                return $"{path} isn't a working git executable.";
+        }
+
+        try
+        {
+            _settings.Update(s => s with { GitPath = path });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"Could not save settings: {ex.Message}";
+        }
+
+        GitService.UseExecutable(path);
+        _ = Settings.RefreshGitAsync();
+        return null;
+    }
+
+    /// <summary>Called by the git popup once git works: closes it and finishes starting up.</summary>
+    internal async Task OnGitFoundAsync()
+    {
+        GitMissing = false;
+        Dialog = null;
+        await ContinueStartupAsync();
+    }
+
+    private async Task ContinueStartupAsync()
+    {
         if (_settings.Current.CheckForUpdatesOnLaunch)
             _ = CheckForAppUpdateAsync();
 

@@ -31,6 +31,7 @@ public class SettingsShowCommand(SettingsStore store, GitHubTokenProvider tokens
                 ? pre.ToString().ToLowerInvariant()
                 : $"{s.EffectiveIncludePrereleases.ToString().ToLowerInvariant()} [grey](default)[/]");
         table.AddRow(SettingsEditor.GameVersion, Markup.Escape(s.GameVersionOverride ?? "(detect from Version.txt)"));
+        table.AddRow(SettingsEditor.GitPath, Markup.Escape(s.GitPath ?? "(git on PATH)"));
         table.AddRow(SettingsEditor.UpdateParallelism, s.EffectiveUpdateParallelism.ToString());
         foreach (Models.ModCategory category in Models.ModCategories.Resolve(s))
             table.AddRow(SettingsEditor.CategoryKey(category.Id),
@@ -50,7 +51,7 @@ public class SettingsSetCommand(SettingsStore store) : Command<SettingsSetComman
     public class Options : CommandSettings
     {
         [CommandArgument(0, "<KEY>")]
-        [Description("mods-directory, github-token, check-updates, include-prereleases, game-version, update-parallelism or category.<id>.enabled")]
+        [Description("mods-directory, github-token, check-updates, include-prereleases, game-version, update-parallelism, git-path or category.<id>.enabled")]
         public required string Key { get; init; }
 
         [CommandArgument(1, "<VALUE>")]

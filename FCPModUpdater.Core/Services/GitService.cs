@@ -17,12 +17,71 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
     [GeneratedRegex(@"(\d+)%\s*\((\d+)/(\d+)\)", RegexOptions.Compiled)]
     private static partial Regex GitProgressRegex();
 
-    /// <summary>True when the git executable can be started from PATH.</summary>
+    /// <summary>The git that commands run: "git" (found on PATH) or a full path chosen by the user.</summary>
+    public static string Executable { get; private set; } = "git";
+
+    /// <summary>Use the git at <paramref name="path"/>, or the one on PATH when it is null or empty.</summary>
+    public static void UseExecutable(string? path) =>
+        Executable = string.IsNullOrWhiteSpace(path) ? "git" : path;
+
+    /// <summary>
+    /// Turns what the user typed or picked into a git executable path: the file itself, or for a folder
+    /// its git(.exe), cmd\git.exe or bin\git.exe (a Git for Windows install folder). Null when none exists.
+    /// </summary>
+    public static string? NormalizeGitPath(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return null;
+        try
+        {
+            var path = Path.GetFullPath(Environment.ExpandEnvironmentVariables(input.Trim().Trim('"')));
+            if (File.Exists(path))
+                return path;
+            if (!Directory.Exists(path))
+                return null;
+
+            string[] names = OperatingSystem.IsWindows() ? ["git.exe"] : ["git", "git.exe"];
+            foreach (var sub in new[] { "", "cmd", "bin" })
+            foreach (var name in names)
+            {
+                var candidate = Path.Combine(path, sub, name);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or System.Security.SecurityException)
+        {
+            // Not a usable path
+        }
+        return null;
+    }
+
+    /// <summary>Runs <c>--version</c> on <paramref name="executable"/>; the version text, or null if it isn't a working git.</summary>
+    public static async Task<string?> ProbeAsync(string executable)
+    {
+        try
+        {
+            BufferedCommandResult result = await Cli.Wrap(executable)
+                .WithArguments("--version")
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+            var output = result.StandardOutput.Trim();
+            return result.ExitCode == 0 && output.StartsWith("git version", StringComparison.OrdinalIgnoreCase)
+                ? output
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>True when the git in use (<see cref="Executable"/>) can be started.</summary>
     public static async Task<bool> IsGitInstalledAsync()
     {
         try
         {
-            BufferedCommandResult result = await Cli.Wrap("git")
+            BufferedCommandResult result = await Cli.Wrap(Executable)
                 .WithArguments("--version")
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteBufferedAsync();
@@ -150,13 +209,13 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
         return true;
     }
 
-    /// <summary>The <c>git --version</c> text and the git executable found on PATH, or nulls when git is missing.</summary>
+    /// <summary>The <c>git --version</c> text and the git executable in use, or nulls when git is missing.</summary>
     public static async Task<(string? Version, string? ExecutablePath)> GetGitInfoAsync()
     {
         string? version = null;
         try
         {
-            BufferedCommandResult result = await Cli.Wrap("git")
+            BufferedCommandResult result = await Cli.Wrap(Executable)
                 .WithArguments("--version")
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteBufferedAsync();
@@ -168,7 +227,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
             // git is not installed
         }
 
-        return (version, FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git"));
+        return (version, Executable != "git" ? Executable : FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git"));
     }
 
     internal static string? FindOnPath(string executable)
@@ -438,7 +497,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
 
         try
         {
-            var result = await Cli.Wrap("git")
+            var result = await Cli.Wrap(Executable)
                 .WithArguments(arguments)
                 .WithWorkingDirectory(workingDirectory)
                 .WithEnvironmentVariables(env => env
@@ -528,7 +587,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
 
         try
         {
-            BufferedCommandResult result = await Cli.Wrap("git")
+            BufferedCommandResult result = await Cli.Wrap(Executable)
                 .WithArguments(arguments)
                 .WithWorkingDirectory(workingDirectory)
                 .WithEnvironmentVariables(env => env

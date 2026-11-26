@@ -11,12 +11,13 @@ public static class SettingsEditor
     public const string IncludePrereleases = "include-prereleases";
     public const string GameVersion = "game-version";
     public const string UpdateParallelism = "update-parallelism";
+    public const string GitPath = "git-path";
 
     /// <summary>Prefix of the per-category key <c>category.&lt;id&gt;.enabled</c>.</summary>
     public const string CategoryPrefix = "category.";
     public const string CategoryEnabledSuffix = ".enabled";
 
-    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion, UpdateParallelism, "category.<id>.enabled"];
+    public static readonly IReadOnlyList<string> Keys = [ModsDirectory, GitHubToken, CheckForUpdates, IncludePrereleases, GameVersion, UpdateParallelism, GitPath, "category.<id>.enabled"];
 
     public static string CategoryKey(string id) => $"{CategoryPrefix}{id}{CategoryEnabledSuffix}";
 
@@ -76,6 +77,13 @@ public static class SettingsEditor
                 return int.TryParse(value.Trim(), out var n) && n is >= 1 and <= Services.ParallelRunner.MaxParallelism
                     ? (settings with { UpdateParallelism = n }, null)
                     : (null, $"Expected a number from 1 to {Services.ParallelRunner.MaxParallelism}, got '{value}'");
+
+            case GitPath:
+                if (string.IsNullOrWhiteSpace(value))
+                    return (settings with { GitPath = null }, null);
+                return Services.GitService.NormalizeGitPath(ExpandHome(value.Trim().Trim('"'))) is { } git
+                    ? (settings with { GitPath = git }, null)
+                    : (null, $"No git executable found at '{value}'");
 
             default:
                 return (null, $"Unknown setting '{key}'. Known settings: {string.Join(", ", Keys)}");

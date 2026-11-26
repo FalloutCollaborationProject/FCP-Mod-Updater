@@ -25,5 +25,6 @@
     <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
     <DataTemplate DataType="vm:OperationDialogViewModel"><views:OperationDialogView /></DataTemplate>
     <DataTemplate DataType="vm:UninstallDialogViewModel"><views:UninstallDialogView /></DataTemplate>
+    <DataTemplate DataType="vm:GitMissingDialogViewModel"><views:GitMissingDialogView /></DataTemplate>
   </Application.DataTemplates>
 </Application>

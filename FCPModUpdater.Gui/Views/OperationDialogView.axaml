@@ -5,7 +5,7 @@
              xmlns:c="using:FCPModUpdater.Gui.Controls"
              x:Class="FCPModUpdater.Gui.Views.OperationDialogView"
              x:DataType="vm:OperationDialogViewModel"
-             MaxWidth="780">
+             MaxWidth="780" VerticalAlignment="Top">
   <Border Classes="dialog">
     <DockPanel>
 

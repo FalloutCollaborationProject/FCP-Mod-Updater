@@ -8,7 +8,8 @@ using Spectre.Console.Cli;
 
 var services = new ServiceCollection();
 
-services.AddFcpCore(CommandLine.FindOption(args, "--github-token"));
+var settingsStore = new FCPModUpdater.Settings.SettingsStore();
+services.AddFcpCore(CommandLine.FindOption(args, "--github-token"), settingsStore: settingsStore);
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -16,7 +17,7 @@ app.Configure(config =>
 {
     config.SetApplicationName("collab-project-updater");
     config.SetApplicationVersion(AppVersion.InformationalVersion);
-    config.SetInterceptor(new GitRequiredInterceptor());
+    config.SetInterceptor(new GitRequiredInterceptor(settingsStore));
 
     config.AddCommand<ScanCommand>("scan")
         .WithDescription("Scan mods and show interactive menu (DEFAULT)")

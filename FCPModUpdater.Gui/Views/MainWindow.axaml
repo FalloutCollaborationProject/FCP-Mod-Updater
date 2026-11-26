@@ -137,22 +137,14 @@
                     Content="Choose Mods folder…" Command="{Binding ChangeFolderCommand}" />
           </StackPanel>
 
-          <!-- Git not installed -->
-          <StackPanel IsVisible="{Binding GitMissing}" Spacing="12" MaxWidth="460"
-                      HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Classes="h1" Text="Git is required" />
-            <TextBlock Classes="sub" TextWrapping="Wrap" LineHeight="20"
-                       Text="This application uses Git to manage mods, and it wasn't found on your PATH. Install Git, then restart Collaboration Project Updater." />
-            <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0"
-                    Content="Get Git" Click="OnGetGitClick" />
-          </StackPanel>
         </Panel>
       </DockPanel>
     </Grid>
 
     <!-- Modal overlay -->
     <Border Background="{StaticResource Scrim}" IsVisible="{Binding HasDialog}">
-      <ContentControl Content="{Binding Dialog}" Margin="16,48" VerticalAlignment="Top"
+      <!-- Each dialog view picks its own alignment (top for most, centred for the git popup). -->
+      <ContentControl Content="{Binding Dialog}" Margin="16,48" VerticalAlignment="Stretch"
                       HorizontalAlignment="Stretch" />
     </Border>
   </Panel>

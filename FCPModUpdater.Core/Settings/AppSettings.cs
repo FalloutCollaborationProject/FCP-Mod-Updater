@@ -11,6 +11,9 @@ public sealed record AppSettings
     /// <summary>GitHub personal access token. Overridden by <c>--github-token</c> and <c>GITHUB_TOKEN</c>.</summary>
     public string? GitHubToken { get; init; }
 
+    /// <summary>Full path to the git executable. Null uses git from PATH.</summary>
+    public string? GitPath { get; init; }
+
     public bool CheckForUpdatesOnLaunch { get; init; } = true;
 
     /// <summary>Null means "not chosen yet": follow whether the running build is itself a pre-release.</summary>

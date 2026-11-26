@@ -207,7 +207,19 @@
             <TextBlock Classes="mono" FontSize="12" Foreground="{StaticResource TextDim}" Text="{Binding GitPath}"
                        VerticalAlignment="Center" />
           </WrapPanel>
-          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" Text="The app uses the git on your PATH." />
+          <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="Git executable" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBox Classes="mono field" FontSize="13" Text="{Binding GitPathText}"
+                     Watermark="Automatic (git on PATH)"
+                     KeyDown="OnGitPathKeyDown" LostFocus="OnGitPathLostFocus"
+                     AutomationProperties.Name="Git executable" />
+            <Button Grid.Column="1" Classes="secondary" Content="Browse…" Command="{Binding BrowseGitCommand}" />
+            <Button Grid.Column="2" Classes="secondary" Content="Use PATH" Command="{Binding UsePathGitCommand}" />
+          </Grid>
+          <TextBlock FontSize="12" Foreground="{StaticResource Danger}" Text="{Binding GitPathError}"
+                     TextWrapping="Wrap" IsVisible="{Binding HasGitPathError}" />
+          <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
+                     Text="Leave empty to use git from PATH. You can pick git.exe or the folder Git is installed in." />
         </StackPanel>
       </Border>
 

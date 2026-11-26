@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FCPModUpdater.Gui.ViewModels"
+             xmlns:c="using:FCPModUpdater.Gui.Controls"
+             x:Class="FCPModUpdater.Gui.Views.GitMissingDialogView"
+             x:DataType="vm:GitMissingDialogViewModel"
+             Width="560" HorizontalAlignment="Center" VerticalAlignment="Center">
+  <Border Classes="dialog">
+    <DockPanel>
+      <Border DockPanel.Dock="Bottom" Background="{StaticResource Window}" BorderBrush="{StaticResource Line}"
+              BorderThickness="0,1,0,0" Padding="24,14">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+          <Button Classes="outline" Padding="16,8" Content="Check again" Command="{Binding CheckAgainCommand}" />
+          <Button Grid.Column="2" Classes="primary" Content="Get Git" Command="{Binding GetGitCommand}" />
+        </Grid>
+      </Border>
+
+      <StackPanel Spacing="16" Margin="24,22">
+        <Grid ColumnDefinitions="Auto,*">
+          <Border Width="40" Height="40" CornerRadius="5" Background="{StaticResource WarnSurface}"
+                  VerticalAlignment="Top">
+            <c:Icon Data="{StaticResource IconWarning}" Size="20" Foreground="{StaticResource Warn}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="4" Margin="14,0,0,0">
+            <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextStrong}"
+                       Text="Git is required" />
+            <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}" LineHeight="19.5"
+                       Text="{Binding Description}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="13" Foreground="{StaticResource TextSoft}" Text="{Binding PathLabel}" />
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBox Classes="mono field" FontSize="13" Text="{Binding PathText}"
+                     Watermark="{Binding PathExample}"
+                     AutomationProperties.Name="Location of git.exe" />
+            <Button Grid.Column="1" Classes="secondary" Content="Browse…" Command="{Binding BrowseCommand}" />
+            <Button Grid.Column="2" Classes="secondary" Content="Use this" Command="{Binding UsePathCommand}"
+                    IsDefault="True" />
+          </Grid>
+        </StackPanel>
+
+        <Border Classes="errorBlock" IsVisible="{Binding HasError}">
+          <SelectableTextBlock Classes="mono" FontSize="12" Foreground="{StaticResource ErrorBlockText}"
+                               Text="{Binding Error}" TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</UserControl>

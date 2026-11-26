@@ -20,5 +20,16 @@ public partial class SettingsView : UserControl
         }
     }
 
+    private void OnGitPathKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && ViewModel is { } vm)
+        {
+            _ = vm.CommitGitPathAsync();
+            e.Handled = true;
+        }
+    }
+
+    private void OnGitPathLostFocus(object? sender, RoutedEventArgs e) => _ = ViewModel?.CommitGitPathAsync();
+
     private void OnFolderLostFocus(object? sender, RoutedEventArgs e) => _ = ViewModel?.CommitFolderAsync();
 }

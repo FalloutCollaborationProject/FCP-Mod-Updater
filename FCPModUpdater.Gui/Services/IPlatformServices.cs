@@ -6,6 +6,8 @@ namespace FCPModUpdater.Gui.Services;
 public interface IPlatformServices
 {
     Task<string?> PickFolderAsync(string? startIn);
+    /// <summary>File picker for the git executable; null when cancelled.</summary>
+    Task<string?> PickGitAsync();
     Task CopyTextAsync(string text);
     void OpenFolder(string path);
     void OpenUrl(string url);
@@ -15,6 +17,7 @@ public interface IPlatformServices
 public sealed class NullPlatformServices : IPlatformServices
 {
     public Task<string?> PickFolderAsync(string? startIn) => Task.FromResult<string?>(null);
+    public Task<string?> PickGitAsync() => Task.FromResult<string?>(null);
     public Task CopyTextAsync(string text) => Task.CompletedTask;
     public void OpenFolder(string path) { }
     public void OpenUrl(string url) { }

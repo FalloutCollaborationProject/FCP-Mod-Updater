@@ -27,6 +27,20 @@ public partial class MainWindow : Window, IPlatformServices
         Closed += (_, _) => _relativeTimeTimer.Stop();
     }
 
+    public async Task<string?> PickGitAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose git.exe",
+            AllowMultiple = false,
+            FileTypeFilter = OperatingSystem.IsWindows()
+                ? [new FilePickerFileType("git.exe") { Patterns = ["git.exe"] }, FilePickerFileTypes.All]
+                : null,
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
     public async Task<string?> PickFolderAsync(string? startIn)
     {
         IStorageFolder? start = startIn is not null && Directory.Exists(startIn)
@@ -65,5 +79,4 @@ public partial class MainWindow : Window, IPlatformServices
         }
     }
 
-    private void OnGetGitClick(object? sender, RoutedEventArgs e) => OpenUrl("https://git-scm.com/downloads");
 }

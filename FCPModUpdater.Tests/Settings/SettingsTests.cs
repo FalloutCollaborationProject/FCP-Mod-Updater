@@ -341,4 +341,30 @@ public class UpdateCheckFilterTests
                 Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
             });
     }
+
+    [Fact]
+    public void GitPath_AcceptsFileOrInstallFolder_AndRejectsMissing()
+    {
+        var dir = Directory.CreateTempSubdirectory("git-path-").FullName;
+        try
+        {
+            var cmd = Directory.CreateDirectory(Path.Combine(dir, "cmd")).FullName;
+            var exe = Path.Combine(cmd, OperatingSystem.IsWindows() ? "git.exe" : "git");
+            File.WriteAllText(exe, "");
+
+            Assert.Equal(exe, GitService.NormalizeGitPath(exe));
+            Assert.Equal(exe, GitService.NormalizeGitPath($"\"{dir}\""));
+            Assert.Null(GitService.NormalizeGitPath(Path.Combine(dir, "nope")));
+
+            var (set, error) = SettingsEditor.Apply(new AppSettings(), "git-path", dir);
+            Assert.Null(error);
+            Assert.Equal(exe, set!.GitPath);
+            Assert.NotNull(SettingsEditor.Apply(new AppSettings(), "git-path", Path.Combine(dir, "nope")).Error);
+            Assert.Null(SettingsEditor.Apply(set, "git-path", null).Result!.GitPath);
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
 }
