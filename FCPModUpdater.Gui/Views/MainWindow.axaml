@@ -132,7 +132,7 @@
                       HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Classes="h1" Text="Choose your RimWorld Mods folder" TextWrapping="Wrap" />
             <TextBlock Classes="sub" TextWrapping="Wrap" LineHeight="20"
-                       Text="RimWorld wasn't found in the usual Steam, GOG or Lutris locations. Pick the Mods folder to continue, or start the app with --directory to skip this step." />
+                       Text="{Binding NoModsFolderText}" />
             <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0"
                     Content="Choose Mods folder…" Command="{Binding ChangeFolderCommand}" />
           </StackPanel>

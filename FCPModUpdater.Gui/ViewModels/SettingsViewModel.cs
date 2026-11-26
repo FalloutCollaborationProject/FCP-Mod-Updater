@@ -148,7 +148,7 @@ public partial class SettingsViewModel : ObservableObject
         if (found.Count == 0)
         {
             FolderOk = false;
-            FolderStatus = "✗ RimWorld wasn't found in the usual Steam, GOG or Lutris locations";
+            FolderStatus = $"✗ RimWorld wasn't found in the usual {MainWindowViewModel.SearchedLocations} locations";
             return;
         }
 

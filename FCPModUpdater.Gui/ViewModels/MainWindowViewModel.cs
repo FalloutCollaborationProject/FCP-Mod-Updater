@@ -241,6 +241,12 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>The git path saved in settings, or null when git comes from PATH.</summary>
     public string? SavedGitPath => _settings.Current.GitPath;
 
+    /// <summary>Where RimWorld was looked for; Lutris only exists on Linux.</summary>
+    public static string SearchedLocations => OperatingSystem.IsWindows() ? "Steam or GOG" : "Steam, GOG or Lutris";
+
+    public static string NoModsFolderText =>
+        $"RimWorld wasn't found in the usual {SearchedLocations} locations. Pick the Mods folder to continue, or start the app with --directory to skip this step.";
+
     /// <summary>Applies the saved git location, then checks that git runs.</summary>
     internal Task<bool> CheckGitAsync()
     {
