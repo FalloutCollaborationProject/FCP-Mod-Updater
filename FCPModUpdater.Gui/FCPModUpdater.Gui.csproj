@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>CollabProjectUpdater</AssemblyName>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <RootNamespace>FCPModUpdater.Gui</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
