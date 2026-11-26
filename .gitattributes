@@ -1,0 +1,3 @@
+# Windows cmd needs CRLF in batch files (labels and goto misbehave with LF only)
+*.bat text eol=crlf
+*.sh text eol=lf

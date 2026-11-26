@@ -1,14 +1,17 @@
 @echo off
 setlocal
 
-if /I not "%~1"=="--from-temp" (
-    set "TEMP_SCRIPT=%TEMP%\update-collab-project-updater-%RANDOM%%RANDOM%.bat"
-    copy "%~f0" "%TEMP_SCRIPT%" >nul
-    call "%TEMP_SCRIPT%" --from-temp
-    set "EXIT_CODE=%ERRORLEVEL%"
-    del "%TEMP_SCRIPT%" >nul 2>nul
-    exit /b %EXIT_CODE%
-)
+rem Run from a temp copy, so the script in the install folder can be replaced. Not a ( ) block: cmd expands
+rem %VARS% in a block when it reads it, before the set inside it has run.
+if /I "%~1"=="--from-temp" goto main
+set "TEMP_SCRIPT=%TEMP%\update-collab-project-updater-%RANDOM%%RANDOM%.bat"
+copy "%~f0" "%TEMP_SCRIPT%" >nul
+call "%TEMP_SCRIPT%" --from-temp
+set "EXIT_CODE=%ERRORLEVEL%"
+del "%TEMP_SCRIPT%" >nul 2>nul
+exit /b %EXIT_CODE%
+
+:main
 
 rem Updates the CLI (CollabProjectUpdater-CLI) in this folder. A plain GUI folder (CollabProjectUpdater.exe) is switched to the
 rem self-updating Velopack portable build, which then updates itself from the app's Updates page.
