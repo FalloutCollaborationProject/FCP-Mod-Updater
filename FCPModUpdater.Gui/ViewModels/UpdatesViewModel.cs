@@ -39,7 +39,7 @@ public partial class UpdatesViewModel : ObservableObject
     public string InstallKind =>
         IsInstalledApp ? "Installed: updates itself"
         : UpdateCheckService.IsAppImage ? "Older AppImage: download the new one once to get automatic updates"
-        : "Portable folder: updated with the updater script, or switch to the installer";
+        : "Portable folder: Get the installer (or run the updater script) to switch to the version that updates itself";
 
     // ── Release check ────────────────────────────────────────────────────────
 

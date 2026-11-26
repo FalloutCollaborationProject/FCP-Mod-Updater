@@ -108,7 +108,15 @@ public class UpdateCheckService(HttpClient httpClient)
     internal static bool IsAppImagePath(string? appImage) => !string.IsNullOrWhiteSpace(appImage);
 
     /// <summary>The updater script shipped next to the app for this platform, or null when there is none.</summary>
-    public static string? GetUpdaterCommand() => GetUpdaterCommand(IsAppImage);
+    /// <summary>
+    /// The updater script to run, when it sits next to the app. The scripts are separate release downloads (not in the
+    /// archives), so a folder without one gets null and the caller points at the release instead.
+    /// </summary>
+    public static string? GetUpdaterCommand() =>
+        GetUpdaterCommand(IsAppImage) is { } command
+        && File.Exists(Path.Combine(AppContext.BaseDirectory, command.TrimStart('.', '/')))
+            ? command
+            : null;
 
     // An AppImage is one read-only file with no script beside it; it is updated by replacing the file.
     internal static string? GetUpdaterCommand(bool isAppImage) =>

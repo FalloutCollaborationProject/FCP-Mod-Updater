@@ -72,9 +72,8 @@
 | `CollabProjectUpdater-win-x64-Setup.exe` | Desktop app installer for Windows (per-user, no admin; Start Menu and Desktop shortcuts) | **Most Windows users** |
 | `CollabProjectUpdater-x86_64.AppImage` | Desktop app for Linux as one file: `chmod +x` it and run | **Most Linux users** |
 | `CollabProjectUpdater-win-x64-Portable.zip` | Windows desktop app without installing; still updates itself | Windows users who want a portable folder |
-| `CollabProjectUpdater-win-x64.zip` / `CollabProjectUpdater-linux-x64.tar.gz` | Desktop app as a plain folder, updated with the updater script | Existing installs of these archives |
 | `CollabProjectUpdater-CLI-*-selfcontained.zip` / `.tar.gz` | Command-line app, everything bundled | Terminal users |
-| `CollabProjectUpdater-CLI-win-x64.zip` / `CollabProjectUpdater-CLI-linux-x64.tar.gz` | Command-line app, smaller, requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download) | Users who already have .NET installed |
+| `update-collab-project-updater.bat` / `.sh` | Updater script: updates the CLI, and switches an old plain desktop-app folder to the self-updating version | CLI users; old plain-folder installs |
 
 Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
 
@@ -82,14 +81,14 @@ Downloads are available on the [Releases](https://github.com/FalloutCollaboratio
 
 The desktop app checks for newer releases on launch. If you installed it with `Setup.exe`, the AppImage or the Velopack portable zip, click **Update now** in the banner: it downloads the update and restarts into the new version (pre-releases only when "include pre-releases" is on in Settings).
 
-If you use a plain GUI zip/tar.gz or the old AppImage, the banner offers **Get the installer** to switch once (your settings are kept). The CLI and the plain archives keep using the updater scripts:
+If you use an old plain GUI zip/tar.gz (no longer published) or the old AppImage, the banner offers **Get the installer** to switch once (your settings are kept). The CLI uses the updater scripts, which are separate downloads on each release (not inside the archives): put the one for your platform in the app folder.
 
 | Platform | Script |
 |----------|--------|
 | Windows | `update-collab-project-updater.bat` |
 | Linux | `./update-collab-project-updater.sh` |
 
-Before running an updater script, close Collaboration Project Updater and run the script from the existing app folder. The script will ask whether to use the latest stable release or the latest pre-release, download the matching archive and `checksums.txt`, verify the SHA256 checksum, then replace the files in the current folder.
+Before running an updater script, close Collaboration Project Updater and run the script from the existing app folder. The script will ask whether to use the latest stable release or the latest pre-release, download the matching archive and `checksums.txt`, verify the SHA256 checksum, then replace the files in the current folder. Run in an old plain desktop-app folder, it installs the portable zip (Windows) or the AppImage (Linux) there instead and removes the old app files; from then on the app updates itself. Use the script from the latest release: older copies look for the plain archives, which are no longer published.
 
 > [!NOTE]
 > The app was renamed from FCP Mod Manager. Updater scripts from before the rename (`update-fcp-mod-manager.*`) can't find the new archives: download `update-collab-project-updater.sh`/`.bat` from the latest release into your old app folder once and run it. It installs the renamed app and removes the old files.

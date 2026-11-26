@@ -15,21 +15,28 @@ if [[ "${1:-}" != "--from-temp" ]]; then
     exit "${exit_code}"
 fi
 
-# The same script updates the GUI (CollabProjectUpdater) and the CLI (CollabProjectUpdater-CLI); the install folder says which.
+# Updates the CLI (CollabProjectUpdater-CLI) in this folder. A plain GUI folder (CollabProjectUpdater) is switched to the
+# self-updating AppImage, which then updates itself from the app's Updates page.
 # Installs from before the rename (FCPModManager / FCPModUpdater) are migrated: the old files are removed after updating.
+GUI_APPIMAGE="CollabProjectUpdater-x86_64.AppImage"
 OLD_FILES=()
-if [[ -f "./CollabProjectUpdater" ]]; then
+IS_GUI=false
+if [[ -f "./${GUI_APPIMAGE}" && ! -f "./CollabProjectUpdater" && ! -f "./FCPModManager" ]]; then
+    echo "This is the AppImage, which updates itself: open the app's Updates page and click Update now."
+    exit 0
+elif [[ -f "./CollabProjectUpdater" ]]; then
     APP_NAME="CollabProjectUpdater"
-    ARCHIVE="CollabProjectUpdater-linux-x64.tar.gz"
-    ARCHIVE_DIR="gui-linux-x64"
+    ARCHIVE="${GUI_APPIMAGE}"
+    IS_GUI=true
+    OLD_FILES=("./CollabProjectUpdater" "./collab_logo.png" "./collab-project-updater-gui.desktop")
 elif [[ -f "./CollabProjectUpdater-CLI" ]]; then
     APP_NAME="CollabProjectUpdater-CLI"
     ARCHIVE="CollabProjectUpdater-CLI-linux-x64-selfcontained.tar.gz"
     ARCHIVE_DIR="linux-x64-sc"
 elif [[ -f "./FCPModManager" ]]; then
     APP_NAME="FCPModManager"
-    ARCHIVE="CollabProjectUpdater-linux-x64.tar.gz"
-    ARCHIVE_DIR="gui-linux-x64"
+    ARCHIVE="${GUI_APPIMAGE}"
+    IS_GUI=true
     OLD_FILES=("./FCPModManager" "./fcp_logo.png" "./fcp-mod-manager-gui.desktop" "./update-fcp-mod-manager.sh")
 elif [[ -f "./FCPModUpdater" ]]; then
     APP_NAME="FCPModUpdater"
@@ -132,6 +139,17 @@ if ! grep " ${ARCHIVE}$" checksums.txt | sha256sum -c -; then
     exit 1
 fi
 
+if [[ "${IS_GUI}" == true ]]; then
+    cp "${staging}/${ARCHIVE}" "${OLDPWD}/${GUI_APPIMAGE}.new"
+    cd - >/dev/null
+    mv -f "./${GUI_APPIMAGE}.new" "./${GUI_APPIMAGE}"
+    chmod +x "./${GUI_APPIMAGE}"
+    rm -f "${OLD_FILES[@]}"
+    echo "Switched to the AppImage: start ./${GUI_APPIMAGE} from now on (settings are kept)."
+    echo "It updates itself from the app's Updates page, so this script is no longer needed for it."
+    exit 0
+fi
+
 tar -xzf "${ARCHIVE}"
 source_dir="${staging}/${ARCHIVE_DIR}"
 
@@ -145,11 +163,10 @@ cd - >/dev/null
 echo "Installing update..."
 cp -R "${source_dir}/." .
 if [[ ${#OLD_FILES[@]} -gt 0 ]]; then
-    APP_NAME="${APP_NAME/FCPModManager/CollabProjectUpdater}"
-    APP_NAME="${APP_NAME/FCPModUpdater/CollabProjectUpdater-CLI}"
+    APP_NAME="CollabProjectUpdater-CLI"
     rm -f "${OLD_FILES[@]}"
     echo "Renamed: start ./${APP_NAME} from now on."
 fi
-chmod +x "./${APP_NAME}" "./update-collab-project-updater.sh"
+chmod +x "./${APP_NAME}"
 
 echo "Update complete. Start Collaboration Project Updater normally."

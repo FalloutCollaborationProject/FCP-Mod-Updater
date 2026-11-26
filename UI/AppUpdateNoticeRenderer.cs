@@ -8,12 +8,16 @@ public static class AppUpdateNoticeRenderer
     public static void Render(UpdateCheckResult updateResult)
     {
         var label = updateResult.IsPrerelease ? "Pre-release available" : "Update available";
-        var updateCommand = GetUpdateCommand();
-        var content = new Rows(
-            new Markup(
+        var lines = new List<Markup>
+        {
+            new(
                 $"[yellow bold]{label}: v{Markup.Escape(updateResult.LatestVersion)}[/] [Grey66](current: [/][Grey66 dim bold]{Markup.Escape(updateResult.CurrentVersion)}[/][Grey66])[/]"),
-            new Markup($"[Grey66]Close this app before updating and run:[/] [underline]{Markup.Escape(updateCommand)}[/]"),
-            new Markup($"[Grey66]Manual download:[/] [link]{Markup.Escape(updateResult.ReleaseUrl)}[/]"));
+        };
+        // The updater script is a separate download; only suggest it when it is next to the app.
+        if (UpdateCheckService.GetUpdaterCommand() is { } updateCommand)
+            lines.Add(new Markup($"[Grey66]Close this app before updating and run:[/] [underline]{Markup.Escape(updateCommand)}[/]"));
+        lines.Add(new Markup($"[Grey66]Download:[/] [link]{Markup.Escape(updateResult.ReleaseUrl)}[/]"));
+        var content = new Rows(lines);
 
         var panel = new Panel(content)
         {
@@ -25,7 +29,4 @@ public static class AppUpdateNoticeRenderer
 
         AnsiConsole.Write(panel);
     }
-
-    private static string GetUpdateCommand() =>
-        UpdateCheckService.GetUpdaterCommand() ?? "download the latest release manually";
 }

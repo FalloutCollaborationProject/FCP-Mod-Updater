@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Collaboration Project Updater
-Comment=Manage RimWorld mods from the Fallout and Elder Scrolls Collaboration Projects
-Exec=./CollabProjectUpdater
-Icon=./collab_logo.png
-Terminal=false
-Categories=Game;Utility;

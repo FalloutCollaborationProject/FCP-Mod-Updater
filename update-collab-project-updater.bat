@@ -10,13 +10,21 @@ if /I not "%~1"=="--from-temp" (
     exit /b %EXIT_CODE%
 )
 
-rem The same script updates the GUI (CollabProjectUpdater) and the CLI (CollabProjectUpdater-CLI); the install folder says which.
+rem Updates the CLI (CollabProjectUpdater-CLI) in this folder. A plain GUI folder (CollabProjectUpdater.exe) is switched to the
+rem self-updating Velopack portable build, which then updates itself from the app's Updates page.
 rem Installs from before the rename (FCPModManager / FCPModUpdater) are migrated: the old files are removed after updating.
 set "OLD_APP="
+set "IS_GUI="
+if exist ".\Update.exe" if exist ".\.portable" (
+    echo This copy updates itself: open the app's Updates page and click Update now.
+    exit /b 0
+)
 if exist ".\CollabProjectUpdater.exe" (
     set "APP_NAME=CollabProjectUpdater.exe"
-    set "ARCHIVE=CollabProjectUpdater-win-x64.zip"
-    set "ARCHIVE_DIR=gui-win-x64"
+    set "OLD_APP=CollabProjectUpdater.exe"
+    set "IS_GUI=1"
+    set "ARCHIVE=CollabProjectUpdater-win-x64-Portable.zip"
+    set "ARCHIVE_DIR="
 ) else if exist ".\CollabProjectUpdater-CLI.exe" (
     set "APP_NAME=CollabProjectUpdater-CLI.exe"
     set "ARCHIVE=CollabProjectUpdater-CLI-win-x64-selfcontained.zip"
@@ -24,9 +32,9 @@ if exist ".\CollabProjectUpdater.exe" (
 ) else if exist ".\FCPModManager.exe" (
     set "APP_NAME=FCPModManager.exe"
     set "OLD_APP=FCPModManager.exe"
-    set "NEW_APP=CollabProjectUpdater.exe"
-    set "ARCHIVE=CollabProjectUpdater-win-x64.zip"
-    set "ARCHIVE_DIR=gui-win-x64"
+    set "IS_GUI=1"
+    set "ARCHIVE=CollabProjectUpdater-win-x64-Portable.zip"
+    set "ARCHIVE_DIR="
 ) else (
     set "APP_NAME=FCPModUpdater.exe"
     set "OLD_APP=FCPModUpdater.exe"
@@ -97,27 +105,43 @@ if /I not "%ACTUAL%"=="%EXPECTED%" (
     exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -Path '%STAGING%\%ARCHIVE%' -DestinationPath '%STAGING%'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -Path '%STAGING%\%ARCHIVE%' -DestinationPath '%STAGING%\extract'"
 if not "%ERRORLEVEL%"=="0" (
     echo Could not extract update archive.
     rmdir /S /Q "%STAGING%" >nul 2>nul
     exit /b 1
 )
 
-if not exist "%STAGING%\%ARCHIVE_DIR%" (
+rem The CLI archive has a top-level folder; the portable zip does not.
+set "SOURCE=%STAGING%\extract"
+if not defined IS_GUI set "SOURCE=%STAGING%\extract\%ARCHIVE_DIR%"
+if defined IS_GUI if not exist "%SOURCE%\Update.exe" (
+    echo Downloaded archive did not contain the expected files.
+    rmdir /S /Q "%STAGING%" >nul 2>nul
+    exit /b 1
+)
+if not exist "%SOURCE%" (
     echo Downloaded archive did not contain the expected %ARCHIVE_DIR% folder.
     rmdir /S /Q "%STAGING%" >nul 2>nul
     exit /b 1
 )
 
 echo Installing update...
-robocopy "%STAGING%\%ARCHIVE_DIR%" "%CD%" /E /COPY:DAT /R:3 /W:1 /NFL /NDL
+robocopy "%SOURCE%" "%CD%" /E /COPY:DAT /R:3 /W:1 /NFL /NDL
 set "COPY_EXIT=%ERRORLEVEL%"
 rmdir /S /Q "%STAGING%" >nul 2>nul
 
 if %COPY_EXIT% GEQ 8 (
     echo Update copy failed.
     exit /b 1
+)
+
+if defined IS_GUI (
+    del ".\%OLD_APP%" >nul 2>nul
+    del ".\update-fcp-mod-manager.bat" >nul 2>nul
+    echo Switched to the self-updating version: start "Collaboration Project Updater.exe" from now on ^(settings are kept^).
+    echo It updates itself from the app's Updates page, so this script is no longer needed for it.
+    exit /b 0
 )
 
 if defined OLD_APP (

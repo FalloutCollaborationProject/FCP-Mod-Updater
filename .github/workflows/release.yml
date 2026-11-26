@@ -28,34 +28,14 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release
 
-      - name: Build Windows x64 (self-contained)
-        run: |
-          dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
-          cp ./update-collab-project-updater.bat ./publish/win-x64-sc/
+      # CLI only; the GUI ships through Velopack below. The updater scripts are separate release assets.
+      - name: Build CLI Windows x64 (self-contained)
+        run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/win-x64-sc
 
-      - name: Build Linux x64 (self-contained)
+      - name: Build CLI Linux x64 (self-contained)
         run: |
           dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/linux-x64-sc
-          cp ./update-collab-project-updater.sh ./publish/linux-x64-sc/
           cp ./collab-project-updater.desktop ./publish/linux-x64-sc/
-
-      - name: Build Windows x64 (framework-dependent)
-        run: dotnet publish FCPModUpdater.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/win-x64-fd
-
-      - name: Build Linux x64 (framework-dependent)
-        run: |
-          dotnet publish FCPModUpdater.csproj -c Release -r linux-x64 --self-contained false -p:PublishSingleFile=false -o ./publish/linux-x64-fd
-          cp ./collab-project-updater.desktop ./publish/linux-x64-fd/
-
-      - name: Build GUI Windows x64 (self-contained)
-        run: |
-          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-win-x64
-          cp ./update-collab-project-updater.bat ./publish/gui-win-x64/
-
-      - name: Build GUI Linux x64 (self-contained)
-        run: |
-          dotnet publish FCPModUpdater.Gui/FCPModUpdater.Gui.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./publish/gui-linux-x64
-          cp ./update-collab-project-updater.sh ./collab-project-updater-gui.desktop ./FCPModUpdater.Gui/Assets/collab_logo.png ./publish/gui-linux-x64/
 
       # Velopack: Windows Setup.exe/Portable.zip (cross-packed here) and the self-updating Linux AppImage.
       # Channels must match VelopackAppUpdater.Channel; explicit names keep the two -full.nupkg files apart.
@@ -83,21 +63,16 @@ jobs:
           mkdir -p ./publish/velopack
           mv ./vp/Releases/*.AppImage ./publish/${{ env.GUI_NAME }}-x86_64.AppImage
           # Only this version's packages; older ones (downloaded for deltas) are already on their releases.
-          cp ./vp/Releases/*-"$VERSION"-*.nupkg ./vp/Releases/releases.*.json ./vp/Releases/assets.*.json \
+          cp ./vp/Releases/*-"$VERSION"-*.nupkg ./vp/Releases/releases.*.json \
             ./vp/Releases/*-Setup.exe ./vp/Releases/*-Portable.zip ./publish/velopack/
 
       - name: Create archives
         run: |
-          cp ./update-collab-project-updater.bat ./publish/
-          cp ./update-collab-project-updater.sh ./publish/
+          cp ./update-collab-project-updater.bat ./update-collab-project-updater.sh ./publish/
           cd ./publish
-          chmod +x linux-x64-sc/${{ env.APP_NAME }} linux-x64-sc/update-collab-project-updater.sh gui-linux-x64/${{ env.GUI_NAME }} gui-linux-x64/update-collab-project-updater.sh
+          chmod +x linux-x64-sc/${{ env.APP_NAME }}
           zip -r "${{ env.APP_NAME }}-win-x64-selfcontained.zip" win-x64-sc
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
-          zip -r "${{ env.APP_NAME }}-win-x64.zip" win-x64-fd
-          tar -czvf "${{ env.APP_NAME }}-linux-x64.tar.gz" linux-x64-fd
-          zip -r "${{ env.GUI_NAME }}-win-x64.zip" gui-win-x64
-          tar -czvf "${{ env.GUI_NAME }}-linux-x64.tar.gz" gui-linux-x64
           sha256sum *.zip *.tar.gz *.AppImage velopack/*-Setup.exe velopack/*-Portable.zip | sed 's| velopack/| |' > checksums.txt
 
       - name: Create Release
@@ -109,10 +84,6 @@ jobs:
           files: |
             ./publish/${{ env.APP_NAME }}-win-x64-selfcontained.zip
             ./publish/${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz
-            ./publish/${{ env.APP_NAME }}-win-x64.zip
-            ./publish/${{ env.APP_NAME }}-linux-x64.tar.gz
-            ./publish/${{ env.GUI_NAME }}-win-x64.zip
-            ./publish/${{ env.GUI_NAME }}-linux-x64.tar.gz
             ./publish/${{ env.GUI_NAME }}-x86_64.AppImage
             ./publish/velopack/*
             ./publish/checksums.txt
