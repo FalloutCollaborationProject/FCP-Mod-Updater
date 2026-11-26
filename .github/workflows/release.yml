@@ -75,10 +75,18 @@ jobs:
           tar -czvf "${{ env.APP_NAME }}-linux-x64-selfcontained.tar.gz" linux-x64-sc
           sha256sum *.zip *.tar.gz *.AppImage velopack/*-Setup.exe velopack/*-Portable.zip | sed 's| velopack/| |' > checksums.txt
 
+      - name: Release notes
+        run: |
+          {
+            bash .github/changelog-notes.sh "${GITHUB_REF_NAME#v}"
+            printf '\n---\n\n'
+            sed "s/@TAG@/${GITHUB_REF_NAME}/g" .github/release-downloads.md
+          } > ./publish/release-notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: .github/release-downloads.md
+          body_path: ./publish/release-notes.md
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |

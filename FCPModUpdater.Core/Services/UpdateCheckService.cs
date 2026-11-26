@@ -67,7 +67,7 @@ public class UpdateCheckService(HttpClient httpClient)
                     ReleaseName: newest.Name,
                     PublishedAt: newest.PublishedAt,
                     IsPrerelease: newest.Prerelease,
-                    ReleaseNotes: newest.Body
+                    ReleaseNotes: ChangelogPart(newest.Body)
                 );
             }
 
@@ -142,6 +142,20 @@ public class UpdateCheckService(HttpClient httpClient)
     }
 
     /// <summary>SemVer order: core version, then a release beats any pre-release, then the labels by dot part.</summary>
+    /// <summary>
+    /// The changelog part of a release body: the text above the first <c>---</c> line (below it are the download
+    /// instructions from <c>.github/release-downloads.md</c>). Null when there is none.
+    /// </summary>
+    internal static string? ChangelogPart(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return null;
+        var lines = body.Replace("\r\n", "\n").Split('\n');
+        var end = Array.FindIndex(lines, l => l.Trim() == "---");
+        var notes = string.Join('\n', end < 0 ? lines : lines[..end]).Trim();
+        return notes.Length == 0 ? null : notes;
+    }
+
     internal static int CompareVersions(string a, string b)
     {
         var (coreA, labelA) = SplitVersion(a);

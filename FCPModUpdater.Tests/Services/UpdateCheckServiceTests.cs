@@ -33,3 +33,28 @@ public class UpdaterCommandTests
             Assert.Null(command);
     }
 }
+
+public class ReleaseNotesTests
+{
+    [Fact]
+    public void ChangelogPart_KeepsTheTextAboveTheFirstRule()
+    {
+        var body = "### Fixed\r\n- A fix\r\n\r\n---\r\n\r\n## Which file do I download?\n---\nGenerated";
+        Assert.Equal("### Fixed\n- A fix", UpdateCheckService.ChangelogPart(body));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("\n---\n\n## Which file do I download?")]
+    public void ChangelogPart_IsNullWithoutChangelog(string? body)
+    {
+        Assert.Null(UpdateCheckService.ChangelogPart(body));
+    }
+
+    [Fact]
+    public void ChangelogPart_WithoutRule_KeepsEverything()
+    {
+        Assert.Equal("Old release notes", UpdateCheckService.ChangelogPart("  Old release notes \n"));
+    }
+}

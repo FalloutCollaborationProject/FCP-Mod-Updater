@@ -75,7 +75,7 @@
 | `CollabProjectUpdater-CLI-*-selfcontained.zip` / `.tar.gz` | Command-line app, everything bundled | Terminal users |
 | `update-collab-project-updater.bat` / `.sh` | Updater script: updates the CLI, and switches an old plain desktop-app folder to the self-updating version | CLI users; old plain-folder installs |
 
-Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page.
+Downloads are available on the [Releases](https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases) page. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 ### Updating the App
 
