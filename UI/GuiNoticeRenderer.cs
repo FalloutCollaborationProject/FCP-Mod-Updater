@@ -6,7 +6,7 @@ namespace FCPModUpdater.UI;
 /// <summary>Tells CLI users, once, that a desktop GUI version is available.</summary>
 public static class GuiNoticeRenderer
 {
-    private const string ReleasesUrl = "https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases/latest";
+    private const string ReleasesUrl = "https://github.com/FalloutCollaborationProject/FCP-Mod-Updater/releases";
 
     /// <summary>Renders the notice if it has never been shown, then records that it was.</summary>
     public static void RenderOnce(SettingsStore? settingsStore)
@@ -16,7 +16,7 @@ public static class GuiNoticeRenderer
 
         var content = new Rows(
             new Markup("[cyan bold]New: Collaboration Project Updater now has a GUI version[/]"),
-            new Markup("[Grey66]Download the[/] [underline]CollabProjectUpdater[/] [Grey66]archive (or the Linux AppImage) from:[/]"),
+            new Markup("[Grey66]Download[/] [underline]CollabProjectUpdater-win-x64-Setup.exe[/] [Grey66](Windows) or the[/] [underline]AppImage[/] [Grey66](Linux) from:[/]"),
             new Markup($"[link]{ReleasesUrl}[/]"),
             new Markup("[Grey66 dim]It shares this app's settings. This notice is only shown once.[/]"));
 

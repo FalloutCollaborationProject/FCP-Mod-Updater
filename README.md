@@ -1,5 +1,7 @@
 <h1 align="center">Collaboration Project Updater</h1>
-
+<p align="center">
+  (Previously FCP Mod Manager)
+</p>
 <p align="center">
   <img src="FCPModUpdater.Gui/Assets/collab_logo.png" alt="Collaboration Project Updater logo" width="180" />
 </p>
@@ -55,7 +57,7 @@
 
 ## Requirements
 
-- [Git](https://git-scm.com/downloads) installed and available in PATH
+- [Git](https://git-scm.com/downloads) installed and available in PATH or manually set in the app
 
 ## Installation
 
