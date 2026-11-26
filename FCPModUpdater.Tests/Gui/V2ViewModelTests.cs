@@ -14,7 +14,7 @@ public sealed class V2ViewModelTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     /// <summary>Navigation starts the rescan without awaiting it; discovery runs on the thread pool.</summary>

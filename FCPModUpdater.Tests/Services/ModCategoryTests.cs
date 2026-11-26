@@ -219,7 +219,7 @@ public class DiscoveryCategoryTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     [Fact]
@@ -265,7 +265,7 @@ public sealed class InstallCategoryFilterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     [Fact]
@@ -399,7 +399,7 @@ public sealed class InstallSelectRecommendedPerCategoryTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     [Fact]

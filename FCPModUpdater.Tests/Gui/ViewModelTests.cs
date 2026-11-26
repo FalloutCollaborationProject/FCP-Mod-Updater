@@ -80,7 +80,7 @@ public sealed class ViewModelTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     private static RemoteRepo Repo(string name, bool notRecommended = false) =>

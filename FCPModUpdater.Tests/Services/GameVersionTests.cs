@@ -15,7 +15,7 @@ public sealed class GameVersionTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     [Theory]
@@ -131,7 +131,7 @@ public sealed class VersionBranchIntegrationTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_dir))
-            Directory.Delete(_dir, true);
+            GitService.DeleteDirectory(_dir);
     }
 
     private static async Task<string> Git(string workingDir, string args)

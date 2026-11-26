@@ -20,7 +20,7 @@ public class GitServiceIntegrationTests : IDisposable
     {
         GC.SuppressFinalize(this);
         if (Directory.Exists(_tempDir))
-            Directory.Delete(_tempDir, true);
+            GitService.DeleteDirectory(_tempDir);
     }
 
     private async Task RunGitAsync(string workingDir, string args)

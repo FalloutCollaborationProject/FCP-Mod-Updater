@@ -16,9 +16,7 @@ public sealed class SubmoduleCleanupIntegrationTests : IDisposable
     {
         if (!Directory.Exists(_dir))
             return;
-        foreach (var f in Directory.EnumerateFiles(_dir, "*", SearchOption.AllDirectories))
-            File.SetAttributes(f, FileAttributes.Normal);
-        Directory.Delete(_dir, true);
+        GitService.DeleteDirectory(_dir);
     }
 
     private static async Task<string> Git(string cwd, string args)

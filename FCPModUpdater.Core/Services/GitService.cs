@@ -344,7 +344,7 @@ public partial class GitService(IGitOutputSink? outputSink = null) : IGitService
     }
 
     /// <summary>Recursive delete that also clears read-only files (git marks objects read-only on Windows).</summary>
-    private static void DeleteDirectory(string dir)
+    internal static void DeleteDirectory(string dir)
     {
         foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
             File.SetAttributes(file, FileAttributes.Normal);

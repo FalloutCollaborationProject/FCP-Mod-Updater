@@ -78,7 +78,7 @@ public static class ModOperations
 
         try
         {
-            Directory.Delete(mod.Path, recursive: true);
+            GitService.DeleteDirectory(mod.Path);
             var result = await gitService.CloneAsync(repo.CloneUrl, mod.Path, percentProgress: progress, ct: ct);
             return result.Success ? await UseVersionBranchAsync(gitService, repo.Name, repo.CategoryId, mod.Path, gameVersion, ct) : result;
         }
@@ -139,7 +139,7 @@ public static class ModOperations
     {
         try
         {
-            Directory.Delete(mod.Path, recursive: true);
+            GitService.DeleteDirectory(mod.Path);
             return (Success: true, Error: null);
         }
         catch (Exception ex)

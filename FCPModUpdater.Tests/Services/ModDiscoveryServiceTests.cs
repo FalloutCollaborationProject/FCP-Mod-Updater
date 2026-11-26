@@ -82,7 +82,7 @@ public class DiscoverModsAsyncTests : IDisposable
         GC.SuppressFinalize(this);
         
         if (Directory.Exists(_tempDir))
-            Directory.Delete(_tempDir, true);
+            GitService.DeleteDirectory(_tempDir);
     }
 
     private void CreateModFolder(string name)
