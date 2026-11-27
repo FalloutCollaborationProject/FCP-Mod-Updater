@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using FCPModUpdater.Services;
 using FCPModUpdater.Settings;
 using FCPModUpdater.UI;
 
@@ -189,24 +190,33 @@ public class SettingsEditorTests
 
     [Theory]
     [InlineData("1", 1)]
-    [InlineData("8", 8)]
-    [InlineData(" 2 ", 2)]
-    public void UpdateParallelism_AcceptsOneToEight(string value, int expected)
+    [InlineData(" 1 ", 1)]
+    public void UpdateParallelism_AcceptsOneToMax(string value, int expected)
     {
         var (result, error) = SettingsEditor.Apply(new AppSettings(), "update-parallelism", value);
         Assert.Null(error);
         Assert.Equal(expected, result!.UpdateParallelism);
     }
 
+    [Fact]
+    public void UpdateParallelism_AcceptsMax()
+    {
+        var max = ParallelRunner.MaxParallelism;
+        var (result, error) = SettingsEditor.Apply(new AppSettings(), "update-parallelism", max.ToString());
+        Assert.Null(error);
+        Assert.Equal(max, result!.UpdateParallelism);
+    }
+
+    public static TheoryData<string> OutOfRangeParallelism =>
+        ["0", (ParallelRunner.MaxParallelism + 1).ToString(), "lots"];
+
     [Theory]
-    [InlineData("0")]
-    [InlineData("9")]
-    [InlineData("lots")]
+    [MemberData(nameof(OutOfRangeParallelism))]
     public void UpdateParallelism_OutOfRange_IsAnError(string value)
     {
         var (result, error) = SettingsEditor.Apply(new AppSettings(), "update-parallelism", value);
         Assert.Null(result);
-        Assert.Contains("1 to 8", error);
+        Assert.Contains($"1 to {ParallelRunner.MaxParallelism}", error);
     }
 
     [Fact]
@@ -214,7 +224,7 @@ public class SettingsEditorTests
     {
         var (result, _) = SettingsEditor.Apply(new AppSettings { UpdateParallelism = 2 }, "update-parallelism", null);
         Assert.Equal(AppSettings.DefaultUpdateParallelism, result!.UpdateParallelism);
-        Assert.Equal(8, new AppSettings { UpdateParallelism = 50 }.EffectiveUpdateParallelism);
+        Assert.Equal(ParallelRunner.MaxParallelism, new AppSettings { UpdateParallelism = 50 }.EffectiveUpdateParallelism);
         Assert.Equal(1, new AppSettings { UpdateParallelism = 0 }.EffectiveUpdateParallelism);
     }
 

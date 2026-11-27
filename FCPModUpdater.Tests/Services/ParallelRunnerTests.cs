@@ -4,14 +4,21 @@ public class ParallelRunnerTests
 {
     [Theory]
     [InlineData(0, 4, 1)]
-    [InlineData(2, 4, 1)]
+    [InlineData(1, 4, 1)]
+    [InlineData(2, 4, 2)]
     [InlineData(3, 4, 3)]
     [InlineData(10, 4, 4)]
     [InlineData(10, 0, 1)]
-    [InlineData(20, 50, 8)]
-    public void ResolveParallelism_OnlyParallelForThreeOrMore(int count, int configured, int expected)
+    public void ResolveParallelism_OnlyParallelForTwoOrMore(int count, int configured, int expected)
     {
         Assert.Equal(expected, ParallelRunner.ResolveParallelism(count, configured));
+    }
+
+    [Fact]
+    public void ResolveParallelism_CappedAtMaxParallelism()
+    {
+        Assert.Equal(ParallelRunner.MaxParallelism, ParallelRunner.ResolveParallelism(100, 100));
+        Assert.InRange(ParallelRunner.MaxParallelism, 1, 16);
     }
 
     [Fact]

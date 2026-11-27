@@ -74,7 +74,7 @@ public static class SettingsEditor
             case UpdateParallelism:
                 if (string.IsNullOrWhiteSpace(value))
                     return (settings with { UpdateParallelism = AppSettings.DefaultUpdateParallelism }, null);
-                return int.TryParse(value.Trim(), out var n) && n is >= 1 and <= Services.ParallelRunner.MaxParallelism
+                return int.TryParse(value.Trim(), out var n) && n >= 1 && n <= Services.ParallelRunner.MaxParallelism
                     ? (settings with { UpdateParallelism = n }, null)
                     : (null, $"Expected a number from 1 to {Services.ParallelRunner.MaxParallelism}, got '{value}'");
 

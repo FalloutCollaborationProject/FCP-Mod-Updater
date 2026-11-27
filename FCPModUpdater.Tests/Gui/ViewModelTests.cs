@@ -272,6 +272,8 @@ public sealed class ViewModelTests : IDisposable
     [Fact]
     public async Task UpdateDialog_CancelRemaining_SkipsQueuedMods()
     {
+        // One at a time, so the second mod is still queued when the batch is cancelled.
+        _f.Settings.Update(s => s with { UpdateParallelism = 1 });
         InstalledMod first = ShellFixture.GitMod("First", ModStatus.Behind, _dir, behind: 1);
         InstalledMod second = ShellFixture.GitMod("Second", ModStatus.Behind, _dir, behind: 1);
         _f.Mods.AddRange([first, second]);
@@ -299,7 +301,7 @@ public sealed class ViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateDialog_ThreeOrMoreMods_RunInParallel_UpToTheSetting()
+    public async Task UpdateDialog_TwoOrMoreMods_RunInParallel_UpToTheSetting()
     {
         _f.Settings.Update(s => s with { UpdateParallelism = 2 });
         InstalledMod[] mods = Enumerable.Range(1, 4)

@@ -6,6 +6,12 @@ Write each change once, under `[Unreleased]`. When tagging, rename `[Unreleased]
 
 ## [Unreleased]
 
+## [1.0.0-beta.2] - 2026-11-27
+
+### Changed
+- Updates now run in parallel from 2 mods (was 3 or more).
+- The parallel updates limit is now your CPU's thread count, up to 16 (was a fixed 8). Applies to the Settings page, `settings set update-parallelism` and `update -j`.
+
 ## [1.0.0-beta.1] - 2026-11-27
 
 First release since 0.4.2. The app is now called Collaboration Project Updater and comes as a desktop app as well as the command-line (CLI) app.

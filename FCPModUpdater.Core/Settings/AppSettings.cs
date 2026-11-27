@@ -22,7 +22,7 @@ public sealed record AppSettings
     /// <summary>RimWorld version such as "1.6", used instead of the one read from the install's Version.txt.</summary>
     public string? GameVersionOverride { get; init; }
 
-    /// <summary>How many mods update at once when three or more are queued. Clamped to 1–8.</summary>
+    /// <summary>How many mods update at once when two or more are queued. Clamped to 1–<see cref="Services.ParallelRunner.MaxParallelism"/>.</summary>
     public int UpdateParallelism { get; init; } = DefaultUpdateParallelism;
 
     public const int DefaultUpdateParallelism = 4;

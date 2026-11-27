@@ -36,12 +36,12 @@ public class UpdateSettings : ModPathSettings
     public bool AllowMainline { get; init; }
 
     [CommandOption("-j|--parallel <COUNT>")]
-    [Description("How many mods to update at once (1-8) when three or more need updating. Defaults to the saved setting.")]
+    [Description("How many mods to update at once (1 up to your CPU thread count, max 16) when two or more need updating. Defaults to the saved setting.")]
     public int? Parallel { get; init; }
 
     public override ValidationResult Validate()
     {
-        if (Parallel is < 1 or > Services.ParallelRunner.MaxParallelism)
+        if (Parallel is { } p && (p < 1 || p > Services.ParallelRunner.MaxParallelism))
             return ValidationResult.Error($"--parallel must be between 1 and {Services.ParallelRunner.MaxParallelism}");
 
         return base.Validate();

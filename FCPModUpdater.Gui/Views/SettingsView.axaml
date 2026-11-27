@@ -119,7 +119,7 @@
           <StackPanel Spacing="2">
             <TextBlock Classes="h2" Text="Parallel updates" />
             <TextBlock FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap"
-                       Text="How many mods update at the same time when three or more are queued. Use 1 to update one at a time." />
+                       Text="How many mods update at the same time when two or more are queued. Use 1 to update one at a time." />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <Slider Width="180" VerticalAlignment="Center"

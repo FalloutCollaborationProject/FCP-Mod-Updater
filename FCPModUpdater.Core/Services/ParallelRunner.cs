@@ -4,9 +4,13 @@ namespace FCPModUpdater.Services;
 public static class ParallelRunner
 {
     /// <summary>Batches smaller than this always run one item at a time.</summary>
-    public const int MinItemsForParallel = 3;
+    public const int MinItemsForParallel = 2;
 
-    public const int MaxParallelism = 8;
+    /// <summary>
+    /// Upper bound for the parallelism setting: the machine's logical thread count, but never more than 16
+    /// so large CPUs don't open dozens of git connections to GitHub at once.
+    /// </summary>
+    public static readonly int MaxParallelism = Math.Min(Environment.ProcessorCount, 16);
 
     /// <summary>How many items of a batch of <paramref name="itemCount"/> run at once for a configured limit.</summary>
     public static int ResolveParallelism(int itemCount, int configured)
