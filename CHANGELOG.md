@@ -6,6 +6,10 @@ Write each change once, under `[Unreleased]`. When tagging, rename `[Unreleased]
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-27
+
+First stable release of Collaboration Project Updater, the desktop app and the command-line (CLI) app. No changes since 1.0.0-beta.2; the notes below cover everything since 0.4.2.
+
 ## [1.0.0-beta.2] - 2026-11-27
 
 ### Changed
