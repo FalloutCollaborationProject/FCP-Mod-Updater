@@ -84,6 +84,7 @@ jobs:
           } > ./publish/release-notes.md
 
       - name: Create Release
+        id: release
         uses: softprops/action-gh-release@v2
         with:
           body_path: ./publish/release-notes.md
@@ -97,3 +98,10 @@ jobs:
             ./publish/checksums.txt
             ./publish/update-collab-project-updater.bat
             ./publish/update-collab-project-updater.sh
+
+      # Short notes + release link; skipped (notice only) while the DISCORD_WEBHOOK_URL secret isn't set.
+      - name: Announce on Discord
+        continue-on-error: true   # a failed post must not mark the release as failed
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: bash .github/discord-notify.sh "${GITHUB_REF_NAME#v}" "${{ steps.release.outputs.url }}"
