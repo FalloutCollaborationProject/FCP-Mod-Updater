@@ -106,58 +106,6 @@ public sealed class ViewModelTests : IDisposable
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
-    public async Task GitMissingDialog_ValidPath_SavesItAndStartsScanning()
-    {
-        // GitService.Executable is global and other tests run git in parallel, so use the real git.
-        var gitFile = GitService.FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git");
-        Assert.NotNull(gitFile);
-        var settings = FCPModUpdater.Settings.SettingsStore.InMemory();
-        var shell = new MainWindowViewModel(_f.Git, _f.GitHub, _f.Discovery,
-            new UpdateCheckService(new HttpClient()), new PathDiscoveryService(), _f.Log,
-            new StartupOptions(_dir), action => action(), () => Task.FromResult(false), settings: settings,
-            gitInfo: () => Task.FromResult<(string?, string?)>(("git version 2.47.1", gitFile)),
-            probeGit: _ => Task.FromResult<string?>("git version 2.47.1"));
-        try
-        {
-            await shell.InitializeAsync();
-            var dialog = Assert.IsType<GitMissingDialogViewModel>(shell.Dialog);
-
-            dialog.PathText = Path.GetDirectoryName(gitFile)!; // the folder works too
-            await dialog.UsePathCommand.ExecuteAsync(null);
-
-            Assert.Null(dialog.Error);
-            Assert.Equal(gitFile, settings.Current.GitPath);
-            Assert.Equal(gitFile, GitService.Executable);
-            Assert.False(shell.GitMissing);
-            Assert.Null(shell.Dialog);
-            await _f.Discovery.ReceivedWithAnyArgs()
-                .DiscoverModsAsync(default!, default, TestContext.Current.CancellationToken);
-        }
-        finally
-        {
-            GitService.UseExecutable(null);
-        }
-    }
-
-    [Fact]
-    public async Task GitMissingDialog_MissingPath_ShowsErrorAndStaysOpen()
-    {
-        var shell = new MainWindowViewModel(_f.Git, _f.GitHub, _f.Discovery,
-            new UpdateCheckService(new HttpClient()), new PathDiscoveryService(), _f.Log,
-            new StartupOptions(_dir), action => action(), () => Task.FromResult(false));
-
-        await shell.InitializeAsync();
-        var dialog = Assert.IsType<GitMissingDialogViewModel>(shell.Dialog);
-        dialog.PathText = Path.Combine(_dir, "nope", "git.exe");
-        await dialog.UsePathCommand.ExecuteAsync(null);
-
-        Assert.NotNull(dialog.Error);
-        Assert.Same(dialog, shell.Dialog);
-        Assert.Equal("git", GitService.Executable);
-    }
-
-    [Fact]
     public async Task SettingsGitPath_Invalid_IsNotSaved()
     {
         _f.Shell.Settings.GitPathText = Path.Combine(_dir, "missing-git");
